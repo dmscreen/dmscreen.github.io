@@ -2,6 +2,7 @@
 import { loadTables } from '../srd.js';
 import { dbAll, dbPut, dbDelete, activeCampaignId } from '../store.js';
 import { el, esc, toast, confirmDialog, promptDialog, modal } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { pick, roll } from '../dice.js';
 
 function generateNPC(names, npcData, ancestry) {
@@ -24,7 +25,7 @@ function generateNPC(names, npcData, ancestry) {
   };
 }
 
-function npcCardHTML(n, saved = false) {
+function npcCardHTML(n) {
   return `
     <h2>${esc(n.name)} <span class="pill">${esc(n.ancestry)}</span> <span class="pill accent">${esc(n.occupation)}</span></h2>
     <p><b>Personality.</b> <span class="muted">${esc(n.personality)}; ${esc(n.quirk)}.</span></p>
@@ -42,7 +43,6 @@ export default {
   async render(container) {
     const [names, npcData] = await Promise.all([loadTables('names'), loadTables('npc')]);
     const ancestries = Object.keys(names.people);
-    let current = null;
 
     container.innerHTML = `
       <div class="grid-2">
@@ -51,30 +51,41 @@ export default {
             <div class="row">
               <label class="field"><span>Ancestry</span><select id="np-anc"><option value="">Any</option>${ancestries.map(a => `<option>${a}</option>`).join('')}</select></label>
               <button class="btn primary" id="np-gen">Generate NPC</button>
-              <button class="btn" id="np-save" disabled>Save to campaign</button>
             </div>
-            <div id="np-current" class="mt"></div>
+            <p class="small faint mt">Every generated NPC lands in the history below. Promote the keepers to the campaign roster with their Save button.</p>
           </div>
+          <div id="np-history"></div>
         </div>
         <div class="card">
-          <h2>Saved NPCs</h2>
+          <h2>Campaign NPCs</h2>
           <div id="np-saved"></div>
         </div>
       </div>`;
 
-    const currentEl = container.querySelector('#np-current');
-    const saveBtn = container.querySelector('#np-save');
-
-    const gen = () => {
-      current = generateNPC(names, npcData, container.querySelector('#np-anc').value);
-      currentEl.innerHTML = npcCardHTML(current);
-      saveBtn.disabled = false;
-    };
+    const history = await historyList({
+      container: container.querySelector('#np-history'),
+      key: 'history:npcs',
+      title: 'Generated NPCs',
+      renderEntry: (npc, body) => {
+        body.innerHTML = `
+          <a href="javascript:void 0"><b>${esc(npc.name)}</b></a>
+          <span class="pill">${esc(npc.ancestry)}</span> <span class="pill accent">${esc(npc.occupation)}</span>
+          <span class="small faint">${timeStamp(npc.ts)}</span>
+          <button class="btn small" style="margin-left:6px" data-save>Save to campaign</button>`;
+        body.querySelector('a').addEventListener('click', () => modal(npc.name, el(`<div>${npcCardHTML(npc)}</div>`)));
+        body.querySelector('[data-save]').addEventListener('click', async () => {
+          const { id, ts, ...data } = npc;
+          await dbPut('npcs', { ...data, campaignId: activeCampaignId() });
+          toast(`${npc.name} saved to campaign`);
+          drawSaved();
+        });
+      },
+    });
 
     const drawSaved = async () => {
       const saved = await dbAll('npcs', activeCampaignId());
       const box = container.querySelector('#np-saved');
-      box.innerHTML = saved.length ? '' : '<p class="faint small">No saved NPCs yet.</p>';
+      box.innerHTML = saved.length ? '' : '<p class="faint small">No campaign NPCs yet.</p>';
       for (const n of saved.sort((a, b) => b.updated - a.updated)) {
         const row = el(`<div style="border-bottom:1px solid var(--border);padding:8px 0">
           <div class="row" style="align-items:center">
@@ -87,7 +98,7 @@ export default {
           </div>
         </div>`);
         row.querySelector('[data-view]').addEventListener('click', () => {
-          modal(n.name, el(`<div>${npcCardHTML(n, true)}</div>`));
+          modal(n.name, el(`<div>${npcCardHTML(n)}</div>`));
         });
         row.querySelector('[data-note]').addEventListener('click', () => {
           promptDialog(`Notes: ${n.name}`, [{ key: 'notes', label: 'DM notes', type: 'textarea', value: n.notes || '' }], async ({ notes }) => {
@@ -102,15 +113,9 @@ export default {
       }
     };
 
-    container.querySelector('#np-gen').addEventListener('click', gen);
-    saveBtn.addEventListener('click', async () => {
-      if (!current) return;
-      await dbPut('npcs', { ...current, campaignId: activeCampaignId() });
-      toast(`${current.name} saved`);
-      drawSaved();
-    });
+    container.querySelector('#np-gen').addEventListener('click', () =>
+      history.add(generateNPC(names, npcData, container.querySelector('#np-anc').value)));
 
-    gen();
     drawSaved();
   },
 };

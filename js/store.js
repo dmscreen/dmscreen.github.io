@@ -122,9 +122,38 @@ export async function exportAll() {
   return dump;
 }
 
+// Export a single campaign: its record plus every store's records for it,
+// including 'misc' (combat state, generator histories, calendar, timers).
+export async function exportCampaign(campaignId = activeCampaignId()) {
+  const campaign = await dbGet('campaigns', campaignId);
+  if (!campaign) throw new Error('Campaign not found.');
+  const dump = {
+    app: 'dm-screen-kit', schema: SCHEMA_VERSION, type: 'campaign',
+    exported: new Date().toISOString(), campaign, stores: {},
+  };
+  for (const name of STORES) {
+    if (name === 'campaigns') continue;
+    dump.stores[name] = await dbAll(name, campaignId);
+  }
+  return dump;
+}
+
 export async function importAll(dump, { replace = false } = {}) {
   if (!dump || dump.app !== 'dm-screen-kit' || !dump.stores) {
     throw new Error('Not a DM Screen backup file.');
+  }
+  // single-campaign file: put the campaign record, then its data (same ids
+  // merge/overwrite, so re-importing an updated file refreshes in place)
+  if (dump.type === 'campaign') {
+    if (!dump.campaign?.id) throw new Error('Campaign backup is missing its campaign record.');
+    await tx('campaigns', 'readwrite', s => s.put(dump.campaign));
+    for (const name of STORES) {
+      for (const rec of dump.stores[name] || []) {
+        if (rec && rec.id) await tx(name, 'readwrite', s => s.put(rec));
+      }
+    }
+    setPref('activeCampaign', dump.campaign.id);
+    return;
   }
   for (const name of STORES) {
     const records = dump.stores[name] || [];

@@ -2,6 +2,7 @@
 import { loadMonsters, monsterXP, encounterMultiplier, fmtCR } from '../srd.js';
 import { dbAll, activeCampaignId } from '../store.js';
 import { el, esc, toast, showStatBlock } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { roll, pick, rollTable } from '../dice.js';
 import { getParty } from './party.js';
 import { difficultyFor, launchCombat } from './encounters.js';
@@ -45,9 +46,32 @@ export default {
           </div>` : `<p class="small faint mt">Tip: build your own tables in Custom Random Tables and they'll show up here. For hundreds of ready-made tables, see <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</p>`}
         </div>
       </div>
-      <div id="re-result"></div>`;
+      <div id="re-result"></div>
+      <div id="re-history"></div>`;
 
     const resultEl = container.querySelector('#re-result');
+    const bySlug = new Map(monsters.map(m => [m.slug, m]));
+
+    const history = await historyList({
+      container: container.querySelector('#re-history'),
+      key: 'history:randomEncounters',
+      title: 'Rolled encounters',
+      renderEntry: (e, body) => {
+        if (e.kind === 'table') {
+          body.innerHTML = `<span class="pill">${esc(e.table)}</span> ${esc(e.text)} <span class="small faint">${timeStamp(e.ts)}</span>`;
+          return;
+        }
+        body.innerHTML = `
+          <b>${e.count} x <a href="javascript:void 0">${esc(e.name)}</a></b>
+          <span class="pill">CR ${esc(e.cr)}</span> <span class="pill">${esc(e.label)}</span>
+          ${e.env ? `<span class="pill">${esc(e.env)}</span>` : ''}
+          <span class="small faint">${timeStamp(e.ts)}</span>
+          <button class="btn small" style="margin-left:6px" data-run>Run</button>`;
+        const m = bySlug.get(e.slug);
+        body.querySelector('a').addEventListener('click', () => m ? showStatBlock(m) : toast('Monster not found', 'danger'));
+        body.querySelector('[data-run]').addEventListener('click', () => m ? launchCombat([{ monster: m, count: e.count }]) : toast('Monster not found', 'danger'));
+      },
+    });
 
     container.querySelector('#re-check').addEventListener('click', () => {
       const threshold = Number(container.querySelector('#re-threshold').value) || 18;
@@ -85,6 +109,7 @@ export default {
       const adjusted = Math.round(xp * count * encounterMultiplier(count, partyForMath.length));
       const { label } = difficultyFor(partyForMath, adjusted);
       lastEncounter = { monster: m, count };
+      history.add({ slug: m.slug, name: m.name, count, cr: fmtCR(m.cr), label, env });
 
       resultEl.innerHTML = '';
       const card = el(`<div class="card">
@@ -108,6 +133,7 @@ export default {
       const table = customTables.find(t => t.id === id);
       if (!table || !table.rows?.length) return toast('That table is empty', 'danger');
       const row = rollTable(table.rows);
+      history.add({ kind: 'table', table: table.name, text: row.text });
       resultEl.innerHTML = '';
       resultEl.append(el(`<div class="card"><h2>${esc(table.name)}</h2><p style="font-size:1.15rem">${esc(row.text)}</p></div>`));
     });

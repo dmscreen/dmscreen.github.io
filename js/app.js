@@ -30,8 +30,8 @@ import about from './tools/about.js';
 
 const TOOLS = [
   initiative, encounters, dice, party,
-  travel, randomEnc, weather, calendar,
-  npcs, names, loot, shops, quests, customTables,
+  travel, randomEnc, calendar,
+  npcs, names, loot, shops, quests, weather, customTables,
   monsters, spells, rules, conditions, characterOptions,
   notes, timer,
   linked, settings, about,

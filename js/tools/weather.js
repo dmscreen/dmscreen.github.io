@@ -1,5 +1,6 @@
 // Weather Generator with SRD mechanical notes.
 import { el, esc } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { roll, pick } from '../dice.js';
 
 const CLIMATES = {
@@ -18,7 +19,7 @@ const FLAVOR = {
 };
 
 export default {
-  id: 'weather', title: 'Weather Generator', shortTitle: 'Weather', group: 'Travel', icon: 'cloud',
+  id: 'weather', title: 'Weather Generator', shortTitle: 'Weather', group: 'Generators', icon: 'cloud',
   subtitle: 'Roll the sky for today',
 
   async render(container) {
@@ -30,10 +31,24 @@ export default {
           <button class="btn primary" id="w-roll">Roll weather</button>
         </div>
         <div id="w-out" class="mt"></div>
-      </div>`;
+      </div>
+      <div id="w-history"></div>`;
+
+    const history = await historyList({
+      container: container.querySelector('#w-history'),
+      key: 'history:weather',
+      title: 'Weather history',
+      renderEntry: (e, body) => {
+        body.innerHTML = `
+          <b>${e.temp} F</b> <span class="muted">${esc(e.desc)} ${esc(e.conditions)}</span>
+          <span class="pill">${esc(e.climate)}, ${esc(e.season)}</span>
+          <span class="small faint">${timeStamp(e.ts)}</span>
+          ${e.notes.length ? `<div class="small muted">${e.notes.map(esc).join(' ')}</div>` : ''}`;
+      },
+    });
 
     const out = container.querySelector('#w-out');
-    const gen = () => {
+    const gen = async (record = true) => {
       const climate = container.querySelector('#w-climate').value;
       const season = container.querySelector('#w-season').value;
       const base = CLIMATES[climate][season];
@@ -59,14 +74,16 @@ export default {
       if (precip === 'heavy') notes.push('Heavy precipitation: lightly obscures everything, disadvantage on sight-based Perception; douses open flames.');
       if (snowing && precip === 'heavy') notes.push('Deep snow is difficult terrain.');
 
+      const conditions = `${wind}${precip !== 'none' ? `, ${precip} ${snowing ? 'snow' : 'rain'}` : ''}`;
       out.innerHTML = `
         <p class="roll-result-big" style="font-size:2rem">${temp} F</p>
         <p class="center">${esc(desc)}</p>
-        <p class="center muted">${wind}${precip !== 'none' ? `, ${precip} ${snowing ? 'snow' : 'rain'}` : ''}</p>
+        <p class="center muted">${esc(conditions)}</p>
         ${notes.map(n => `<p class="small muted">${esc(n)}</p>`).join('') || '<p class="small faint center">No mechanical effects.</p>'}`;
+
+      if (record) await history.add({ temp, desc, conditions, climate, season, notes });
     };
 
-    container.querySelector('#w-roll').addEventListener('click', gen);
-    gen();
+    container.querySelector('#w-roll').addEventListener('click', () => gen());
   },
 };

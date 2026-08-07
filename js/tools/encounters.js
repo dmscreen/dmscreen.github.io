@@ -1,6 +1,6 @@
 // Encounter Builder: XP budget math + saved encounters + send to initiative.
 import { loadMonsters, fmtCR, monsterXP, XP_THRESHOLDS, encounterMultiplier, abilityMod } from '../srd.js';
-import { dbAll, dbPut, dbDelete, activeCampaignId, setState } from '../store.js';
+import { dbAll, dbPut, dbDelete, activeCampaignId, setState, getState } from '../store.js';
 import { el, esc, toast, confirmDialog, showStatBlock, searchInput, promptDialog } from '../components/ui.js';
 import { roll } from '../dice.js';
 import { getParty } from './party.js';
@@ -56,8 +56,10 @@ export default {
   async render(container) {
     const monsters = await loadMonsters();
     const bySlug = new Map(monsters.map(m => [m.slug, m]));
-    let current = []; // [{slug, count}]
+    // the working encounter persists per campaign so tab switches don't lose it
+    let current = ((await getState('encounterCurrent', [])) || []).filter(e => bySlug.has(e.slug));
     let query = '';
+    const persist = () => setState('encounterCurrent', current);
 
     container.innerHTML = `
       <div class="grid-2">
@@ -110,6 +112,7 @@ export default {
       const e = current.find(x => x.slug === slug);
       if (e) e.count++;
       else current.push({ slug, count: 1 });
+      persist();
       drawCurrent();
     };
 
@@ -133,10 +136,11 @@ export default {
           </span>
         </div>`);
         row.querySelector('a').addEventListener('click', () => showStatBlock(m));
-        row.querySelector('[data-inc]').addEventListener('click', () => { entry.count++; drawCurrent(); });
+        row.querySelector('[data-inc]').addEventListener('click', () => { entry.count++; persist(); drawCurrent(); });
         row.querySelector('[data-dec]').addEventListener('click', () => {
           entry.count--;
           if (entry.count <= 0) current = current.filter(x => x !== entry);
+          persist();
           drawCurrent();
         });
         currentEl.append(row);
@@ -196,7 +200,7 @@ export default {
         drawSaved();
       });
     });
-    container.querySelector('#e-clear').addEventListener('click', () => { current = []; drawCurrent(); });
+    container.querySelector('#e-clear').addEventListener('click', () => { current = []; persist(); drawCurrent(); });
 
     drawResults();
     drawCurrent();

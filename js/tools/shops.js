@@ -1,6 +1,6 @@
 // Shop Generator: inventory with prices, editable and savable.
 import { loadTables } from '../srd.js';
-import { dbAll, dbPut, dbDelete, activeCampaignId } from '../store.js';
+import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { el, esc, toast, confirmDialog } from '../components/ui.js';
 import { pick } from '../dice.js';
 import { shopName, personName } from './names.js';
@@ -27,8 +27,12 @@ export default {
 
     const currentEl = container.querySelector('#sh-current');
 
+    // The working shop persists per campaign, so it survives tab switches and reloads.
+    const persistCurrent = (shop, savedId) => setState('shopCurrent', shop ? { shop, savedId } : null);
+
     const renderShop = (shop, savedRecord = null) => {
       currentEl.innerHTML = '';
+      persistCurrent(shop, savedRecord?.id || null);
       const card = el(`<div class="card">
         <h2>${esc(shop.name)}</h2>
         <p class="muted">${esc(shop.type)} in a ${esc(shop.size).toLowerCase()}. Keeper: <b>${esc(shop.keeper)}</b>.</p>
@@ -39,6 +43,7 @@ export default {
         </table></div>
         <div class="row mt">
           <button class="btn primary" data-save>${savedRecord ? 'Update saved shop' : 'Save shop'}</button>
+          <button class="btn danger" data-discard>Discard</button>
         </div>
       </div>`);
       const tbody = card.querySelector('tbody');
@@ -47,7 +52,11 @@ export default {
         shop.items.forEach((item, i) => {
           const tr = el(`<tr><td>${esc(item.name)}${item.flavor ? ' <span class="pill">odd</span>' : ''}</td><td>${esc(item.price)}</td>
             <td style="text-align:right"><button class="btn small danger" title="Sold / remove">Sold</button></td></tr>`);
-          tr.querySelector('button').addEventListener('click', () => { shop.items.splice(i, 1); drawRows(); });
+          tr.querySelector('button').addEventListener('click', () => {
+            shop.items.splice(i, 1);
+            persistCurrent(shop, savedRecord?.id || null);
+            drawRows();
+          });
           tbody.append(tr);
         });
       };
@@ -57,6 +66,10 @@ export default {
         toast('Shop saved');
         renderShop(shop, rec);
         drawSaved();
+      });
+      card.querySelector('[data-discard]').addEventListener('click', async () => {
+        await persistCurrent(null);
+        currentEl.innerHTML = '';
       });
       currentEl.append(card);
     };
@@ -97,7 +110,13 @@ export default {
     };
 
     container.querySelector('#sh-gen').addEventListener('click', gen);
-    gen();
+
+    // restore the working shop from the last visit, if any
+    const prev = await getState('shopCurrent');
+    if (prev?.shop) {
+      const savedRec = prev.savedId ? (await dbAll('shops', activeCampaignId())).find(s => s.id === prev.savedId) : null;
+      renderShop(prev.shop, savedRec || null);
+    }
     drawSaved();
   },
 };

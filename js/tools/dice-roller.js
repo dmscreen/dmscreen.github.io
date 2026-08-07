@@ -46,13 +46,19 @@ export default {
 
     const renderHistory = () => {
       historyEl.innerHTML = history.length
-        ? `<table class="data"><tbody>${history.map(h =>
-            `<tr class="clickable" data-expr="${esc(h.expr)}"><td class="muted small">${esc(h.expr)}</td><td class="small faint">${esc(h.detail)}</td><td style="text-align:right;font-family:var(--font-mono)"><b>${h.total}</b></td></tr>`
+        ? `<table class="data"><tbody>${history.map((h, i) =>
+            `<tr class="clickable" data-i="${i}" data-expr="${esc(h.expr)}" title="Click to re-roll"><td class="muted small">${esc(h.expr)}</td><td class="small faint">${esc(h.detail)}</td><td style="text-align:right;font-family:var(--font-mono)"><b>${h.total}</b></td><td style="text-align:right;width:30px"><button class="btn small icon-btn" data-remove title="Remove" aria-label="Remove roll" style="padding:1px 8px">&times;</button></td></tr>`
           ).join('')}</tbody></table>`
         : '<p class="faint center">No rolls yet</p>';
-      historyEl.querySelectorAll('tr').forEach(tr => tr.addEventListener('click', () =>
-
- doRoll(tr.dataset.expr)));
+      historyEl.querySelectorAll('tr').forEach(tr => {
+        tr.addEventListener('click', () => doRoll(tr.dataset.expr));
+        tr.querySelector('[data-remove]').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          history.splice(Number(tr.dataset.i), 1);
+          renderHistory();
+          await setState('diceHistory', history);
+        });
+      });
     };
 
     const doRoll = async (expr) => {

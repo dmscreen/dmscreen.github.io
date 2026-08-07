@@ -1,6 +1,7 @@
 // Loot & Treasure Generator: coins, gems, art, and SRD magic items by CR band.
 import { loadMagicItems } from '../srd.js';
 import { el, esc, md, modal } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { roll, pick } from '../dice.js';
 
 const GEMS = [
@@ -42,6 +43,7 @@ export default {
 
   async render(container) {
     const magicItems = await loadMagicItems();
+    const bySlug = new Map(magicItems.map(m => [m.slug, m]));
 
     container.innerHTML = `
       <div class="card">
@@ -52,9 +54,30 @@ export default {
         </div>
         <p class="small faint mt">Hoard treasure is meant for a lair or a milestone, not every fight. Tables are original approximations tuned to SRD magic item rarities.</p>
       </div>
-      <div id="l-out"></div>`;
+      <div id="l-history"></div>`;
 
-    const out = container.querySelector('#l-out');
+    const history = await historyList({
+      container: container.querySelector('#l-history'),
+      key: 'history:loot',
+      title: 'Rolled treasure',
+      renderEntry: (e, body) => {
+        body.innerHTML = `
+          <div><b>${esc(e.title)}</b> <span class="small faint">${timeStamp(e.ts)}</span></div>
+          <div class="small">${fmtCoins(e.coins) || '<span class="muted">No coins</span>'}</div>
+          ${e.gems.length ? `<div class="small"><b>Gems.</b> <span class="muted">${e.gems.map(esc).join('; ')}</span></div>` : ''}
+          ${e.art.length ? `<div class="small"><b>Art.</b> <span class="muted">${e.art.map(esc).join('; ')}</span></div>` : ''}
+          <div data-items></div>`;
+        const itemsEl = body.querySelector('[data-items]');
+        for (const it of e.items) {
+          const p = el(`<div class="small"><a href="javascript:void 0">${esc(it.name)}</a> <span class="pill">${esc(it.rarity)}</span></div>`);
+          p.querySelector('a').addEventListener('click', () => {
+            const item = bySlug.get(it.slug);
+            if (item) modal(item.name, el(`<div><p class="muted"><i>${esc(item.type)}, ${esc(item.rarity)}${item.attunement ? ` (${esc(item.attunement)})` : ''}</i></p>${md(item.desc)}</div>`), { wide: true });
+          });
+          itemsEl.append(p);
+        }
+      },
+    });
 
     const rollItems = (band) => {
       if (Math.random() > band.itemChance) return [];
@@ -69,33 +92,17 @@ export default {
           if (r < 0) { rarity = k; break; }
         }
         const pool = magicItems.filter(m => (m.rarity || '').toLowerCase().startsWith(rarity));
-        if (pool.length) items.push(pick(pool));
+        if (pool.length) {
+          const item = pick(pool);
+          items.push({ slug: item.slug, name: item.name, rarity: item.rarity });
+        }
       }
       return items;
     };
 
-    const show = (title, coins, gems, art, items) => {
-      const card = el(`<div class="card">
-        <h2>${esc(title)}</h2>
-        <p>${fmtCoins(coins) || '<span class="muted">No coins</span>'}</p>
-        ${gems.length ? `<p><b>Gems.</b> <span class="muted">${gems.map(esc).join('; ')}</span></p>` : ''}
-        ${art.length ? `<p><b>Art objects.</b> <span class="muted">${art.map(esc).join('; ')}</span></p>` : ''}
-        ${items.length ? `<p><b>Magic items.</b></p>` : ''}
-        <div data-items></div>
-      </div>`);
-      const itemsEl = card.querySelector('[data-items]');
-      for (const item of items) {
-        const rowEl = el(`<p><a href="javascript:void 0">${esc(item.name)}</a> <span class="pill">${esc(item.rarity)}</span>${item.attunement ? ' <span class="pill accent">attunement</span>' : ''}</p>`);
-        rowEl.querySelector('a').addEventListener('click', () =>
-          modal(item.name, el(`<div><p class="muted"><i>${esc(item.type)}, ${esc(item.rarity)}${item.attunement ? ` (${esc(item.attunement)})` : ''}</i></p>${md(item.desc)}</div>`), { wide: true }));
-        itemsEl.append(rowEl);
-      }
-      out.prepend(card);
-    };
-
     container.querySelector('#l-individual').addEventListener('click', () => {
       const band = BANDS[Number(container.querySelector('#l-band').value)];
-      show(`Individual treasure (${band.label})`, band.individual(), [], [], []);
+      history.add({ title: `Individual (${band.label})`, coins: band.individual(), gems: [], art: [], items: [] });
     });
 
     container.querySelector('#l-hoard').addEventListener('click', () => {
@@ -112,7 +119,7 @@ export default {
         const n = roll('1d4').total;
         for (let i = 0; i < n; i++) art.push(`${pick(list)} (${value} gp)`);
       }
-      show(`Treasure hoard (${band.label})`, band.hoardCoins(), gems, art, rollItems(band));
+      history.add({ title: `Hoard (${band.label})`, coins: band.hoardCoins(), gems, art, items: rollItems(band) });
     });
   },
 };

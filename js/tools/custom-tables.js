@@ -1,6 +1,7 @@
 // Custom Random Tables: build, roll, import/export your own weighted tables.
 import { dbAll, dbPut, dbDelete, activeCampaignId } from '../store.js';
 import { el, esc, toast, confirmDialog, modal, promptDialog } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { rollTable } from '../dice.js';
 
 function parseRows(text) {
@@ -22,10 +23,20 @@ export default {
         <span class="muted small" style="align-self:center">Custom tables also appear in the Random Encounters tool. Want hundreds of ready-made tables? Try <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</span>
       </div>
       <div id="ct-list"></div>
-      <div id="ct-result"></div>`;
+      <div id="ct-result"></div>
+      <div id="ct-history"></div>`;
 
     const listEl = container.querySelector('#ct-list');
     const resultEl = container.querySelector('#ct-result');
+
+    const history = await historyList({
+      container: container.querySelector('#ct-history'),
+      key: 'history:customTables',
+      title: 'Roll history',
+      renderEntry: (e, body) => {
+        body.innerHTML = `<span class="pill">${esc(e.table)}</span> ${esc(e.text)} <span class="small faint">${timeStamp(e.ts)}</span>`;
+      },
+    });
 
     const editTable = (table) => {
       const body = el(`<div>
@@ -66,6 +77,7 @@ export default {
         </div>`);
         card.querySelector('[data-roll]').addEventListener('click', () => {
           const row = rollTable(t.rows);
+          history.add({ table: t.name, text: row.text });
           resultEl.innerHTML = `<div class="card"><h2>${esc(t.name)}</h2><p style="font-size:1.2rem">${esc(row.text)}</p></div>`;
           resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });

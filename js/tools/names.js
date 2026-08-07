@@ -1,6 +1,7 @@
 // Name Generator: people, taverns, shops, ships, settlements.
 import { loadTables } from '../srd.js';
 import { el, esc } from '../components/ui.js';
+import { historyList, timeStamp } from '../components/history.js';
 import { pick } from '../dice.js';
 
 export function personName(data, ancestry) {
@@ -48,14 +49,30 @@ export default {
           </select></label>
           <button class="btn primary" id="n-gen">Generate 10</button>
         </div>
-        <div id="n-out" class="mt"></div>
-      </div>`;
+      </div>
+      <div id="n-history"></div>`;
 
-    const out = container.querySelector('#n-out');
-    const gen = () => {
-      const kind = container.querySelector('#n-kind').value;
+    const history = await historyList({
+      container: container.querySelector('#n-history'),
+      key: 'history:names',
+      title: 'Generated names',
+      renderEntry: (e, body) => {
+        body.innerHTML = `
+          <div><span class="pill accent">${esc(e.kind)}</span>${e.ancestry ? ` <span class="pill">${esc(e.ancestry)}</span>` : ''} <span class="small faint">${timeStamp(e.ts)}</span></div>
+          <div class="mt" style="margin-top:6px">${e.names.map(n => `<span style="display:inline-block;margin:2px 10px 2px 0">${esc(n)}</span>`).join('')}</div>`;
+      },
+    });
+
+    const kindSel = container.querySelector('#n-kind');
+    const ancWrap = container.querySelector('#n-anc-wrap');
+    const syncAncestry = () => {
+      const kind = kindSel.value;
+      ancWrap.style.display = kind === 'person' || kind === 'shop' ? '' : 'none';
+    };
+
+    container.querySelector('#n-gen').addEventListener('click', () => {
+      const kind = kindSel.value;
       const anc = container.querySelector('#n-ancestry').value;
-      container.querySelector('#n-anc-wrap').style.display = kind === 'person' || kind === 'shop' ? '' : 'none';
       const names = Array.from({ length: 10 }, () => {
         switch (kind) {
           case 'person': return personName(data, anc || pick(ancestries));
@@ -65,11 +82,9 @@ export default {
           case 'settlement': return settlementName(data);
         }
       });
-      out.innerHTML = names.map(n => `<p style="font-size:1.1rem">${esc(n)}</p>`).join('');
-    };
-
-    container.querySelector('#n-gen').addEventListener('click', gen);
-    container.querySelector('#n-kind').addEventListener('change', gen);
-    gen();
+      history.add({ kind, ancestry: kind === 'person' || kind === 'shop' ? anc : '', names });
+    });
+    kindSel.addEventListener('change', syncAncestry);
+    syncAncestry();
   },
 };
