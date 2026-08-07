@@ -124,7 +124,7 @@ export async function exportAll() {
 
 export async function importAll(dump, { replace = false } = {}) {
   if (!dump || dump.app !== 'dm-screen-kit' || !dump.stores) {
-    throw new Error('Not a DM Screen Kit backup file.');
+    throw new Error('Not a DM Screen backup file.');
   }
   for (const name of STORES) {
     const records = dump.stores[name] || [];

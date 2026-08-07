@@ -89,7 +89,7 @@ export default {
       const blob = new Blob([JSON.stringify(dump, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `dm-screen-kit-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `dm-screen-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
       toast('Backup downloaded');

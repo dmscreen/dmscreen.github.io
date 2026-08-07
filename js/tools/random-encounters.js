@@ -1,5 +1,5 @@
 // Random Encounter Engine: terrain + party level -> a balanced surprise.
-import { loadMonsters, CR_XP, encounterMultiplier, fmtCR } from '../srd.js';
+import { loadMonsters, monsterXP, encounterMultiplier, fmtCR } from '../srd.js';
 import { dbAll, activeCampaignId } from '../store.js';
 import { el, esc, toast, showStatBlock } from '../components/ui.js';
 import { roll, pick, rollTable } from '../dice.js';
@@ -70,14 +70,14 @@ export default {
 
       const pool = monsters.filter(m =>
         (!env || m.environments.includes(env)) &&
-        (CR_XP[m.cr] ?? 0) > 0 &&
-        (CR_XP[m.cr] ?? 0) <= budget
+        monsterXP(m) > 0 &&
+        monsterXP(m) <= budget
       );
       if (!pool.length) { toast('No monsters fit that terrain and budget', 'danger'); return; }
 
       // Weight toward CRs that matter at this level
-      const m = pick(pool.filter(x => (CR_XP[x.cr] ?? 0) >= budget / 12) .length ? pool.filter(x => (CR_XP[x.cr] ?? 0) >= budget / 12) : pool);
-      const xp = CR_XP[m.cr] ?? 10;
+      const m = pick(pool.filter(x => monsterXP(x) >= budget / 12) .length ? pool.filter(x => monsterXP(x) >= budget / 12) : pool);
+      const xp = monsterXP(m) || 10;
       let count = 1;
       for (let c = 8; c >= 1; c--) {
         if (xp * c * encounterMultiplier(c, partyForMath.length) <= budget * 1.15) { count = c; break; }

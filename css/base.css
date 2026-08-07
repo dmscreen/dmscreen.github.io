@@ -1,4 +1,4 @@
-/* DM Screen Kit - base tokens and reset */
+/* DM Screen - base tokens and reset */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
 

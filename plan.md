@@ -1,4 +1,4 @@
-# DM Screen Kit - Project Plan
+# DM Screen - Project Plan
 
 A free, browser-based Dungeon Master's virtual screen for D&D 5e. Pure HTML, CSS, and JavaScript hosted on GitHub Pages. All user data saves to the browser. No accounts, no server, no build step required to run it.
 

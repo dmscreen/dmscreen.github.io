@@ -17,6 +17,8 @@ export const loadSpells = () => load('spells');
 export const loadConditions = () => load('conditions');
 export const loadMagicItems = () => load('magic-items');
 export const loadRules = () => load('rules');
+export const loadFeats = () => load('feats');
+export const loadBackgrounds = () => load('backgrounds');
 export const loadTables = (name) => load(`tables/${name}`);
 
 /* ---------- 5e math ---------- */
@@ -56,5 +58,8 @@ export function encounterMultiplier(monsterCount, partySize = 4) {
 }
 
 export const fmtCR = (cr) => cr === 0.125 ? '1/8' : cr === 0.25 ? '1/4' : cr === 0.5 ? '1/2' : String(cr);
+
+// XP for a monster: prefer the value published with the stat block (A5E), fall back to the CR table.
+export const monsterXP = (m) => m.xp ?? CR_XP[m.cr] ?? 0;
 
 export const CR_LIST = [0, 0.125, 0.25, 0.5, ...Array.from({ length: 30 }, (_, i) => i + 1)];

@@ -1,5 +1,5 @@
 // Shared UI helpers: element creation, toasts, modals, stat blocks.
-import { abilityMod, fmtMod, fmtCR } from '../srd.js';
+import { abilityMod, fmtMod, fmtCR, monsterXP } from '../srd.js';
 
 export function el(html) {
   const t = document.createElement('template');
@@ -45,9 +45,22 @@ export function modal(title, bodyNode, { actions = [], wide = false, onClose } =
     }
     d.append(foot);
   }
+  // Close + cleanup in one place. Not wired to the 'close' event because some
+  // browsers don't fire it reliably; instead d.close() is wrapped so every
+  // caller (close button, backdrop, Esc, action buttons, tool code) cleans up.
+  const nativeClose = d.close.bind(d);
+  let closed = false;
+  d.close = () => {
+    if (closed) return;
+    closed = true;
+    try { nativeClose(); } catch { /* already closed */ }
+    onClose?.();
+    d.remove();
+  };
   d.querySelector('[data-close]').addEventListener('click', () => d.close());
   d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
-  d.addEventListener('close', () => { onClose?.(); d.remove(); });
+  d.addEventListener('close', () => d.close()); // Esc key path
+  d.addEventListener('cancel', () => d.close());
   document.body.append(d);
   d.showModal();
   return d;
@@ -118,7 +131,7 @@ export function statBlockHTML(m) {
 
   return `<div class="stat-block">
     <div class="sb-name">${esc(m.name)}</div>
-    <div class="sb-meta">${esc(m.size)} ${esc(m.type)}${m.subtype ? ` (${esc(m.subtype)})` : ''}, ${esc(m.alignment)}</div>
+    <div class="sb-meta">${esc(m.size)} ${esc(m.type)}${m.subtype ? ` (${esc(m.subtype)})` : ''}, ${esc(m.alignment)}${m.source ? ` <span class="pill">${esc(m.source)}</span>` : ''}</div>
     <hr>
     <p><b>Armor Class</b> ${m.ac}${m.acDesc ? ` (${esc(m.acDesc)})` : ''}</p>
     <p><b>Hit Points</b> ${m.hp}${m.hitDice ? ` (${esc(m.hitDice)})` : ''}</p>
@@ -134,7 +147,7 @@ export function statBlockHTML(m) {
     ${line('Condition Immunities', m.conditionImmunities)}
     ${line('Senses', m.senses)}
     ${line('Languages', m.languages)}
-    <p><b>Challenge</b> ${fmtCR(m.cr)} (${(crXP(m.cr)).toLocaleString()} XP)</p>
+    <p><b>Challenge</b> ${fmtCR(m.cr)} (${monsterXP(m).toLocaleString()} XP)</p>
     ${section('Traits', m.abilities)}
     ${section('Actions', m.actions)}
     ${section('Bonus Actions', m.bonusActions)}
@@ -142,9 +155,6 @@ export function statBlockHTML(m) {
     ${m.legendaryActions?.length ? `<div class="sb-section">Legendary Actions</div>${m.legendaryDesc ? `<p class="small muted">${esc(m.legendaryDesc)}</p>` : ''}` + m.legendaryActions.map(a => `<p><b><i>${esc(a.name)}.</i></b> ${esc(a.desc)}</p>`).join('') : ''}
   </div>`;
 }
-
-import { CR_XP } from '../srd.js';
-const crXP = (cr) => CR_XP[cr] ?? 0;
 
 export function showStatBlock(m) {
   modal(m.name, el(`<div>${statBlockHTML(m)}</div>`), { wide: true });

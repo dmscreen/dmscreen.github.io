@@ -19,6 +19,7 @@ import quests from './tools/quests.js';
 import customTables from './tools/custom-tables.js';
 import monsters from './tools/monsters.js';
 import spells from './tools/spells.js';
+import characterOptions from './tools/character-options.js';
 import rules from './tools/rules.js';
 import conditions from './tools/conditions.js';
 import notes from './tools/notes.js';
@@ -31,7 +32,7 @@ const TOOLS = [
   initiative, encounters, dice, party,
   travel, randomEnc, weather, calendar,
   npcs, names, loot, shops, quests, customTables,
-  monsters, spells, rules, conditions,
+  monsters, spells, rules, conditions, characterOptions,
   notes, timer,
   linked, settings, about,
 ];
@@ -53,7 +54,7 @@ async function route() {
   if (currentTool?.onExit) currentTool.onExit();
   currentTool = tool;
 
-  document.title = `${tool.title} - DM Screen Kit`;
+  document.title = `${tool.title} - DM Screen`;
   document.querySelectorAll('.nav-item, .tab-item').forEach(n => n.classList.toggle('active', n.dataset.tool === id));
   $('#more-sheet').classList.remove('open');
   const moreTab = document.querySelector('.tab-item[data-more]');

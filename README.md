@@ -1,4 +1,4 @@
-# DM Screen Kit
+# DM Screen
 
 **A free, browser-based virtual screen for D&D 5e Dungeon Masters.**
 
@@ -10,13 +10,13 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 
 ### Combat
 - **Initiative Tracker**: turns and rounds, HP with damage/heal, temp AC display, conditions with round-based expiry, concentration reminders with save DCs, death saves, monster stat blocks one click away. Combat state autosaves, so a refresh loses nothing.
-- **Encounter Builder**: search the SRD bestiary, build a monster list, and see live XP budget math (easy/medium/hard/deadly thresholds, encounter multiplier, adjusted XP, per-player XP). Save encounters and launch them straight into the tracker.
+- **Encounter Builder**: search 900+ monsters, build a monster list, and see live XP budget math (easy/medium/hard/deadly thresholds, encounter multiplier, adjusted XP, per-player XP). Save encounters and launch them straight into the tracker.
 - **Dice Roller**: full expression parser (`3d6+2`, `4d6kh3`, `2d20kl1` for disadvantage), quick buttons, and a tap-to-reroll history.
 - **Party Tracker**: the PC stats a DM actually needs: AC, HP, initiative, passive Perception/Investigation/Insight, plus one-click group checks. Powers the encounter builder and tracker.
 
 ### Travel & Exploration
 - **Travel Calculator**: pace, terrain, mounts and ships, forced-march DCs, answers "how long does the journey take?"
-- **Random Encounters**: encounter checks on your terms, then terrain-filtered, level-appropriate encounters rolled from the SRD bestiary. One tap to re-roll, one tap to run it in the tracker.
+- **Random Encounters**: encounter checks on your terms, then terrain-filtered, level-appropriate encounters rolled from the full bestiary. One tap to re-roll, one tap to run it in the tracker.
 - **Weather Generator**: climate + season in, temperature/wind/precipitation out, with the SRD's mechanical effects attached.
 - **Calendar & Time**: track the in-world date and watch, advance time, log events, and customize the whole calendar (months, weekdays) for your setting.
 
@@ -29,10 +29,11 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 - **Custom Random Tables**: build weighted tables ("3x Nothing but wind"), roll them anywhere, including inside the random encounter tool.
 
 ### Reference
-- **Monster Reference**: all 322 SRD monsters with CR/type/size/environment filters and full stat blocks.
-- **Spell Reference**: all 319 SRD spells filterable by level, school, class, concentration, and ritual.
+- **Monster Reference**: 908 monsters (SRD 5.1 + Monstrous Menagerie) with CR/type/size/environment/source filters and full stat blocks.
+- **Spell Reference**: 690 spells (SRD 5.1 + Adventurer's Guide) filterable by level, school, class, source, concentration, and ritual.
 - **Rules Quick Reference**: searchable cards for actions, cover, light, resting, travel, jumping, falling, suffocation, exhaustion, mounted and underwater combat, concentration, death.
 - **Conditions**: every condition on one screen.
+- **Character Options**: 59 feats and 27 backgrounds from the Level Up: Advanced 5th Edition books (Adventurer's Guide, Dungeon Delver's Guide, Gate Pass Gazette).
 
 ### Session
 - **Session Notes**: autosaving per-campaign notes with search and a pinnable recap.
@@ -64,4 +65,5 @@ Then open `http://localhost:8321`.
 
 - Application code: MIT.
 - This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
-- SRD data compiled via the [Open5e](https://open5e.com) project. DM Screen Kit is unofficial fan content and is not affiliated with or endorsed by Wizards of the Coast.
+- This work also includes material from the Level Up: Advanced 5th Edition (A5E) books by [EN Publishing](https://enpublishingrpg.com): the Adventurer's Guide, Dungeon Delver's Guide, Gate Pass Gazette, and Monstrous Menagerie, used under the terms of the Open Gaming License via the [A5E System Reference Document](https://a5esrd.com). This site is not affiliated with or endorsed by EN Publishing.
+- All rules data compiled via the [Open5e](https://open5e.com) project and API. DM Screen is unofficial fan content and is not affiliated with or endorsed by Wizards of the Coast.

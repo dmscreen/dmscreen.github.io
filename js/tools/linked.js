@@ -21,7 +21,7 @@ export default {
         <div class="nav-group-label" style="font-size:0.85rem;padding-left:0">${esc(cat.title)}</div>
         <div class="grid-2">${cat.tools.map(t => toolHTML(t)).join('')}</div>
       `).join('')}
-      <p class="small faint mt">These are independent projects with no affiliation to DM Screen Kit; they're linked because DMs on Reddit and elsewhere consistently recommend them.</p>`;
+      <p class="small faint mt">These are independent projects with no affiliation to DM Screen; they're linked because DMs on Reddit and elsewhere consistently recommend them.</p>`;
 
     container.querySelectorAll('svg.ext').forEach(s => { s.style.width = '15px'; s.style.height = '15px'; s.style.color = 'var(--text-faint)'; });
   },

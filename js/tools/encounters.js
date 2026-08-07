@@ -1,5 +1,5 @@
 // Encounter Builder: XP budget math + saved encounters + send to initiative.
-import { loadMonsters, fmtCR, CR_XP, XP_THRESHOLDS, encounterMultiplier, abilityMod } from '../srd.js';
+import { loadMonsters, fmtCR, monsterXP, XP_THRESHOLDS, encounterMultiplier, abilityMod } from '../srd.js';
 import { dbAll, dbPut, dbDelete, activeCampaignId, setState } from '../store.js';
 import { el, esc, toast, confirmDialog, showStatBlock, searchInput, promptDialog } from '../components/ui.js';
 import { roll } from '../dice.js';
@@ -91,13 +91,13 @@ export default {
     const budgetEl = container.querySelector('#e-budget');
 
     const drawResults = () => {
-      if (!query) { resultsEl.innerHTML = '<p class="faint small">Type to search the SRD bestiary.</p>'; return; }
+      if (!query) { resultsEl.innerHTML = '<p class="faint small">Type to search 900+ monsters.</p>'; return; }
       const found = monsters.filter(m => m.name.toLowerCase().includes(query)).slice(0, 12);
       resultsEl.innerHTML = found.length ? '' : '<p class="faint small">No matches.</p>';
       for (const m of found) {
         const row = el(`<div class="row" style="align-items:center;padding:4px 0">
           <a href="javascript:void 0" style="min-width:0">${esc(m.name)}</a>
-          <span class="pill">CR ${fmtCR(m.cr)}</span>
+          <span class="pill">CR ${fmtCR(m.cr)}</span>${m.source && m.source !== 'SRD 5.1' ? '<span class="pill accent">A5E</span>' : ''}
           <button class="btn small" style="margin-left:auto">+ Add</button>
         </div>`);
         row.querySelector('a').addEventListener('click', () => showStatBlock(m));
@@ -125,7 +125,7 @@ export default {
         const row = el(`<div class="row" style="align-items:center;padding:4px 0">
           <a href="javascript:void 0">${esc(m.name)}</a>
           <span class="pill">CR ${fmtCR(m.cr)}</span>
-          <span class="muted small">${(CR_XP[m.cr] ?? 0).toLocaleString()} XP each</span>
+          <span class="muted small">${monsterXP(m).toLocaleString()} XP each</span>
           <span class="hp-ctrl" style="margin-left:auto">
             <button class="btn small" data-dec>-</button>
             <b style="min-width:22px;text-align:center">${entry.count}</b>
@@ -144,7 +144,7 @@ export default {
 
       const party = await getParty();
       const count = current.reduce((a, e) => a + e.count, 0);
-      const totalXP = current.reduce((a, e) => a + (CR_XP[bySlug.get(e.slug).cr] ?? 0) * e.count, 0);
+      const totalXP = current.reduce((a, e) => a + monsterXP(bySlug.get(e.slug)) * e.count, 0);
       const mult = encounterMultiplier(count, party.length || 4);
       const adjusted = Math.round(totalXP * mult);
 

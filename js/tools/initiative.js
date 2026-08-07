@@ -218,7 +218,7 @@ export default {
           if (!q) return;
           for (const m of monsters.filter(x => x.name.toLowerCase().includes(q)).slice(0, 10)) {
             const row = el(`<div class="row" style="align-items:center;padding:3px 0">
-              <span>${esc(m.name)}</span><span class="pill">AC ${m.ac} HP ${m.hp}</span>
+              <span>${esc(m.name)}</span><span class="pill">AC ${m.ac} HP ${m.hp}</span>${m.source && m.source !== 'SRD 5.1' ? '<span class="pill accent">A5E</span>' : ''}
               <button class="btn small" style="margin-left:auto">Add</button></div>`);
             row.querySelector('button').addEventListener('click', () => {
               const initMod = abilityMod(m.dex);

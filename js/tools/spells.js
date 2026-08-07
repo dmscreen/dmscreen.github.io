@@ -8,7 +8,7 @@ const CLASSES = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Wa
 export function spellDetail(s) {
   const lvl = s.level === 0 ? 'Cantrip' : `Level ${s.level}`;
   const body = el(`<div>
-    <p class="muted"><i>${lvl} ${esc(s.school)}${s.ritual ? ' (ritual)' : ''}</i></p>
+    <p class="muted"><i>${lvl} ${esc(s.school)}${s.ritual ? ' (ritual)' : ''}</i>${s.source ? ` <span class="pill">${esc(s.source)}</span>` : ''}</p>
     <p><b>Casting time:</b> ${esc(s.castingTime)}<br>
     <b>Range:</b> ${esc(s.range)}<br>
     <b>Components:</b> ${esc(s.components)}${s.material ? ` (${esc(s.material)})` : ''}<br>
@@ -22,10 +22,11 @@ export function spellDetail(s) {
 
 export default {
   id: 'spells', title: 'Spell Reference', shortTitle: 'Spells', group: 'Reference', icon: 'sparkle',
-  subtitle: 'Every SRD spell, filterable and searchable',
+  subtitle: "SRD 5.1 plus the Adventurer's Guide, filterable and searchable",
 
   async render(container) {
     const spells = await loadSpells();
+    const sources = [...new Set(spells.map(s => s.source).filter(Boolean))].sort();
 
     container.innerHTML = `
       <div class="card">
@@ -34,6 +35,7 @@ export default {
           <label class="field"><span>Level</span><select id="f-level"><option value="">Any</option><option value="0">Cantrip</option>${Array.from({ length: 9 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}</select></label>
           <label class="field"><span>School</span><select id="f-school"><option value="">Any</option>${SCHOOLS.map(s => `<option>${s}</option>`).join('')}</select></label>
           <label class="field"><span>Class</span><select id="f-class"><option value="">Any</option>${CLASSES.map(c => `<option>${c}</option>`).join('')}</select></label>
+          <label class="field"><span>Source</span><select id="f-source"><option value="">All</option>${sources.map(s => `<option>${esc(s)}</option>`).join('')}</select></label>
           <label class="check"><input type="checkbox" id="f-conc"> Conc.</label>
           <label class="check"><input type="checkbox" id="f-ritual"> Ritual</label>
         </div>
@@ -51,13 +53,15 @@ export default {
       const cls = container.querySelector('#f-class').value;
       const conc = container.querySelector('#f-conc').checked;
       const ritual = container.querySelector('#f-ritual').checked;
+      const source = container.querySelector('#f-source').value;
       const filtered = spells.filter(s =>
         (!query || s.name.toLowerCase().includes(query)) &&
         (level === '' || s.level === Number(level)) &&
         (!school || s.school === school) &&
         (!cls || s.classes.includes(cls)) &&
         (!conc || s.concentration) &&
-        (!ritual || s.ritual)
+        (!ritual || s.ritual) &&
+        (!source || s.source === source)
       ).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 
       container.querySelector('#s-count').textContent = `${filtered.length} spells`;
