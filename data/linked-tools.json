@@ -1,0 +1,57 @@
+{
+  "featured": [
+    {
+      "name": "Auto Roll Tables",
+      "url": "https://autorolltables.github.io",
+      "desc": "Companion project: a huge collection of auto-rolling random tables for encounters, treasure, NPCs, and more. Pairs perfectly with the Custom Random Tables tool here."
+    }
+  ],
+  "categories": [
+    {
+      "title": "Encounters & Combat",
+      "tools": [
+        { "name": "Kobold+ Fight Club", "url": "https://koboldplus.club", "desc": "The community-standard encounter builder and balancer, with content beyond the SRD." },
+        { "name": "Improved Initiative", "url": "https://improvedinitiative.app", "desc": "A polished alternative combat tracker with player views." }
+      ]
+    },
+    {
+      "title": "Maps & Worldbuilding",
+      "tools": [
+        { "name": "donjon", "url": "https://donjon.bin.sh", "desc": "The legendary everything-generator: dungeons, worlds, calendars, names, loot." },
+        { "name": "Dungeon Scrawl", "url": "https://www.dungeonscrawl.com", "desc": "Draw clean dungeon maps in minutes, free." },
+        { "name": "Watabou Procgen Arcana", "url": "https://watabou.github.io", "desc": "Beautiful procedural cities, villages, mansions, and dungeons." },
+        { "name": "Azgaar's Fantasy Map Generator", "url": "https://azgaar.github.io/Fantasy-Map-Generator/", "desc": "Generate entire continents with cultures, states, and trade routes." },
+        { "name": "Inkarnate", "url": "https://inkarnate.com", "desc": "Hand-crafted-looking battle and region maps with a generous free tier." }
+      ]
+    },
+    {
+      "title": "Virtual Tabletops",
+      "tools": [
+        { "name": "Owlbear Rodeo", "url": "https://www.owlbear.rodeo", "desc": "Lightweight free VTT: share a map, drop tokens, play. Great for in-person + projector too." },
+        { "name": "Roll20", "url": "https://roll20.net", "desc": "The most established browser VTT, with character sheets and marketplace content." },
+        { "name": "Foundry VTT", "url": "https://foundryvtt.com", "desc": "Deeply moddable self-hosted VTT; one-time purchase for the GM." }
+      ]
+    },
+    {
+      "title": "Reference & Rules",
+      "tools": [
+        { "name": "Open5e", "url": "https://open5e.com", "desc": "Fast searchable SRD and open-content compendium (the data source for this site)." },
+        { "name": "5thsrd", "url": "https://5thsrd.org", "desc": "Minimalist SRD reference, quick to search at the table." }
+      ]
+    },
+    {
+      "title": "Ambience & Immersion",
+      "tools": [
+        { "name": "Tabletop Audio", "url": "https://tabletopaudio.com", "desc": "Free 10-minute ambient soundscapes and an in-browser soundpad." },
+        { "name": "Kenku FM", "url": "https://www.kenku.fm", "desc": "Route ambience and music into Discord for online games." },
+        { "name": "Michael Ghelfi Studios", "url": "https://michaelghelfistudios.com", "desc": "Huge library of free RPG ambience and music on YouTube and Patreon." }
+      ]
+    },
+    {
+      "title": "Names & Flavor",
+      "tools": [
+        { "name": "Fantasy Name Generators", "url": "https://www.fantasynamegenerators.com", "desc": "Names for absolutely everything, from taverns to lich phylacteries." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+// Shop Generator: inventory with prices, editable and savable.
+import { loadTables } from '../srd.js';
+import { dbAll, dbPut, dbDelete, activeCampaignId } from '../store.js';
+import { el, esc, toast, confirmDialog } from '../components/ui.js';
+import { pick } from '../dice.js';
+import { shopName, personName } from './names.js';
+
+export default {
+  id: 'shops', title: 'Shop Generator', shortTitle: 'Shops', group: 'Generators', icon: 'store',
+  subtitle: 'Stocked shelves and a keeper to haggle with',
+
+  async render(container) {
+    const [shopData, names] = await Promise.all([loadTables('shops'), loadTables('names')]);
+    const types = Object.keys(shopData.types);
+    const sizes = Object.keys(shopData.sizes);
+
+    container.innerHTML = `
+      <div class="card">
+        <div class="row">
+          <label class="field"><span>Shop type</span><select id="sh-type">${types.map(t => `<option>${esc(t)}</option>`).join('')}</select></label>
+          <label class="field"><span>Settlement</span><select id="sh-size">${sizes.map(s => `<option ${s === 'Town' ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+          <button class="btn primary" id="sh-gen">Generate shop</button>
+        </div>
+      </div>
+      <div id="sh-current"></div>
+      <div class="card"><h2>Saved shops</h2><div id="sh-saved"></div></div>`;
+
+    const currentEl = container.querySelector('#sh-current');
+
+    const renderShop = (shop, savedRecord = null) => {
+      currentEl.innerHTML = '';
+      const card = el(`<div class="card">
+        <h2>${esc(shop.name)}</h2>
+        <p class="muted">${esc(shop.type)} in a ${esc(shop.size).toLowerCase()}. Keeper: <b>${esc(shop.keeper)}</b>.</p>
+        <p class="small faint">${esc(shop.note)}</p>
+        <div class="table-scroll"><table class="data">
+          <thead><tr><th>Item</th><th>Price</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <div class="row mt">
+          <button class="btn primary" data-save>${savedRecord ? 'Update saved shop' : 'Save shop'}</button>
+        </div>
+      </div>`);
+      const tbody = card.querySelector('tbody');
+      const drawRows = () => {
+        tbody.innerHTML = '';
+        shop.items.forEach((item, i) => {
+          const tr = el(`<tr><td>${esc(item.name)}${item.flavor ? ' <span class="pill">odd</span>' : ''}</td><td>${esc(item.price)}</td>
+            <td style="text-align:right"><button class="btn small danger" title="Sold / remove">Sold</button></td></tr>`);
+          tr.querySelector('button').addEventListener('click', () => { shop.items.splice(i, 1); drawRows(); });
+          tbody.append(tr);
+        });
+      };
+      drawRows();
+      card.querySelector('[data-save]').addEventListener('click', async () => {
+        const rec = await dbPut('shops', { ...(savedRecord || {}), ...shop, campaignId: activeCampaignId() });
+        toast('Shop saved');
+        renderShop(shop, rec);
+        drawSaved();
+      });
+      currentEl.append(card);
+    };
+
+    const gen = () => {
+      const type = container.querySelector('#sh-type').value;
+      const size = container.querySelector('#sh-size').value;
+      const conf = shopData.types[type];
+      const sizeConf = shopData.sizes[size];
+      const [min, max] = sizeConf.stock;
+      const count = min + Math.floor(Math.random() * (max - min + 1));
+      const pool = [...conf.items].sort(() => Math.random() - 0.5).slice(0, count);
+      const items = pool.map(i => ({ ...i }));
+      if (Math.random() < 0.7) items.push({ ...pick(shopData.flavor), flavor: true });
+      renderShop({
+        name: shopName(names), type, size, note: sizeConf.note,
+        keeper: personName(names), items,
+      });
+    };
+
+    const drawSaved = async () => {
+      const saved = await dbAll('shops', activeCampaignId());
+      const box = container.querySelector('#sh-saved');
+      box.innerHTML = saved.length ? '' : '<p class="faint small">No saved shops. Save one and party purchases will persist.</p>';
+      for (const s of saved.sort((a, b) => b.updated - a.updated)) {
+        const row = el(`<div class="row" style="align-items:center;padding:4px 0">
+          <b>${esc(s.name)}</b><span class="pill">${esc(s.type)}</span>
+          <span class="muted small">${s.items.length} items</span>
+          <span style="margin-left:auto;white-space:nowrap">
+            <button class="btn small" data-open>Open</button>
+            <button class="btn small danger" data-del>Del</button>
+          </span></div>`);
+        row.querySelector('[data-open]').addEventListener('click', () => renderShop(structuredClone(s), s));
+        row.querySelector('[data-del]').addEventListener('click', () =>
+          confirmDialog(`Delete ${s.name}?`, async () => { await dbDelete('shops', s.id); drawSaved(); }));
+        box.append(row);
+      }
+    };
+
+    container.querySelector('#sh-gen').addEventListener('click', gen);
+    gen();
+    drawSaved();
+  },
+};

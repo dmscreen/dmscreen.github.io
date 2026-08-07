@@ -1,0 +1,53 @@
+{
+  "people": {
+    "Human": {
+      "first": ["Adran", "Bela", "Cort", "Dara", "Edrik", "Fenna", "Garon", "Hilde", "Ivo", "Jess", "Kellan", "Lira", "Marek", "Nessa", "Oren", "Petra", "Quinn", "Rowan", "Selra", "Tomas", "Ulla", "Varis", "Wren", "Yandra", "Zane", "Alys", "Brant", "Cerys", "Doran", "Elsbeth"],
+      "last": ["Ashdown", "Blackbriar", "Coldwater", "Dunmore", "Eastcroft", "Fairwind", "Grayson", "Hollowell", "Ironwood", "Kettleburn", "Longacre", "Marsh", "Northgate", "Oakhart", "Pryce", "Ravenscroft", "Stonebridge", "Thorne", "Underhill", "Vance", "Westbrook", "Yarrow"]
+    },
+    "Elf": {
+      "first": ["Aelar", "Birel", "Caelynn", "Dayereth", "Erevan", "Faelar", "Galinndan", "Hadarai", "Ielenia", "Keyleth", "Lamlis", "Mindartis", "Naal", "Otaehryn", "Peren", "Quelenna", "Rolen", "Sariel", "Thamior", "Vadania", "Xanaphia", "Yathlanae"],
+      "last": ["Amakiir", "Amastacia", "Galanodel", "Holimion", "Ilphelkiir", "Liadon", "Meliamne", "Nailo", "Siannodel", "Xiloscient", "Moonwhisper", "Silverfrond", "Dawnstrider", "Nightbloom"]
+    },
+    "Dwarf": {
+      "first": ["Adrik", "Baern", "Darrak", "Eberk", "Fargrim", "Gardain", "Harbek", "Kildrak", "Morgran", "Orsik", "Rangrim", "Thoradin", "Ulfgar", "Vondal", "Amber", "Bardryn", "Dagnal", "Eldeth", "Gunnloda", "Helja", "Kathra", "Mardred", "Riswynn", "Vistra"],
+      "last": ["Battlehammer", "Brawnanvil", "Dankil", "Fireforge", "Frostbeard", "Gorunn", "Holderhek", "Ironfist", "Loderr", "Lutgehr", "Rumnaheim", "Strakeln", "Torunn", "Ungart", "Coppervein", "Stoutale"]
+    },
+    "Halfling": {
+      "first": ["Alton", "Cade", "Corrin", "Eldon", "Errich", "Finnan", "Garret", "Lindal", "Lyle", "Merric", "Milo", "Osborn", "Perrin", "Reed", "Roscoe", "Wellby", "Andry", "Bree", "Callie", "Cora", "Euphemia", "Jillian", "Kithri", "Lavinia", "Lidda", "Merla", "Nedda", "Paela", "Portia", "Seraphina", "Shaena", "Trym", "Vani", "Verna"],
+      "last": ["Brushgather", "Goodbarrel", "Greenbottle", "High-hill", "Hilltopple", "Leagallow", "Tealeaf", "Thorngage", "Tosscobble", "Underbough", "Applefoot", "Warmhearth", "Quickstep"]
+    },
+    "Orc": {
+      "first": ["Dench", "Feng", "Gell", "Henk", "Holg", "Imsh", "Keth", "Krusk", "Mhurren", "Ront", "Shump", "Thokk", "Baggi", "Emen", "Engong", "Kansif", "Myev", "Neega", "Ovak", "Ownka", "Shautha", "Sutha", "Vola", "Volen", "Yevelda"],
+      "last": ["Bonecrusher", "Skullsplitter", "Ironhide", "Bloodfang", "Ashmaw", "Grimtusk", "Stonejaw", "Wolfbane", "Redhand", "Thunderfoot"]
+    },
+    "Tiefling": {
+      "first": ["Akmenos", "Amnon", "Barakas", "Damakos", "Ekemon", "Iados", "Kairon", "Leucis", "Melech", "Mordai", "Morthos", "Pelaios", "Skamos", "Therai", "Akta", "Anakis", "Bryseis", "Criella", "Damaia", "Ea", "Kallista", "Lerissa", "Makaria", "Nemeia", "Orianna", "Phelaia", "Rieta"],
+      "last": ["Art", "Carrion", "Chant", "Creed", "Despair", "Excellence", "Fear", "Glory", "Hope", "Ideal", "Music", "Nowhere", "Open", "Poetry", "Quest", "Random", "Reverence", "Sorrow", "Temerity", "Torment", "Weary"]
+    },
+    "Dragonborn": {
+      "first": ["Arjhan", "Balasar", "Bharash", "Donaar", "Ghesh", "Heskan", "Kriv", "Medrash", "Mehen", "Nadarr", "Pandjed", "Patrin", "Rhogar", "Shamash", "Shedinn", "Tarhun", "Torinn", "Akra", "Biri", "Daar", "Farideh", "Harann", "Havilar", "Jheri", "Kava", "Korinn", "Mishann", "Nala", "Perra", "Raiann", "Sora", "Surina", "Thava", "Uadjit"],
+      "last": ["Clethtinthiallor", "Daardendrian", "Delmirev", "Drachedandion", "Fenkenkabradon", "Kepeshkmolik", "Kerrhylon", "Kimbatuul", "Linxakasendalor", "Myastan", "Nemmonis", "Norixius", "Ophinshtalajiir", "Prexijandilin", "Shestendeliath", "Turnuroth", "Verthisathurgiesh", "Yarjerit"]
+    },
+    "Gnome": {
+      "first": ["Alston", "Alvyn", "Boddynock", "Brocc", "Burgell", "Dimble", "Eldon", "Erky", "Fonkin", "Frug", "Gerbo", "Gimble", "Glim", "Jebeddo", "Kellen", "Namfoodle", "Orryn", "Roondar", "Seebo", "Sindri", "Warryn", "Wrenn", "Zook", "Bimpnottin", "Breena", "Caramip", "Carlin", "Donella", "Duvamil", "Ella", "Ellyjobell", "Ellywick", "Lilli", "Loopmottin", "Lorilla", "Mardnab", "Nissa", "Nyx", "Oda", "Orla", "Roywyn", "Shamil", "Tana", "Waywocket", "Zanna"],
+      "last": ["Beren", "Daergel", "Folkor", "Garrick", "Nackle", "Murnig", "Ningel", "Raulnor", "Scheppen", "Timbers", "Turen", "Badgerhole", "Cogspinner", "Duskcap", "Fiddlefen", "Gearloose", "Sparklight"]
+    }
+  },
+  "tavern": {
+    "adjectives": ["Prancing", "Gilded", "Drunken", "Laughing", "Rusty", "Silver", "Crooked", "Sleeping", "Wandering", "Salty", "Broken", "Grinning", "Weeping", "Howling", "Lucky", "Thirsty", "Velvet", "Copper", "Merry", "Wicked"],
+    "nouns": ["Pony", "Griffon", "Dragon", "Goblin", "Flagon", "Lantern", "Boar", "Maiden", "Minstrel", "Anchor", "Crown", "Stag", "Kraken", "Rose", "Barrel", "Wyvern", "Hearth", "Gargoyle", "Pixie", "Cauldron"]
+  },
+  "shop": {
+    "patterns": ["{last}'s {goods}", "The {adj} {goods}", "{first}'s Fine {goods}", "{last} & {last2}"],
+    "adjectives": ["Honest", "Golden", "Curious", "Practical", "Peerless", "Humble", "Grand", "Odd"],
+    "goods": ["Goods", "Wares", "Sundries", "Provisions", "Emporium", "Curiosities", "Supplies", "Trading Post"]
+  },
+  "ship": {
+    "adjectives": ["Swift", "Bold", "Iron", "Sea", "Storm", "Dawn", "Night", "Star", "Wave", "Wind"],
+    "nouns": ["Serpent", "Maiden", "Gull", "Dancer", "Fortune", "Hammer", "Whisper", "Vengeance", "Promise", "Runner", "Queen", "Talon"]
+  },
+  "settlement": {
+    "prefixes": ["Ash", "Bright", "Cold", "Deep", "Elm", "Fair", "Glen", "Hart", "Iron", "King's", "Long", "Mill", "North", "Oak", "Raven's", "Salt", "Stone", "Thorn", "West", "Winter"],
+    "suffixes": ["brook", "bury", "combe", "dale", "field", "ford", "gate", "ham", "haven", "hollow", "march", "mere", "moor", "reach", "rest", "shire", "stead", "vale", "watch", "well"]
+  }
+}

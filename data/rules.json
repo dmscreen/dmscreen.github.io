@@ -1,0 +1,163 @@
+[
+  {
+    "id": "actions",
+    "title": "Actions in Combat",
+    "category": "Combat",
+    "entries": [
+      { "name": "Attack", "text": "Make one melee or ranged attack. Some features (like Extra Attack) allow more than one attack with this action." },
+      { "name": "Cast a Spell", "text": "Cast a spell with a casting time of 1 action. You can't cast a leveled spell as an action and a bonus-action spell on the same turn (cantrips with a casting time of 1 action are fine)." },
+      { "name": "Dash", "text": "Gain extra movement equal to your speed for the current turn, after applying modifiers." },
+      { "name": "Disengage", "text": "Your movement doesn't provoke opportunity attacks for the rest of the turn." },
+      { "name": "Dodge", "text": "Until your next turn: attack rolls against you have disadvantage if you can see the attacker, and you make Dexterity saves with advantage. You lose the benefit if incapacitated or your speed drops to 0." },
+      { "name": "Help", "text": "Give an ally advantage on their next ability check to do the task you're helping with, or on their next attack roll against a creature within 5 feet of you, made before your next turn." },
+      { "name": "Hide", "text": "Make a Dexterity (Stealth) check to become hidden." },
+      { "name": "Ready", "text": "Choose a trigger and an action (or movement). Use your reaction when the trigger occurs. Readying a spell requires concentration and casts it when released." },
+      { "name": "Search", "text": "Devote attention to finding something: usually Wisdom (Perception) or Intelligence (Investigation)." },
+      { "name": "Use an Object", "text": "Interact with a second object on your turn, or use an object requiring an action." },
+      { "name": "Grapple (special melee attack)", "text": "Contest your Strength (Athletics) vs. the target's Athletics or Acrobatics. On a success the target is grappled (speed 0). Target must be no more than one size larger. Escape uses the target's action and the same contest." },
+      { "name": "Shove (special melee attack)", "text": "Same contest as a grapple. On a success, knock the target prone or push it 5 feet away." },
+      { "name": "Opportunity Attack (reaction)", "text": "When a hostile creature you can see moves out of your reach, use your reaction for one melee attack against it." },
+      { "name": "Two-Weapon Fighting (bonus action)", "text": "When you Attack with a light melee weapon in one hand, you can attack with a different light melee weapon in the other as a bonus action, without adding your ability modifier to the damage (unless negative)." }
+    ]
+  },
+  {
+    "id": "cover",
+    "title": "Cover",
+    "category": "Combat",
+    "entries": [
+      { "name": "Half cover", "text": "+2 to AC and Dexterity saving throws. An obstacle blocks at least half the body: a low wall, furniture, a creature, a thin tree." },
+      { "name": "Three-quarters cover", "text": "+5 to AC and Dexterity saving throws. About three-quarters covered: a portcullis, an arrow slit, a thick tree trunk." },
+      { "name": "Total cover", "text": "Can't be targeted directly by an attack or spell, though some spells reach it in an area of effect." }
+    ]
+  },
+  {
+    "id": "light",
+    "title": "Light and Vision",
+    "category": "Exploration",
+    "entries": [
+      { "name": "Lightly obscured", "text": "Dim light, patchy fog, moderate foliage. Disadvantage on Wisdom (Perception) checks that rely on sight." },
+      { "name": "Heavily obscured", "text": "Darkness, opaque fog, dense foliage. Vision is blocked entirely; a creature effectively suffers the blinded condition when looking into it." },
+      { "name": "Blindsight", "text": "Perceive surroundings without sight within a radius." },
+      { "name": "Darkvision", "text": "Within range, treat dim light as bright light and darkness as dim light. Can't discern color in darkness." },
+      { "name": "Truesight", "text": "See in normal and magical darkness, see invisible creatures and objects, automatically detect visual illusions, perceive the original form of shapechangers, and see into the Ethereal Plane." },
+      { "name": "Common light sources", "text": "Torch: 20 ft bright / 20 ft dim, 1 hour. Lamp: 15/30, 6 hours. Hooded lantern: 30/30, 6 hours. Bullseye lantern: 60-ft cone/60, 6 hours. Candle: 5/5, 1 hour. Light spell: 20/20, 1 hour. Dancing Lights: 10-ft dim." }
+    ]
+  },
+  {
+    "id": "resting",
+    "title": "Resting",
+    "category": "Exploration",
+    "entries": [
+      { "name": "Short rest", "text": "At least 1 hour of light activity. Spend Hit Dice to heal: roll the die + Con modifier per die spent." },
+      { "name": "Long rest", "text": "At least 8 hours: sleep for at least 6 with no more than 2 hours of light activity. Regain all HP and half your total Hit Dice (minimum 1). Interrupted by 1+ hour of walking, fighting, casting, or similar. One long rest per 24 hours; must have at least 1 HP to benefit." }
+    ]
+  },
+  {
+    "id": "travel",
+    "title": "Travel Pace",
+    "category": "Exploration",
+    "entries": [
+      { "name": "Fast pace", "text": "400 ft/min, 4 miles/hour, 30 miles/day. Penalty: -5 to passive Wisdom (Perception)." },
+      { "name": "Normal pace", "text": "300 ft/min, 3 miles/hour, 24 miles/day." },
+      { "name": "Slow pace", "text": "200 ft/min, 2 miles/hour, 18 miles/day. Able to use stealth." },
+      { "name": "Forced march", "text": "Beyond 8 hours/day: each extra hour, each creature makes a Con save (DC 10 + 1 per hour past 8) or takes one level of exhaustion." },
+      { "name": "Difficult terrain", "text": "Every foot costs 1 extra foot; travel at half speed." },
+      { "name": "Mounts and vehicles", "text": "A mount can gallop at double fast pace for about an hour. Water travel depends on the vessel and crew, and can go around the clock." }
+    ]
+  },
+  {
+    "id": "dcs",
+    "title": "Typical DCs and Checks",
+    "category": "Core",
+    "entries": [
+      { "name": "Difficulty Classes", "text": "Very easy 5, Easy 10, Medium 15, Hard 20, Very hard 25, Nearly impossible 30." },
+      { "name": "Contests", "text": "Both parties roll ability checks; higher result wins. Ties preserve the status quo." },
+      { "name": "Working together", "text": "One creature leads a group effort with advantage from a helper, if working together is actually plausible." },
+      { "name": "Group checks", "text": "Everyone rolls. If at least half succeed, the group succeeds." },
+      { "name": "Passive checks", "text": "10 + all modifiers that normally apply. Advantage +5, disadvantage -5." }
+    ]
+  },
+  {
+    "id": "movement",
+    "title": "Jumping, Climbing, Swimming",
+    "category": "Exploration",
+    "entries": [
+      { "name": "Long jump", "text": "With a 10-ft running start, jump up to your Strength score in feet. Standing: half that. Each foot costs a foot of movement." },
+      { "name": "High jump", "text": "With a 10-ft running start, jump 3 + Strength modifier feet up. Standing: half that. Reach is height x 1.5 during the jump." },
+      { "name": "Climbing and swimming", "text": "Each foot costs 1 extra foot (2 extra in difficult terrain) unless you have a climbing/swimming speed. A difficult climb or rough water may require Strength (Athletics) checks." },
+      { "name": "Crawling", "text": "Each foot costs 1 extra foot (2 extra in difficult terrain)." }
+    ]
+  },
+  {
+    "id": "hazards",
+    "title": "Falling, Suffocation, Environment",
+    "category": "Hazards",
+    "entries": [
+      { "name": "Falling", "text": "1d6 bludgeoning damage per 10 feet fallen, max 20d6. Land prone unless damage is avoided." },
+      { "name": "Holding breath", "text": "1 + Con modifier minutes (minimum 30 seconds)." },
+      { "name": "Suffocating", "text": "When out of breath, survive Con modifier rounds (minimum 1). At the start of the next turn, drop to 0 HP and start dying; no healing or stabilizing until you can breathe." },
+      { "name": "Extreme cold", "text": "At or below 0 F: DC 10 Con save at the end of each hour or gain one level of exhaustion. Cold resistance/immunity or appropriate gear negates." },
+      { "name": "Extreme heat", "text": "100 F or above without water: Con save each hour (DC 5, +1 per additional hour) or gain one level of exhaustion. Disadvantage in heavy clothes or armor." },
+      { "name": "Strong wind", "text": "Disadvantage on ranged weapon attack rolls and hearing-based Perception; extinguishes open flames and disperses fog." },
+      { "name": "Heavy precipitation", "text": "Lightly obscures everything; disadvantage on sight-based Perception, and rain douses open flames." },
+      { "name": "Frigid water", "text": "Immersion: survive Con modifier minutes (min 1), then DC 10 Con save each additional minute or gain one level of exhaustion." }
+    ]
+  },
+  {
+    "id": "exhaustion",
+    "title": "Exhaustion",
+    "category": "Hazards",
+    "entries": [
+      { "name": "Level 1", "text": "Disadvantage on ability checks." },
+      { "name": "Level 2", "text": "Speed halved." },
+      { "name": "Level 3", "text": "Disadvantage on attack rolls and saving throws." },
+      { "name": "Level 4", "text": "Hit point maximum halved." },
+      { "name": "Level 5", "text": "Speed reduced to 0." },
+      { "name": "Level 6", "text": "Death." },
+      { "name": "Recovery", "text": "Finishing a long rest with food and drink reduces exhaustion by 1 level." }
+    ]
+  },
+  {
+    "id": "mounted",
+    "title": "Mounted Combat",
+    "category": "Combat",
+    "entries": [
+      { "name": "Mounting and dismounting", "text": "Costs half your speed. The mount must be within 5 feet and at least one size larger than you." },
+      { "name": "Controlled mount", "text": "Acts on your initiative; can only Dash, Disengage, and Dodge. Moves as you direct." },
+      { "name": "Independent mount", "text": "Keeps its own initiative and acts freely (typical for intelligent mounts)." },
+      { "name": "Falling off", "text": "If the mount is knocked prone, or an effect moves it or knocks you off, land prone within 5 feet, or make a DC 10 Dex save to stay mounted when it moves unexpectedly." }
+    ]
+  },
+  {
+    "id": "underwater",
+    "title": "Underwater Combat",
+    "category": "Combat",
+    "entries": [
+      { "name": "Melee attacks", "text": "Disadvantage on melee weapon attack rolls unless using a dagger, javelin, shortsword, spear, or trident (or the attacker has a swim speed)." },
+      { "name": "Ranged attacks", "text": "Automatically miss beyond normal range. Within normal range, disadvantage unless using a crossbow, net, or thrown spear-like weapon (or swim speed)." },
+      { "name": "Fire", "text": "Anything fully immersed has resistance to fire damage." }
+    ]
+  },
+  {
+    "id": "concentration",
+    "title": "Concentration",
+    "category": "Combat",
+    "entries": [
+      { "name": "Breaking concentration", "text": "Casting another concentration spell ends the first. Taking damage: Con save DC 10 or half the damage taken, whichever is higher. Incapacitated or killed: concentration ends." },
+      { "name": "Environmental effects", "text": "The GM may call for a DC 10 Con save in situations like crashing waves or high winds." }
+    ]
+  },
+  {
+    "id": "damage-types",
+    "title": "Damage and Healing",
+    "category": "Core",
+    "entries": [
+      { "name": "Instant death", "text": "If damage reduces you to 0 HP and the remainder equals or exceeds your HP maximum, you die outright." },
+      { "name": "Dropping to 0", "text": "Fall unconscious and start making death saves at the start of your turns: d20, 10+ succeeds. Three successes stabilize, three failures kill. A natural 20 restores 1 HP; a natural 1 counts as two failures. Damage at 0 HP causes a failure (two on a crit)." },
+      { "name": "Stabilizing", "text": "DC 10 Wisdom (Medicine) check as an action. A stable creature regains 1 HP after 1d4 hours." },
+      { "name": "Knocking out", "text": "When a melee attack drops a creature to 0 HP, the attacker can knock it out instead; it is unconscious and stable." },
+      { "name": "Resistance and vulnerability", "text": "Resistance halves damage of that type; vulnerability doubles it. Apply after other modifiers; multiple instances of resistance to the same type count once." },
+      { "name": "Temporary hit points", "text": "Not actual HP and don't stack: take the higher value. Lost first, can exceed your max, disappear per the granting effect or after a long rest." }
+    ]
+  }
+]

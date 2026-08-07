@@ -1,0 +1,15 @@
+{
+  "name": "DM Screen Kit",
+  "short_name": "DM Screen",
+  "description": "A free browser-based virtual screen for D&D 5e Dungeon Masters.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#191512",
+  "theme_color": "#191512",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
