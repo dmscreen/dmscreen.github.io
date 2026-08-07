@@ -1,5 +1,5 @@
 // Monster Reference: SRD bestiary browser.
-import { loadMonsters, fmtCR, CR_LIST, monsterXP } from '../srd.js';
+import { loadMonsters, fmtCR, monsterXP } from '../srd.js';
 import { el, esc, showStatBlock, searchInput, cap } from '../components/ui.js';
 
 const TYPES = ['aberration', 'beast', 'celestial', 'construct', 'dragon', 'elemental', 'fey', 'fiend', 'giant', 'humanoid', 'monstrosity', 'ooze', 'plant', 'undead'];
@@ -20,8 +20,6 @@ export default {
           <div class="grow" id="m-search"></div>
           <label class="field"><span>Type</span><select id="f-type"><option value="">Any</option>${TYPES.map(t => `<option>${t}</option>`).join('')}</select></label>
           <label class="field"><span>Size</span><select id="f-size"><option value="">Any</option>${SIZES.map(t => `<option>${t}</option>`).join('')}</select></label>
-          <label class="field"><span>Min CR</span><select id="f-crmin"><option value="">-</option>${CR_LIST.map(c => `<option value="${c}">${fmtCR(c)}</option>`).join('')}</select></label>
-          <label class="field"><span>Max CR</span><select id="f-crmax"><option value="">-</option>${CR_LIST.map(c => `<option value="${c}">${fmtCR(c)}</option>`).join('')}</select></label>
           <label class="field"><span>Environment</span><select id="f-env"><option value="">Any</option>${envs.map(e => `<option>${esc(e)}</option>`).join('')}</select></label>
           <label class="field"><span>Source</span><select id="f-source"><option value="">All</option>${sources.map(s => `<option>${esc(s)}</option>`).join('')}</select></label>
         </div>
@@ -36,19 +34,15 @@ export default {
     const draw = () => {
       const type = container.querySelector('#f-type').value;
       const size = container.querySelector('#f-size').value;
-      const crMin = container.querySelector('#f-crmin').value;
-      const crMax = container.querySelector('#f-crmax').value;
       const env = container.querySelector('#f-env').value;
       const source = container.querySelector('#f-source').value;
       const filtered = monsters.filter(m =>
         (!query || m.name.toLowerCase().includes(query)) &&
         (!type || m.type === type) &&
         (!size || m.size === size) &&
-        (crMin === '' || m.cr >= Number(crMin)) &&
-        (crMax === '' || m.cr <= Number(crMax)) &&
         (!env || m.environments.includes(env)) &&
         (!source || m.source === source)
-      ).sort((a, b) => a.cr - b.cr || a.name.localeCompare(b.name));
+      ).sort((a, b) => a.name.localeCompare(b.name));
 
       container.querySelector('#m-count').textContent = `${filtered.length} monsters`;
       const tbody = container.querySelector('#m-rows');

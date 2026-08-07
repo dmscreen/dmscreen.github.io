@@ -17,11 +17,7 @@ import loot from './tools/loot.js';
 import shops from './tools/shops.js';
 import quests from './tools/quests.js';
 import customTables from './tools/custom-tables.js';
-import monsters from './tools/monsters.js';
-import spells from './tools/spells.js';
-import characterOptions from './tools/character-options.js';
-import rules from './tools/rules.js';
-import conditions from './tools/conditions.js';
+import reference from './tools/reference.js';
 import notes from './tools/notes.js';
 import timer from './tools/timer.js';
 import linked from './tools/linked.js';
@@ -32,19 +28,25 @@ const TOOLS = [
   initiative, encounters, dice, party,
   travel, randomEnc, calendar,
   npcs, names, loot, shops, quests, weather, customTables,
-  monsters, spells, rules, conditions, characterOptions,
+  reference,
   notes, timer,
   linked, settings, about,
 ];
 const byId = new Map(TOOLS.map(t => [t.id, t]));
 const GROUP_ORDER = ['Combat', 'Travel', 'Generators', 'Reference', 'Session', 'More'];
-const DEFAULT_TABS = ['initiative', 'dice', 'notes', 'monsters'];
+const DEFAULT_TABS = ['initiative', 'dice', 'notes', 'reference'];
+// old per-tool reference routes now land on the unified Reference at that type
+const REF_REDIRECTS = new Set(['monsters', 'spells', 'items', 'rules', 'conditions', 'character-options']);
 
 const $ = (sel) => document.querySelector(sel);
 let currentTool = null;
 
 function routeId() {
   const h = location.hash.replace(/^#\/?/, '');
+  if (REF_REDIRECTS.has(h)) {
+    setPref('refType', h);
+    return 'reference';
+  }
   return byId.has(h) ? h : 'initiative';
 }
 
@@ -164,6 +166,21 @@ async function boot() {
   renderTabbar();
   renderMoreSheet();
   await renderCampaignBar();
+
+  // hover navigation for the sidebar (default on; Settings can switch to click)
+  const nav = $('#nav');
+  let hoverTimer = null;
+  nav.addEventListener('mouseover', (e) => {
+    if (getPrefs().navHover === false) return;
+    const item = e.target.closest('.nav-item');
+    if (!item) return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => {
+      const id = item.dataset.tool;
+      if (id && routeId() !== id) location.hash = `#/${id}`;
+    }, 140);
+  });
+  nav.addEventListener('mouseleave', () => clearTimeout(hoverTimer));
 
   // sidebar collapse
   const app = $('#app');

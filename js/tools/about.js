@@ -22,6 +22,10 @@ export default {
         used under the terms of the Open Gaming License via the
         <a href="https://a5esrd.com" target="_blank" rel="noopener">A5E System Reference Document</a>.
         Level Up: Advanced 5th Edition and the book titles are trademarks of EN Publishing; this site is not affiliated with or endorsed by EN Publishing.</p>
+        <p class="small muted">The Item Reference additionally includes open-content magic items from
+        <a href="https://koboldpress.com" target="_blank" rel="noopener">Kobold Press</a> (<i>Vault of Magic</i>, <i>Tome of Heroes</i>) and
+        Green Ronin Publishing (<i>Critical Role: Tal'Dorei Campaign Setting</i>), used under the terms of the Open Gaming License.
+        Those publishers do not endorse this site.</p>
         <p class="small muted">All rules data was compiled via the excellent <a href="https://open5e.com" target="_blank" rel="noopener">Open5e</a> project and API.
         DM Screen is unofficial fan content and is not affiliated with or endorsed by Wizards of the Coast.</p>
         <p class="small muted">Application code is MIT licensed.</p>

@@ -29,11 +29,13 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 - **Custom Random Tables**: build weighted tables ("3x Nothing but wind"), roll them anywhere, including inside the random encounter tool.
 
 ### Reference
-- **Monster Reference**: 908 monsters (SRD 5.1 + Monstrous Menagerie) with CR/type/size/environment/source filters and full stat blocks.
-- **Spell Reference**: 690 spells (SRD 5.1 + Adventurer's Guide) filterable by level, school, class, source, concentration, and ritual.
-- **Rules Quick Reference**: searchable cards for actions, cover, light, resting, travel, jumping, falling, suffocation, exhaustion, mounted and underwater combat, concentration, death.
+One unified Reference browser with a Type selector:
+- **Bestiary**: 908 monsters (SRD 5.1 + Monstrous Menagerie) with type/size/environment/source filters and full stat blocks.
+- **Spells**: 690 spells (SRD 5.1 + Adventurer's Guide) filterable by level, school, class, source, concentration, and ritual.
+- **Items**: 1,855 items, from backpacks and trail rations to legendary artifacts (SRD 5.1 equipment and magic items, Level Up A5E magic items, Kobold Press Vault of Magic and Tome of Heroes).
+- **Rules**: searchable cards for actions, cover, light, resting, travel, jumping, falling, suffocation, exhaustion, mounted and underwater combat, concentration, death.
 - **Conditions**: every condition on one screen.
-- **Character Options**: 59 feats and 27 backgrounds from the Level Up: Advanced 5th Edition books (Adventurer's Guide, Dungeon Delver's Guide, Gate Pass Gazette).
+- **Character Options**: 59 feats and 27 backgrounds from the Level Up: Advanced 5th Edition books.
 
 ### Session
 - **Session Notes**: autosaving per-campaign notes with search and a pinnable recap.

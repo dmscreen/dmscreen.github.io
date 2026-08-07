@@ -18,6 +18,7 @@ export const loadConditions = () => load('conditions');
 export const loadMagicItems = () => load('magic-items');
 export const loadRules = () => load('rules');
 export const loadFeats = () => load('feats');
+export const loadItems = () => load('items');
 export const loadBackgrounds = () => load('backgrounds');
 export const loadTables = (name) => load(`tables/${name}`);
 
