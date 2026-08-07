@@ -162,6 +162,36 @@ export function showStatBlock(m) {
 
 export const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/* ---------- number steppers ---------- */
+
+// Wrap a number input in a [- value +] stepper. Applied automatically to every
+// input[type=number] on the page (see the MutationObserver in app.js).
+function attachStepper(input) {
+  input.dataset.stepper = '1';
+  const wrap = el('<span class="stepper"></span>');
+  input.replaceWith(wrap);
+  const dec = el('<button type="button" class="step-btn" aria-label="Decrease" tabindex="-1">&minus;</button>');
+  const inc = el('<button type="button" class="step-btn" aria-label="Increase" tabindex="-1">+</button>');
+  wrap.append(dec, input, inc);
+
+  const step = (dir) => {
+    const by = Number(input.step) || 1;
+    const cur = input.value === '' ? 0 : Number(input.value);
+    let next = (Number.isFinite(cur) ? cur : 0) + dir * by;
+    if (input.min !== '' && next < Number(input.min)) next = Number(input.min);
+    if (input.max !== '' && next > Number(input.max)) next = Number(input.max);
+    input.value = next;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  dec.addEventListener('click', () => step(-1));
+  inc.addEventListener('click', () => step(1));
+}
+
+export function enhanceNumberInputs(root = document.body) {
+  root.querySelectorAll('input[type="number"]:not([data-stepper])').forEach(attachStepper);
+}
+
 /* ---------- searchable list input ---------- */
 
 export function searchInput(placeholder, onQuery) {

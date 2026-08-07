@@ -82,7 +82,7 @@ export default {
         const dead = c.hp <= 0;
         const hpPct = Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100));
         const row = el(`<div class="init-row ${isCurrent ? 'current' : ''} ${dead && c.type === 'monster' ? 'dead' : ''}">
-          <input type="number" class="init-num" value="${c.init ?? ''}" placeholder="--" title="Initiative" style="border:1px solid var(--border);border-radius:4px;background:var(--bg);padding:2px">
+          <input type="number" class="init-num" value="${c.init ?? ''}" placeholder="--" title="Initiative">
           <span class="name">${c.type === 'monster' && c.slug ? `<a href="javascript:void 0" data-statblock>${esc(c.name)}</a>` : esc(c.name)}
             ${c.type === 'pc' ? '<span class="pill info">PC</span>' : ''}
             ${c.concentration ? '<span class="pill accent" title="Concentrating">conc</span>' : ''}

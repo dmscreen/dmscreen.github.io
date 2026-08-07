@@ -1,6 +1,6 @@
 // App shell: registry, router, nav, campaign switcher.
 import { getPrefs, setPref, ensureCampaign, activeCampaignId, setActiveCampaign, dbPut, onCampaignChange } from './store.js';
-import { el, esc, toast, promptDialog } from './components/ui.js';
+import { el, esc, toast, promptDialog, enhanceNumberInputs } from './components/ui.js';
 import { icon } from './components/icons.js';
 
 import initiative from './tools/initiative.js';
@@ -156,6 +156,10 @@ function applyTheme() {
 
 async function boot() {
   applyTheme();
+
+  // Upgrade every number input (present and future) to a [- value +] stepper.
+  new MutationObserver(() => enhanceNumberInputs()).observe(document.body, { childList: true, subtree: true });
+  enhanceNumberInputs();
   $('#nav').innerHTML = navHTML();
   renderTabbar();
   renderMoreSheet();

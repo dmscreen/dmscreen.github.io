@@ -23,6 +23,44 @@
 .btn.icon-btn svg { width: 17px; height: 17px; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 
+/* ---------- Number steppers ---------- */
+/* Native spinners overlap the value at small widths; hide them and use .stepper */
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+.stepper input[type="number"] {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+  padding: 6px 2px;
+  min-width: 0;
+}
+.stepper input[type="number"]:focus { outline: none; }
+.stepper:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+.step-btn {
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  width: 26px;
+  flex: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0;
+}
+.step-btn:hover { background: var(--bg-hover); color: var(--text); }
+.step-btn:active { background: var(--bg-raised); }
+
 input[type="text"], input[type="number"], input[type="search"], textarea, select {
   padding: 7px 10px;
   border: 1px solid var(--border);
@@ -204,7 +242,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .init-row .name { font-weight: 600; min-width: 100px; }
 .init-row .hp-ctrl { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.init-row .hp-ctrl input { width: 58px; text-align: center; }
+.init-row .hp-ctrl input { width: 44px; text-align: center; }
 .hp-bar { height: 4px; border-radius: 2px; background: var(--border); width: 100%; overflow: hidden; }
 .hp-bar > div { height: 100%; background: var(--success); }
 .hp-bar.low > div { background: var(--danger); }
