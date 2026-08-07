@@ -51,7 +51,14 @@ export default {
     };
 
     const draw = () => {
+      // keep the current-turn marker on the same combatant across re-sorts
+      const curId = state.combatants[state.turnIndex]?.id;
       sortCombatants();
+      if (state.started && curId) {
+        const idx = state.combatants.findIndex(c => c.id === curId);
+        if (idx !== -1) state.turnIndex = idx;
+        else if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
+      }
       container.innerHTML = '';
 
       const controls = el(`<div class="row mb" style="align-items:center">

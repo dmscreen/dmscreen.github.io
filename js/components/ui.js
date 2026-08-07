@@ -89,7 +89,7 @@ export function promptDialog(title, fields, onSubmit, { submitLabel = 'Save' } =
         onClick: () => {
           const out = {};
           body.querySelectorAll('[data-key]').forEach(i => {
-            out[i.dataset.key] = i.type === 'number' ? Number(i.value) : i.value;
+            out[i.dataset.key] = i.type === 'number' ? (i.value === '' ? '' : Number(i.value)) : i.value;
           });
           return onSubmit(out);
         },
@@ -107,7 +107,10 @@ export function statBlockHTML(m) {
   const abil = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
   const saves = abil.filter(a => m.saves?.[a] != null).map(a => `${a.toUpperCase()} ${fmtMod(m.saves[a])}`).join(', ');
   const skills = Object.entries(m.skills || {}).map(([k, v]) => `${cap(k)} ${fmtMod(v)}`).join(', ');
-  const speed = Object.entries(m.speed || {}).filter(([k]) => k !== 'notes').map(([k, v]) => k === 'walk' ? `${v} ft.` : `${k} ${v} ft.`).join(', ');
+  const speed = Object.entries(m.speed || {})
+    .filter(([, v]) => typeof v === 'number')
+    .map(([k, v]) => (k === 'walk' ? `${v} ft.` : `${k} ${v} ft.${k === 'fly' && m.speed.hover ? ' (hover)' : ''}`))
+    .join(', ');
   const line = (label, val) => val ? `<p><b>${label}</b> ${esc(val)}</p>` : '';
   const section = (title, items) => items?.length
     ? `<div class="sb-section">${title}</div>` + items.map(a => `<p><b><i>${esc(a.name)}.</i></b> ${md(a.desc).replace(/^<p>|<\/p>$/g, '')}</p>`).join('')
