@@ -2,7 +2,7 @@
 import { loadFeats, loadBackgrounds } from '../srd.js';
 import { el, esc, md, modal, searchInput } from '../components/ui.js';
 
-function featDetail(f) {
+export function featDetail(f) {
   const body = el(`<div>
     <p class="muted"><span class="pill">${esc(f.source)}</span>${f.prerequisite ? ` <i>Prerequisite: ${esc(f.prerequisite)}</i>` : ''}</p>
     ${f.desc ? md(f.desc) : ''}
@@ -11,7 +11,7 @@ function featDetail(f) {
   modal(f.name, body, { wide: true });
 }
 
-function backgroundDetail(b) {
+export function backgroundDetail(b) {
   const body = el(`<div>
     <p class="muted"><span class="pill">${esc(b.source)}</span></p>
     ${b.desc ? md(b.desc) : ''}

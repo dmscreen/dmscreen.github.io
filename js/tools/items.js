@@ -2,7 +2,7 @@
 import { loadItems } from '../srd.js';
 import { el, esc, md, modal, searchInput, cap } from '../components/ui.js';
 
-function itemDetail(i) {
+export function itemDetail(i) {
   const meta = [];
   if (i.kind === 'magic') {
     meta.push(`<i>${esc(i.category)}, ${esc(i.rarity || 'unknown rarity')}${i.attunement ? ` (${esc(i.attunement)})` : ''}</i>`);
