@@ -128,8 +128,18 @@ async function route() {
 const navItemHTML = (t) =>
   `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}" style="margin-top:2px">${icon(t.icon)}<span>${esc(t.title)}</span></a>`;
 
+// Companion sites, linked straight from the sidebar
+const EXTERNAL_LINKS = [
+  { name: 'Auto Roll Tables', url: 'https://autorolltables.github.io', icon: 'd20' },
+  { name: 'Character Generator', url: 'https://charactergenerator.github.io', icon: 'cghex' },
+];
+
 function navHTML() {
-  return TOOLS.filter(t => t.id !== 'settings').map(navItemHTML).join('');
+  const items = TOOLS.filter(t => t.id !== 'settings').map(navItemHTML).join('');
+  const links = EXTERNAL_LINKS.map(l =>
+    `<a class="nav-item" href="${esc(l.url)}" target="_blank" rel="noopener" style="margin-top:2px">${icon(l.icon)}<span>${esc(l.name)}</span>${icon('external', 'ext')}</a>`
+  ).join('');
+  return `${items}<div class="nav-group-label">More</div>${links}`;
 }
 
 function renderTabbar() {
