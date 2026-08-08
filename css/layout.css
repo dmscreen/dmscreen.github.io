@@ -68,6 +68,7 @@
 .nav-item:hover { background: var(--bg-hover); color: var(--text); }
 .nav-item.active { background: var(--bg-raised); color: var(--text); }
 .nav-item svg { width: 18px; height: 18px; flex: none; }
+.nav-item .nav-logo { width: 18px; height: 18px; flex: none; object-fit: contain; }
 .nav-item .ext { margin-left: auto; width: 12px; height: 12px; color: var(--text-faint); }
 
 .sidebar-foot {

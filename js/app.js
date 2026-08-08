@@ -128,17 +128,19 @@ async function route() {
 const navItemHTML = (t) =>
   `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}" style="margin-top:2px">${icon(t.icon)}<span>${esc(t.title)}</span></a>`;
 
-// Companion sites, linked straight from the sidebar
+// Companion sites, linked straight from the sidebar. `logo` is that site's own
+// mark copied into assets/; `icon` falls back to our inline icon set.
 const EXTERNAL_LINKS = [
-  { name: 'Auto Roll Tables', url: 'https://autorolltables.github.io', icon: 'd20' },
+  { name: 'Auto Roll Tables', url: 'https://autorolltables.github.io', logo: 'assets/art-logo.png' },
   { name: 'Character Generator', url: 'https://charactergenerator.github.io', icon: 'cghex' },
 ];
 
 function navHTML() {
   const items = TOOLS.filter(t => t.id !== 'settings').map(navItemHTML).join('');
-  const links = EXTERNAL_LINKS.map(l =>
-    `<a class="nav-item" href="${esc(l.url)}" target="_blank" rel="noopener" style="margin-top:2px">${icon(l.icon)}<span>${esc(l.name)}</span>${icon('external', 'ext')}</a>`
-  ).join('');
+  const links = EXTERNAL_LINKS.map(l => {
+    const mark = l.logo ? `<img class="nav-logo" src="${esc(l.logo)}" alt="" width="18" height="18">` : icon(l.icon);
+    return `<a class="nav-item" href="${esc(l.url)}" target="_blank" rel="noopener" style="margin-top:2px">${mark}<span>${esc(l.name)}</span>${icon('external', 'ext')}</a>`;
+  }).join('');
   return `${items}<div class="nav-group-label">More</div>${links}`;
 }
 
