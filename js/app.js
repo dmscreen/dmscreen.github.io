@@ -116,6 +116,12 @@ async function route() {
     console.error(err);
     container.innerHTML = `<div class="card"><p class="muted">This tool failed to load: ${esc(err.message)}</p></div>`;
   }
+
+  main.append(el(`<footer class="page-foot">
+    Created by <a href="https://github.com/dangeratio" target="_blank" rel="noopener">dangeratio</a>
+    | <a href="https://github.com/dmscreen/dmscreen.github.io/issues" target="_blank" rel="noopener">report issues at GitHub</a>
+    | <a href="#/about">sources &amp; attribution</a>
+  </footer>`));
 }
 
 function navHTML() {

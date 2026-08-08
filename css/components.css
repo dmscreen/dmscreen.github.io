@@ -185,6 +185,18 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   margin: 12px 0 6px;
 }
 
+/* ---------- Page footer ---------- */
+.page-foot {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+.page-foot a { color: var(--text-dim); }
+.page-foot a:hover { color: var(--accent); }
+
 /* ---------- Toast ---------- */
 #toast-wrap {
   position: fixed;

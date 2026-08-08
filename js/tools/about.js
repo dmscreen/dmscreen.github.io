@@ -6,9 +6,8 @@ export default {
     container.innerHTML = `
       <div class="card">
         <h2>DM Screen</h2>
-        <p class="muted">A free, browser-based virtual screen for D&D 5e Dungeon Masters: initiative tracking, encounter building, travel, generators, and SRD reference in one place.</p>
-        <p class="muted mt">Everything runs in your browser. There is no server, no account, and no tracking; your campaign data never leaves this device. Use <b>Settings &gt; Export backup</b> to move it or keep it safe.</p>
-        <p class="mt"><a href="https://github.com/dmscreen/dmscreen.github.io" target="_blank" rel="noopener">Source code on GitHub</a></p>
+        <p>Created by <a href="https://github.com/dangeratio" target="_blank" rel="noopener">dangeratio</a></p>
+        <p>Report issues at <a href="https://github.com/dmscreen/dmscreen.github.io/issues" target="_blank" rel="noopener">GitHub</a></p>
       </div>
       <div class="card">
         <h2>Licensing & attribution</h2>
