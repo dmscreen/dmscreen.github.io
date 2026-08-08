@@ -48,9 +48,9 @@ const session = categoryTool({
 });
 const more = categoryTool({
   id: 'more', title: 'More', icon: 'grid',
-  subtitle: 'Linked tools from around the community',
+  subtitle: 'Tools from around the community',
   tabs: [
-    { ...linked, chipLabel: 'Linked Tools' },
+    { ...linked, chipLabel: 'Tools' },
     // on desktop these live in the sidebar; the chips only show on mobile
     { ...settings, mobileOnly: true },
     { ...about, mobileOnly: true },

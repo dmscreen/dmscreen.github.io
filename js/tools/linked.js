@@ -1,9 +1,9 @@
-// Linked Tools: curated external DM resources.
+// Tools: curated external DM resources.
 import { esc } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 
 export default {
-  id: 'linked', title: 'Linked Tools', shortTitle: 'Links', group: 'More', icon: 'link',
+  id: 'linked', title: 'Tools', shortTitle: 'Tools', group: 'More', icon: 'link',
   subtitle: 'Excellent free tools from around the community',
 
   async render(container) {
@@ -16,7 +16,7 @@ export default {
       </a>`;
 
     container.innerHTML = `
-      ${data.featured.map(t => toolHTML(t, true)).join('')}
+      <div class="grid-2">${data.featured.map(t => toolHTML(t, true)).join('')}</div>
       ${data.categories.map(cat => `
         <div class="nav-group-label" style="font-size:0.85rem;padding-left:0">${esc(cat.title)}</div>
         <div class="grid-2">${cat.tools.map(t => toolHTML(t)).join('')}</div>

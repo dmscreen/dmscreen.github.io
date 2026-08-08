@@ -3,7 +3,12 @@
     {
       "name": "Auto Roll Tables",
       "url": "https://autorolltables.github.io",
-      "desc": "Companion project: a huge collection of auto-rolling random tables for encounters, treasure, NPCs, and more. Pairs perfectly with the Custom Random Tables tool here."
+      "desc": "Companion project: a huge collection of auto-rolling random tables for encounters, treasure, NPCs, and more. Import any of them straight into the Tables generator here."
+    },
+    {
+      "name": "Character Generator",
+      "url": "https://charactergenerator.github.io",
+      "desc": "Companion project: build D&D characters and play from a live sheet, levels 1-20, with a searchable reference and bestiary. Works offline."
     }
   ],
   "categories": [

@@ -11,7 +11,8 @@ export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
 
     async render(container) {
       let tabId = getPrefs()[`cat:${id}`];
-      if (!tabs.some(t => t.id === tabId)) tabId = tabs[0].id;
+      const usable = (t) => t && !(t.mobileOnly && window.matchMedia('(min-width: 900px)').matches);
+      if (!usable(tabs.find(t => t.id === tabId))) tabId = tabs.find(usable)?.id || tabs[0].id;
 
       container.innerHTML = `
         <div class="row mb" data-chips style="gap:6px"></div>
