@@ -22,15 +22,6 @@ export default {
     container.innerHTML = `
       <div class="grid-2">
         <div class="card">
-          <h2>Encounter check</h2>
-          <div class="row">
-            <label class="field"><span>Encounter on (d20)</span><input type="number" id="re-threshold" value="18" min="1" max="20" style="width:70px"></label>
-            <button class="btn primary" id="re-check">Check for encounter</button>
-          </div>
-          <div id="re-check-out" class="mt center muted"></div>
-          <p class="small faint mt">A common rhythm: check once per watch (4 hours) while traveling, and once per night's rest. Raise or lower the threshold for wilder or safer lands.</p>
-        </div>
-        <div class="card">
           <h2>Roll an encounter</h2>
           <div class="row">
             <label class="field grow"><span>Terrain</span><select id="re-env"><option value="">Any terrain</option>${envs.map(e => `<option>${esc(e)}</option>`).join('')}</select></label>
@@ -44,6 +35,15 @@ export default {
             <label class="field grow"><span>...or roll on a custom table</span><select id="re-custom">${customTables.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
             <button class="btn" id="re-roll-custom">Roll table</button>
           </div>` : `<p class="small faint mt">Tip: build your own tables in Custom Random Tables and they'll show up here. For hundreds of ready-made tables, see <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</p>`}
+        </div>
+        <div class="card">
+          <h2>Encounter check</h2>
+          <div class="row">
+            <label class="field"><span>Encounter on (d20)</span><input type="number" id="re-threshold" value="18" min="1" max="20" style="width:70px"></label>
+            <button class="btn primary" id="re-check">Check for encounter</button>
+          </div>
+          <div id="re-check-out" class="mt center muted"></div>
+          <p class="small faint mt">A common rhythm: check once per watch (4 hours) while traveling, and once per night's rest. Raise or lower the threshold for wilder or safer lands.</p>
         </div>
       </div>
       <div id="re-result"></div>
