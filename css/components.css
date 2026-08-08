@@ -228,8 +228,9 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   font-size: 0.78rem;
   color: var(--text-faint);
 }
-.page-foot a { color: var(--text-dim); }
-.page-foot a:hover { color: var(--accent); }
+.page-foot a { color: var(--accent); text-decoration: underline; }
+.page-foot a:hover { filter: brightness(1.15); }
+.page-foot .sep { color: var(--text-faint); margin: 0 4px; }
 
 /* ---------- Toast ---------- */
 #toast-wrap {
