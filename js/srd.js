@@ -2,12 +2,23 @@
 
 const cache = {};
 
-async function load(name) {
+async function fetchJSON(name) {
+  const r = await fetch(`data/${name}.json`);
+  if (!r.ok) throw new Error(`Failed to load ${name}.json (HTTP ${r.status})`);
+  return r.json();
+}
+
+function load(name) {
   if (!cache[name]) {
-    cache[name] = fetch(`data/${name}.json`).then(r => {
-      if (!r.ok) throw new Error(`Failed to load ${name}.json`);
-      return r.json();
-    });
+    // Retry once (an interrupted fetch, e.g. during a service worker update,
+    // throws AbortError), and never cache a failure, so the next visit
+    // to the page tries again instead of showing a stale error forever.
+    cache[name] = fetchJSON(name)
+      .catch(() => fetchJSON(name))
+      .catch(err => {
+        delete cache[name];
+        throw err;
+      });
   }
   return cache[name];
 }
