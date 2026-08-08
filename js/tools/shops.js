@@ -14,13 +14,22 @@ export default {
     const types = Object.keys(shopData.types);
     const sizes = Object.keys(shopData.sizes);
 
+    let selType = types[0];
+    let selSize = sizes.includes('Town') ? 'Town' : sizes[0];
+
     container.innerHTML = `
       <div class="card">
-        <div class="row">
-          <label class="field"><span>Shop type</span><select id="sh-type">${types.map(t => `<option>${esc(t)}</option>`).join('')}</select></label>
-          <label class="field"><span>Settlement</span><select id="sh-size">${sizes.map(s => `<option ${s === 'Town' ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
-          <button class="btn primary" id="sh-gen">Generate shop</button>
+        <div class="field"><span>Shop type</span>
+          <div class="row" id="sh-type" style="gap:6px;margin:4px 0 12px">
+            ${types.map(t => `<button class="btn small" data-val="${esc(t)}">${esc(t)}</button>`).join('')}
+          </div>
         </div>
+        <div class="field"><span>Settlement</span>
+          <div class="row" id="sh-size" style="gap:6px;margin:4px 0 12px">
+            ${sizes.map(s => `<button class="btn small" data-val="${esc(s)}">${esc(s)}</button>`).join('')}
+          </div>
+        </div>
+        <button class="btn primary" id="sh-gen">Generate shop</button>
       </div>
       <div id="sh-current"></div>
       <div class="card"><h2>Saved shops</h2><div id="sh-saved"></div></div>`;
@@ -74,9 +83,25 @@ export default {
       currentEl.append(card);
     };
 
+    // single-select toggle rows for shop type and settlement size
+    const wireToggles = (rowId, getVal, setVal) => {
+      const row = container.querySelector(rowId);
+      const paint = () => row.querySelectorAll('.btn').forEach(b =>
+        b.classList.toggle('primary', b.dataset.val === getVal()));
+      row.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn');
+        if (!btn) return;
+        setVal(btn.dataset.val);
+        paint();
+      });
+      paint();
+    };
+    wireToggles('#sh-type', () => selType, (v) => { selType = v; });
+    wireToggles('#sh-size', () => selSize, (v) => { selSize = v; });
+
     const gen = () => {
-      const type = container.querySelector('#sh-type').value;
-      const size = container.querySelector('#sh-size').value;
+      const type = selType;
+      const size = selSize;
       const conf = shopData.types[type];
       const sizeConf = shopData.sizes[size];
       const [min, max] = sizeConf.stock;

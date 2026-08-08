@@ -45,10 +45,16 @@ export default {
     const magicItems = await loadMagicItems();
     const bySlug = new Map(magicItems.map(m => [m.slug, m]));
 
+    let bandIdx = 0;
+
     container.innerHTML = `
       <div class="card">
+        <div class="field"><span>CR band</span>
+          <div class="row" id="l-band" style="gap:6px;margin:4px 0 12px">
+            ${BANDS.map((b, i) => `<button class="btn small ${i === 0 ? 'primary' : ''}" data-val="${i}">${b.label}</button>`).join('')}
+          </div>
+        </div>
         <div class="row">
-          <label class="field"><span>CR band</span><select id="l-band">${BANDS.map((b, i) => `<option value="${i}">${b.label}</option>`).join('')}</select></label>
           <button class="btn primary" id="l-hoard">Roll hoard</button>
           <button class="btn" id="l-individual">Roll individual</button>
         </div>
@@ -79,6 +85,15 @@ export default {
       },
     });
 
+    // CR band toggle row (single select)
+    const bandRow = container.querySelector('#l-band');
+    bandRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn');
+      if (!btn) return;
+      bandIdx = Number(btn.dataset.val);
+      bandRow.querySelectorAll('.btn').forEach(b => b.classList.toggle('primary', Number(b.dataset.val) === bandIdx));
+    });
+
     const rollItems = (band) => {
       if (Math.random() > band.itemChance) return [];
       const n = band.itemCount();
@@ -101,12 +116,12 @@ export default {
     };
 
     container.querySelector('#l-individual').addEventListener('click', () => {
-      const band = BANDS[Number(container.querySelector('#l-band').value)];
+      const band = BANDS[bandIdx];
       history.add({ title: `Individual (${band.label})`, coins: band.individual(), gems: [], art: [], items: [] });
     });
 
     container.querySelector('#l-hoard').addEventListener('click', () => {
-      const band = BANDS[Number(container.querySelector('#l-band').value)];
+      const band = BANDS[bandIdx];
       const gems = [];
       const art = [];
       if (Math.random() < 0.6) {
