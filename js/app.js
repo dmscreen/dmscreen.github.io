@@ -2,12 +2,13 @@
 import { getPrefs, setPref, ensureCampaign, activeCampaignId, setActiveCampaign, dbPut, onCampaignChange } from './store.js';
 import { el, esc, toast, promptDialog, enhanceNumberInputs } from './components/ui.js';
 import { icon } from './components/icons.js';
+import { categoryTool } from './components/category.js';
 
 import initiative from './tools/initiative.js';
 import encounters from './tools/encounters.js';
 import dice from './tools/dice-roller.js';
 import party from './tools/party.js';
-import travel from './tools/travel.js';
+import travelCalc from './tools/travel.js';
 import randomEnc from './tools/random-encounters.js';
 import weather from './tools/weather.js';
 import calendar from './tools/calendar.js';
@@ -24,18 +25,52 @@ import linked from './tools/linked.js';
 import settings from './tools/settings.js';
 import about from './tools/about.js';
 
-const TOOLS = [
-  initiative, encounters, dice, party,
-  travel, randomEnc, calendar,
-  npcs, names, loot, shops, quests, weather, customTables,
-  reference,
-  notes, timer,
-  linked, settings, about,
-];
+const combat = categoryTool({
+  id: 'combat', title: 'Combat', icon: 'swords',
+  subtitle: 'Initiative, encounters, dice, and the party',
+  tabs: [initiative, encounters, dice, party],
+});
+const travel = categoryTool({
+  id: 'travel-page', title: 'Travel', icon: 'map',
+  subtitle: 'Journeys, random encounters, and the in-world calendar',
+  tabs: [travelCalc, randomEnc, calendar],
+});
+const generators = categoryTool({
+  id: 'generators', title: 'Generators', icon: 'sparkle',
+  subtitle: 'NPCs, names, loot, shops, quests, weather, and custom tables',
+  tabs: [npcs, names, loot, shops, quests, weather, customTables],
+});
+const session = categoryTool({
+  id: 'session', title: 'Session', icon: 'note',
+  subtitle: 'Notes and the session timer',
+  tabs: [notes, timer],
+});
+const more = categoryTool({
+  id: 'more', title: 'More', icon: 'grid',
+  subtitle: 'Linked tools, settings, and about this site',
+  tabs: [
+    { ...linked, chipLabel: 'Linked Tools' },
+    settings,
+    about,
+  ],
+});
+
+const TOOLS = [combat, travel, generators, reference, session, more];
 const byId = new Map(TOOLS.map(t => [t.id, t]));
-const GROUP_ORDER = ['Combat', 'Travel', 'Generators', 'Reference', 'Session', 'More'];
-const DEFAULT_TABS = ['initiative', 'dice', 'notes', 'reference'];
-// old per-tool reference routes now land on the unified Reference at that type
+const DEFAULT_TABS = ['combat', 'travel-page', 'generators', 'reference', 'session', 'more'];
+
+// old per-tool routes land on their category page with the right chip active
+const SUB_REDIRECTS = {
+  initiative: ['combat', 'initiative'], encounters: ['combat', 'encounters'],
+  dice: ['combat', 'dice'], party: ['combat', 'party'],
+  travel: ['travel-page', 'travel'], 'random-encounters': ['travel-page', 'random-encounters'],
+  calendar: ['travel-page', 'calendar'],
+  npcs: ['generators', 'npcs'], names: ['generators', 'names'], loot: ['generators', 'loot'],
+  shops: ['generators', 'shops'], quests: ['generators', 'quests'],
+  weather: ['generators', 'weather'], tables: ['generators', 'tables'],
+  notes: ['session', 'notes'], timer: ['session', 'timer'],
+  linked: ['more', 'linked'], settings: ['more', 'settings'], about: ['more', 'about'],
+};
 const REF_REDIRECTS = new Set(['monsters', 'spells', 'items', 'rules', 'conditions', 'character-options']);
 
 const $ = (sel) => document.querySelector(sel);
@@ -43,11 +78,16 @@ let currentTool = null;
 
 function routeId() {
   const h = location.hash.replace(/^#\/?/, '');
+  if (SUB_REDIRECTS[h]) {
+    const [page, chip] = SUB_REDIRECTS[h];
+    setPref(`cat:${page}`, chip);
+    return page;
+  }
   if (REF_REDIRECTS.has(h)) {
     setPref('refType', h);
     return 'reference';
   }
-  return byId.has(h) ? h : 'initiative';
+  return byId.has(h) ? h : 'combat';
 }
 
 async function route() {
@@ -58,15 +98,12 @@ async function route() {
 
   document.title = `${tool.title} - DM Screen`;
   document.querySelectorAll('.nav-item, .tab-item').forEach(n => n.classList.toggle('active', n.dataset.tool === id));
-  $('#more-sheet').classList.remove('open');
-  const moreTab = document.querySelector('.tab-item[data-more]');
-  if (moreTab) moreTab.classList.toggle('active', !DEFAULT_TABS.includes(id));
 
   const main = $('#main');
   main.innerHTML = '';
   main.scrollTop = 0;
-  const header = el(`<div class="tool-header"><h1>${esc(tool.title)}</h1>${tool.subtitle ? `<div class="sub">${esc(tool.subtitle)}</div>` : ''}</div>`);
-  if (!tool.noHeader) main.append(header);
+  const header = el(`<div class="tool-header"><h1>${esc(tool.title)}</h1></div>`);
+  main.append(header);
   const container = el('<div></div>');
   main.append(container);
   try {
@@ -78,51 +115,17 @@ async function route() {
 }
 
 function navHTML() {
-  const groups = new Map();
-  for (const t of TOOLS) {
-    if (!groups.has(t.group)) groups.set(t.group, []);
-    groups.get(t.group).push(t);
-  }
-  let html = '';
-  for (const g of GROUP_ORDER) {
-    if (!groups.has(g)) continue;
-    html += `<div class="nav-group-label">${g}</div>`;
-    for (const t of groups.get(g)) {
-      html += `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}">${icon(t.icon)}<span>${esc(t.title)}</span></a>`;
-    }
-  }
-  return html;
+  return TOOLS.map(t =>
+    `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}" style="margin-top:2px">${icon(t.icon)}<span>${esc(t.title)}</span></a>`
+  ).join('');
 }
 
 function renderTabbar() {
   const bar = $('#tabbar');
-  const tabs = getPrefs().tabs || DEFAULT_TABS;
-  bar.innerHTML = tabs.filter(id => byId.has(id)).map(id => {
+  bar.innerHTML = DEFAULT_TABS.filter(id => byId.has(id)).map(id => {
     const t = byId.get(id);
     return `<a class="tab-item" href="#/${t.id}" data-tool="${t.id}">${icon(t.icon)}<span>${esc(t.shortTitle || t.title)}</span></a>`;
-  }).join('') + `<button class="tab-item" data-more>${icon('grid')}<span>More</span></button>`;
-  bar.querySelector('[data-more]').addEventListener('click', () => {
-    $('#more-sheet').classList.toggle('open');
-  });
-}
-
-function renderMoreSheet() {
-  const sheet = $('#more-sheet');
-  const groups = new Map();
-  for (const t of TOOLS) {
-    if (!groups.has(t.group)) groups.set(t.group, []);
-    groups.get(t.group).push(t);
-  }
-  let html = '';
-  for (const g of GROUP_ORDER) {
-    if (!groups.has(g)) continue;
-    html += `<div class="nav-group-label">${g}</div><div class="more-grid">`;
-    html += groups.get(g).map(t =>
-      `<a class="more-tile" href="#/${t.id}" data-tool="${t.id}">${icon(t.icon)}<span>${esc(t.shortTitle || t.title)}</span></a>`
-    ).join('');
-    html += '</div>';
-  }
-  sheet.innerHTML = html;
+  }).join('');
 }
 
 async function renderCampaignBar() {
@@ -162,9 +165,9 @@ async function boot() {
   // Upgrade every number input (present and future) to a [- value +] stepper.
   new MutationObserver(() => enhanceNumberInputs()).observe(document.body, { childList: true, subtree: true });
   enhanceNumberInputs();
+
   $('#nav').innerHTML = navHTML();
   renderTabbar();
-  renderMoreSheet();
   await renderCampaignBar();
 
   // hover navigation for the sidebar (default on; Settings can switch to click)
