@@ -1,7 +1,7 @@
 // NPC Generator: instant character with a hook, savable to the campaign.
 import { loadTables } from '../srd.js';
 import { dbAll, dbPut, dbDelete, activeCampaignId } from '../store.js';
-import { el, esc, toast, confirmDialog, promptDialog, modal } from '../components/ui.js';
+import { el, esc, toast, confirmDialog, promptDialog, modal, toggleRow } from '../components/ui.js';
 import { historyList, timeStamp } from '../components/history.js';
 import { pick, roll } from '../dice.js';
 
@@ -48,10 +48,8 @@ export default {
       <div class="grid-2">
         <div>
           <div class="card">
-            <div class="row">
-              <label class="field"><span>Ancestry</span><select id="np-anc"><option value="">Any</option>${ancestries.map(a => `<option>${a}</option>`).join('')}</select></label>
-              <button class="btn primary" id="np-gen">Generate NPC</button>
-            </div>
+            <div id="np-anc-row"></div>
+            <button class="btn primary" id="np-gen">Generate NPC</button>
             <p class="small faint mt">Every generated NPC lands in the history below. Promote the keepers to the campaign roster with their Save button.</p>
           </div>
           <div id="np-history"></div>
@@ -113,8 +111,11 @@ export default {
       }
     };
 
+    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null);
+    container.querySelector('#np-anc-row').append(ancestry.el);
+
     container.querySelector('#np-gen').addEventListener('click', () =>
-      history.add(generateNPC(names, npcData, container.querySelector('#np-anc').value)));
+      history.add(generateNPC(names, npcData, ancestry.get())));
 
     drawSaved();
   },

@@ -1,6 +1,6 @@
 // Name Generator: people, taverns, shops, ships, settlements.
 import { loadTables } from '../srd.js';
-import { el, esc } from '../components/ui.js';
+import { el, esc, toggleRow } from '../components/ui.js';
 import { historyList, timeStamp } from '../components/history.js';
 import { pick } from '../dice.js';
 
@@ -38,17 +38,9 @@ export default {
 
     container.innerHTML = `
       <div class="card">
-        <div class="row">
-          <label class="field"><span>Kind</span><select id="n-kind">
-            <option value="person">Person</option><option value="tavern">Tavern</option>
-            <option value="shop">Shop</option><option value="ship">Ship</option>
-            <option value="settlement">Settlement</option>
-          </select></label>
-          <label class="field" id="n-anc-wrap"><span>Ancestry</span><select id="n-ancestry">
-            <option value="">Any</option>${ancestries.map(a => `<option>${a}</option>`).join('')}
-          </select></label>
-          <button class="btn primary" id="n-gen">Generate 10</button>
-        </div>
+        <div id="n-kind-row"></div>
+        <div id="n-anc-row"></div>
+        <button class="btn primary" id="n-gen">Generate 10</button>
       </div>
       <div id="n-history"></div>`;
 
@@ -63,18 +55,27 @@ export default {
       },
     });
 
-    const kindSel = container.querySelector('#n-kind');
-    const ancWrap = container.querySelector('#n-anc-wrap');
+    const ancRow = container.querySelector('#n-anc-row');
     const syncAncestry = () => {
-      const kind = kindSel.value;
-      ancWrap.style.display = kind === 'person' || kind === 'shop' ? '' : 'none';
+      const k = kind.get();
+      ancRow.style.display = k === 'person' || k === 'shop' ? '' : 'none';
     };
 
+    const kind = toggleRow('Kind', [
+      { value: 'person', label: 'Person' }, { value: 'tavern', label: 'Tavern' },
+      { value: 'shop', label: 'Shop' }, { value: 'ship', label: 'Ship' },
+      { value: 'settlement', label: 'Settlement' },
+    ], 'person', () => syncAncestry());
+    container.querySelector('#n-kind-row').append(kind.el);
+
+    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null);
+    ancRow.append(ancestry.el);
+
     container.querySelector('#n-gen').addEventListener('click', () => {
-      const kind = kindSel.value;
-      const anc = container.querySelector('#n-ancestry').value;
+      const k = kind.get();
+      const anc = ancestry.get();
       const names = Array.from({ length: 10 }, () => {
-        switch (kind) {
+        switch (k) {
           case 'person': return personName(data, anc || pick(ancestries));
           case 'tavern': return tavernName(data);
           case 'shop': return shopName(data, anc || 'Human');
@@ -82,9 +83,8 @@ export default {
           case 'settlement': return settlementName(data);
         }
       });
-      history.add({ kind, ancestry: kind === 'person' || kind === 'shop' ? anc : '', names });
+      history.add({ kind: k, ancestry: k === 'person' || k === 'shop' ? anc : '', names });
     });
-    kindSel.addEventListener('change', syncAncestry);
     syncAncestry();
   },
 };

@@ -185,6 +185,11 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   margin: 12px 0 6px;
 }
 
+/* ---------- Toggle rows ---------- */
+.toggle-field { display: block; }
+.toggle-field > span { display: block; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 4px; }
+.toggle-row { gap: 6px; margin-bottom: 12px; }
+
 /* ---------- Page footer ---------- */
 .page-foot {
   margin-top: 28px;

@@ -39,7 +39,8 @@ export function preloadAll() {
     () => load('monsters'), () => load('spells'), () => load('items'),
     () => load('magic-items'), () => load('conditions'), () => load('rules'),
     () => load('feats'), () => load('backgrounds'),
-    () => load('tables/names'), () => load('tables/npc'), () => load('tables/quests'), () => load('tables/shops'),
+    () => load('tables/names'), () => load('tables/npc'), () => load('tables/quests'),
+    () => load('tables/shops'), () => load('tables/rumors'),
   ];
   const runNext = () => {
     const job = jobs.shift();

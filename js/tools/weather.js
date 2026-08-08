@@ -1,5 +1,5 @@
 // Weather Generator with SRD mechanical notes.
-import { el, esc } from '../components/ui.js';
+import { el, esc, toggleRow, cap } from '../components/ui.js';
 import { historyList, timeStamp } from '../components/history.js';
 import { roll, pick } from '../dice.js';
 
@@ -25,14 +25,17 @@ export default {
   async render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="row">
-          <label class="field"><span>Climate</span><select id="w-climate">${Object.keys(CLIMATES).map(c => `<option ${c === 'temperate' ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
-          <label class="field"><span>Season</span><select id="w-season"><option>spring</option><option selected>summer</option><option>fall</option><option>winter</option></select></label>
-          <button class="btn primary" id="w-roll">Roll weather</button>
-        </div>
+        <div id="w-climate-row"></div>
+        <div id="w-season-row"></div>
+        <button class="btn primary" id="w-roll">Roll weather</button>
         <div id="w-out" class="mt"></div>
       </div>
       <div id="w-history"></div>`;
+
+    const climate = toggleRow('Climate', Object.keys(CLIMATES).map(c => ({ value: c, label: cap(c) })), 'temperate', null);
+    container.querySelector('#w-climate-row').append(climate.el);
+    const season = toggleRow('Season', ['spring', 'summer', 'fall', 'winter'].map(s => ({ value: s, label: cap(s) })), 'summer', null);
+    container.querySelector('#w-season-row').append(season.el);
 
     const history = await historyList({
       container: container.querySelector('#w-history'),
@@ -49,17 +52,17 @@ export default {
 
     const out = container.querySelector('#w-out');
     const gen = async (record = true) => {
-      const climate = container.querySelector('#w-climate').value;
-      const season = container.querySelector('#w-season').value;
-      const base = CLIMATES[climate][season];
+      const climateVal = climate.get();
+      const seasonVal = season.get();
+      const base = CLIMATES[climateVal][seasonVal];
       const temp = base + roll('2d10').total - 11;
 
       const windRoll = roll('1d20').total;
       const wind = windRoll <= 12 ? 'calm' : windRoll <= 17 ? 'light wind' : 'strong wind';
 
       let precipRoll = roll('1d20').total;
-      if (climate === 'arid') precipRoll -= 5;
-      if (climate === 'tropical') precipRoll += 3;
+      if (climateVal === 'arid') precipRoll -= 5;
+      if (climateVal === 'tropical') precipRoll += 3;
       const precip = precipRoll <= 12 ? 'none' : precipRoll <= 17 ? 'light' : 'heavy';
 
       const snowing = temp <= 32 && precip !== 'none';
@@ -81,7 +84,7 @@ export default {
         <p class="center muted">${esc(conditions)}</p>
         ${notes.map(n => `<p class="small muted">${esc(n)}</p>`).join('') || '<p class="small faint center">No mechanical effects.</p>'}`;
 
-      if (record) await history.add({ temp, desc, conditions, climate, season, notes });
+      if (record) await history.add({ temp, desc, conditions, climate: climateVal, season: seasonVal, notes });
     };
 
     container.querySelector('#w-roll').addEventListener('click', () => gen());

@@ -25,6 +25,8 @@ export default {
         <a href="https://koboldpress.com" target="_blank" rel="noopener">Kobold Press</a> (<i>Vault of Magic</i>, <i>Tome of Heroes</i>) and
         Green Ronin Publishing (<i>Critical Role: Tal'Dorei Campaign Setting</i>), used under the terms of the Open Gaming License.
         Those publishers do not endorse this site.</p>
+        <p class="small muted">The rumor generator and the importable table catalog come from the companion project
+        <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</p>
         <p class="small muted">All rules data was compiled via the excellent <a href="https://open5e.com" target="_blank" rel="noopener">Open5e</a> project and API.
         DM Screen is unofficial fan content and is not affiliated with or endorsed by Wizards of the Coast.</p>
         <p class="small muted">Application code is MIT licensed.</p>
