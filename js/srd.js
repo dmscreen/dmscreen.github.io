@@ -22,6 +22,25 @@ export const loadItems = () => load('items');
 export const loadBackgrounds = () => load('backgrounds');
 export const loadTables = (name) => load(`tables/${name}`);
 
+// Warm every dataset in the background so page switches never wait on a fetch+parse.
+export function preloadAll() {
+  const jobs = [
+    () => load('monsters'), () => load('spells'), () => load('items'),
+    () => load('magic-items'), () => load('conditions'), () => load('rules'),
+    () => load('feats'), () => load('backgrounds'),
+    () => load('tables/names'), () => load('tables/npc'), () => load('tables/quests'), () => load('tables/shops'),
+  ];
+  const runNext = () => {
+    const job = jobs.shift();
+    if (!job) return;
+    job().catch(() => {}).finally(() => {
+      const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 150));
+      idle(runNext);
+    });
+  };
+  runNext();
+}
+
 /* ---------- 5e math ---------- */
 
 export const abilityMod = (score) => Math.floor((score - 10) / 2);

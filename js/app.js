@@ -1,5 +1,6 @@
 // App shell: registry, router, nav, campaign switcher.
 import { getPrefs, setPref, ensureCampaign, activeCampaignId, setActiveCampaign, dbPut, onCampaignChange } from './store.js';
+import { preloadAll } from './srd.js';
 import { el, esc, toast, promptDialog, enhanceNumberInputs } from './components/ui.js';
 import { icon } from './components/icons.js';
 import { categoryTool } from './components/category.js';
@@ -181,7 +182,7 @@ async function boot() {
     hoverTimer = setTimeout(() => {
       const id = item.dataset.tool;
       if (id && routeId() !== id) location.hash = `#/${id}`;
-    }, 140);
+    }, 60);
   });
   nav.addEventListener('mouseleave', () => clearTimeout(hoverTimer));
 
@@ -196,6 +197,9 @@ async function boot() {
   onCampaignChange(async () => { await renderCampaignBar(); route(); });
   window.addEventListener('hashchange', route);
   await route();
+
+  // warm all reference data in the background so later page switches are instant
+  setTimeout(preloadAll, 400);
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
