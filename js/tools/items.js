@@ -77,7 +77,7 @@ export default {
         tr.addEventListener('click', () => itemDetail(shown[Number(tr.dataset.i)])));
     };
 
-    container.querySelector('#it-search').append(searchInput('Search 1,800+ items...', q => { query = q; draw(); }));
+    container.querySelector('#it-search').append(searchInput('Search 2,000+ items...', q => { query = q; draw(); }));
     container.querySelectorAll('select').forEach(s => s.addEventListener('change', draw));
     draw();
   },

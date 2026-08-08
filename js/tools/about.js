@@ -19,7 +19,8 @@ export default {
         <a href="https://enpublishingrpg.com" target="_blank" rel="noopener">EN Publishing</a>:
         the <i>Adventurer's Guide</i>, <i>Dungeon Delver's Guide</i>, <i>Gate Pass Gazette</i>, and <i>Monstrous Menagerie</i>,
         used under the terms of the Open Gaming License via the
-        <a href="https://a5esrd.com" target="_blank" rel="noopener">A5E System Reference Document</a>.
+        <a href="https://a5esrd.com" target="_blank" rel="noopener">A5E System Reference Document</a>,
+        including equipment and enchanted items taken from the published A5E SRD documents.
         Level Up: Advanced 5th Edition and the book titles are trademarks of EN Publishing; this site is not affiliated with or endorsed by EN Publishing.</p>
         <p class="small muted">The Item Reference additionally includes open-content magic items from
         <a href="https://koboldpress.com" target="_blank" rel="noopener">Kobold Press</a> (<i>Vault of Magic</i>, <i>Tome of Heroes</i>) and

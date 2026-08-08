@@ -32,7 +32,7 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 One unified Reference browser with a Type selector:
 - **Bestiary**: 908 monsters (SRD 5.1 + Monstrous Menagerie) with type/size/environment/source filters and full stat blocks.
 - **Spells**: 690 spells (SRD 5.1 + Adventurer's Guide) filterable by level, school, class, source, concentration, and ritual.
-- **Items**: 1,855 items, from backpacks and trail rations to legendary artifacts (SRD 5.1 equipment and magic items, Level Up A5E magic items, Kobold Press Vault of Magic and Tome of Heroes).
+- **Items**: 2,011 items, from backpacks and trail rations to legendary artifacts (SRD 5.1 equipment and magic items, Level Up A5E equipment and magic items, Kobold Press Vault of Magic and Tome of Heroes).
 - **Rules**: searchable cards for actions, cover, light, resting, travel, jumping, falling, suffocation, exhaustion, mounted and underwater combat, concentration, death.
 - **Conditions**: every condition on one screen.
 - **Character Options**: 59 feats and 27 backgrounds from the Level Up: Advanced 5th Edition books.
