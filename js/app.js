@@ -1,7 +1,7 @@
 // App shell: registry, router, nav, campaign switcher.
 import { getPrefs, setPref, ensureCampaign, activeCampaignId, setActiveCampaign, dbPut, onCampaignChange } from './store.js';
 import { preloadAll } from './srd.js';
-import { el, esc, toast, promptDialog, enhanceNumberInputs } from './components/ui.js';
+import { el, esc, toast, promptDialog, enhanceNumberInputs, attachHoverSwitch } from './components/ui.js';
 import { icon } from './components/icons.js';
 import { categoryTool } from './components/category.js';
 
@@ -124,10 +124,12 @@ async function route() {
   </footer>`));
 }
 
+// Settings is pinned to the bottom of the sidebar instead of the main list
+const navItemHTML = (t) =>
+  `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}" style="margin-top:2px">${icon(t.icon)}<span>${esc(t.title)}</span></a>`;
+
 function navHTML() {
-  return TOOLS.map(t =>
-    `<a class="nav-item" href="#/${t.id}" data-tool="${t.id}" style="margin-top:2px">${icon(t.icon)}<span>${esc(t.title)}</span></a>`
-  ).join('');
+  return TOOLS.filter(t => t.id !== 'settings').map(navItemHTML).join('');
 }
 
 function renderTabbar() {
@@ -177,23 +179,17 @@ async function boot() {
   enhanceNumberInputs();
 
   $('#nav').innerHTML = navHTML();
+  $('#sidebar-foot').innerHTML = navItemHTML(byId.get('settings'));
   renderTabbar();
   await renderCampaignBar();
 
   // hover navigation for the sidebar (default on; Settings can switch to click)
-  const nav = $('#nav');
-  let hoverTimer = null;
-  nav.addEventListener('mouseover', (e) => {
-    if (getPrefs().navHover === false) return;
-    const item = e.target.closest('.nav-item');
-    if (!item) return;
-    clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => {
+  for (const region of [$('#nav'), $('#sidebar-foot')]) {
+    attachHoverSwitch(region, '.nav-item', (item) => {
       const id = item.dataset.tool;
       if (id && routeId() !== id) location.hash = `#/${id}`;
-    }, 60);
-  });
-  nav.addEventListener('mouseleave', () => clearTimeout(hoverTimer));
+    });
+  }
 
   // sidebar collapse
   const app = $('#app');
