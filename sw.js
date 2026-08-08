@@ -1,6 +1,6 @@
 // Cache-first service worker so the screen works offline.
 // Bump VERSION on every deploy to refresh caches.
-const VERSION = 'v23';
+const VERSION = 'v24';
 const CACHE = `dmsk-${VERSION}`;
 
 const PRECACHE = [
@@ -8,7 +8,8 @@ const PRECACHE = [
   'index.html',
   'manifest.webmanifest',
   'css/base.css', 'css/layout.css', 'css/components.css',
-  'assets/favicon.svg', 'assets/icon-192.png', 'assets/icon-512.png',
+  'assets/favicon.svg', 'assets/icon-16.png', 'assets/icon-32.png',
+  'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
