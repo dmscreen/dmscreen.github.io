@@ -2,7 +2,7 @@
 // misc store, so they survive tab switches, reloads, and browser restarts.
 // Every list gets a "Clear all" button and a per-entry remove button.
 import { getState, setState, uid } from '../store.js';
-import { el, esc, confirmDialog } from './ui.js';
+import { el, esc } from './ui.js';
 
 export async function historyList({ container, key, title = 'History', max = 50, renderEntry, empty = 'Nothing generated yet. Results are saved here automatically.' }) {
   let items = (await getState(key, [])) || [];
@@ -37,12 +37,11 @@ export async function historyList({ container, key, title = 'History', max = 50,
     clearBtn.style.visibility = items.length ? 'visible' : 'hidden';
   };
 
-  clearBtn.addEventListener('click', () =>
-    confirmDialog('Clear this entire history?', async () => {
-      items = [];
-      await save();
-      draw();
-    }, { label: 'Clear all' }));
+  clearBtn.addEventListener('click', async () => {
+    items = [];
+    await save();
+    draw();
+  });
 
   draw();
 
