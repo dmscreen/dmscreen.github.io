@@ -19,13 +19,13 @@ export default {
               <option value="light" ${prefs.theme === 'light' ? 'selected' : ''}>Light</option>
             </select>
           </label>
-          <label class="field mt"><span>Left nav switching</span>
+          <label class="field mt"><span>Navigation switching</span>
             <select id="st-navmode">
               <option value="hover" ${prefs.navHover !== false ? 'selected' : ''}>Hover (default)</option>
               <option value="click" ${prefs.navHover === false ? 'selected' : ''}>Click</option>
             </select>
           </label>
-          <p class="small faint">With hover, resting the pointer on a sidebar entry switches to it without a click.</p>
+          <p class="small faint">With hover, resting the pointer on a sidebar entry or a page's tab switches to it without a click.</p>
         </div>
         <div class="card">
           <h2>Campaigns</h2>
@@ -55,7 +55,7 @@ export default {
 
     container.querySelector('#st-navmode').addEventListener('change', (e) => {
       setPref('navHover', e.target.value === 'hover');
-      toast(e.target.value === 'hover' ? 'Sidebar switches on hover' : 'Sidebar switches on click');
+      toast(e.target.value === 'hover' ? 'Navigation switches on hover' : 'Navigation switches on click');
     });
 
     const drawCampaigns = async () => {

@@ -1,7 +1,7 @@
 // Unified Reference: quick-filter chips across every reference type.
 // "All" searches everything at once; a specific chip opens that type's full browser.
 import { getPrefs, setPref } from '../store.js';
-import { el, esc, md, modal, searchInput, showStatBlock, cap } from '../components/ui.js';
+import { el, esc, md, modal, searchInput, showStatBlock, cap, attachHoverSwitch } from '../components/ui.js';
 import { loadMonsters, loadSpells, loadItems, loadRules, loadConditions, loadFeats, loadBackgrounds, fmtCR } from '../srd.js';
 import monsters from './monsters.js';
 import spells, { spellDetail } from './spells.js';
@@ -106,16 +106,19 @@ export default {
     const chipsEl = container.querySelector('#ref-chips');
     const body = container.querySelector('#ref-body');
 
+    const select = (id) => {
+      if (!id || typeId === id) return;
+      typeId = id;
+      setPref('refType', typeId);
+      draw();
+    };
+    attachHoverSwitch(chipsEl, '.btn', (chip) => select(chip.dataset.tab));
+
     const draw = async () => {
       chipsEl.innerHTML = '';
       for (const t of [{ id: 'all', label: 'All' }, ...REF_TYPES]) {
-        const chip = el(`<button class="btn small ${t.id === typeId ? 'primary' : ''}">${esc(t.label)}</button>`);
-        chip.addEventListener('click', () => {
-          if (typeId === t.id) return;
-          typeId = t.id;
-          setPref('refType', typeId);
-          draw();
-        });
+        const chip = el(`<button class="btn small ${t.id === typeId ? 'primary' : ''}" data-tab="${esc(t.id)}">${esc(t.label)}</button>`);
+        chip.addEventListener('click', () => select(t.id));
         chipsEl.append(chip);
       }
       body.innerHTML = '';

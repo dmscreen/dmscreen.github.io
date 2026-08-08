@@ -1,5 +1,6 @@
 // Shared UI helpers: element creation, toasts, modals, stat blocks.
 import { abilityMod, fmtMod, fmtCR, monsterXP } from '../srd.js';
+import { getPrefs } from '../store.js';
 
 export function el(html) {
   const t = document.createElement('template');
@@ -161,6 +162,23 @@ export function showStatBlock(m) {
 }
 
 export const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/* ---------- hover switching ---------- */
+
+// Switch on hover inside a chip/tab row, matching the sidebar's behavior and
+// honoring the same Settings preference. Uses delegation, so the row's
+// contents can be re-rendered freely after this is attached once.
+export function attachHoverSwitch(row, selector, onPick, delay = 60) {
+  let timer = null;
+  row.addEventListener('mouseover', (e) => {
+    if (getPrefs().navHover === false) return;
+    const target = e.target.closest(selector);
+    if (!target || !row.contains(target)) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => onPick(target), delay);
+  });
+  row.addEventListener('mouseleave', () => clearTimeout(timer));
+}
 
 /* ---------- number steppers ---------- */
 

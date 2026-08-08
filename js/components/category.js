@@ -1,7 +1,7 @@
 // Category page factory: one nav entry per major category, with a chip row
 // switching between the sub-tools (same pattern as the Reference page).
 import { getPrefs, setPref } from '../store.js';
-import { el, esc } from './ui.js';
+import { el, esc, attachHoverSwitch } from './ui.js';
 
 export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
   let active = null;
@@ -21,17 +21,20 @@ export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
       const subEl = container.querySelector('[data-sub]');
       const body = container.querySelector('[data-body]');
 
+      const select = (chipTabId) => {
+        if (!chipTabId || tabId === chipTabId) return;
+        tabId = chipTabId;
+        setPref(`cat:${id}`, tabId);
+        draw();
+      };
+      attachHoverSwitch(chipsEl, '.btn', (chip) => select(chip.dataset.tab));
+
       const draw = async () => {
         active?.onExit?.();
         chipsEl.innerHTML = '';
         for (const t of tabs) {
-          const chip = el(`<button class="btn small ${t.id === tabId ? 'primary' : ''} ${t.mobileOnly ? 'mobile-only' : ''}">${esc(t.chipLabel || t.shortTitle || t.title)}</button>`);
-          chip.addEventListener('click', () => {
-            if (tabId === t.id) return;
-            tabId = t.id;
-            setPref(`cat:${id}`, tabId);
-            draw();
-          });
+          const chip = el(`<button class="btn small ${t.id === tabId ? 'primary' : ''} ${t.mobileOnly ? 'mobile-only' : ''}" data-tab="${esc(t.id)}">${esc(t.chipLabel || t.shortTitle || t.title)}</button>`);
+          chip.addEventListener('click', () => select(t.id));
           chipsEl.append(chip);
         }
         const tool = tabs.find(t => t.id === tabId);
