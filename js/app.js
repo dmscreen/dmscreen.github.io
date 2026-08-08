@@ -100,7 +100,7 @@ async function route() {
   if (currentTool?.onExit) currentTool.onExit();
   currentTool = tool;
 
-  document.title = `${tool.title} - dmscreen.github.io`;
+  document.title = 'dmscreen.github.io';
   document.querySelectorAll('.nav-item, .tab-item').forEach(n => n.classList.toggle('active', n.dataset.tool === id));
 
   const main = $('#main');
