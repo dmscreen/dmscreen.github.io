@@ -1,6 +1,7 @@
 // Shared UI helpers: element creation, toasts, modals, stat blocks.
 import { abilityMod, fmtMod, fmtCR, monsterXP } from '../srd.js';
 import { getPrefs } from '../store.js';
+import { icon } from './icons.js';
 
 export function el(html) {
   const t = document.createElement('template');
@@ -166,14 +167,16 @@ export const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 /* ---------- toggle rows ---------- */
 
 // A single-select row of toggle buttons, used instead of dropdowns in the
-// generators. options: [{value, label}] or plain strings. Returns { get, set, el }.
-export function toggleRow(label, options, initial, onChange) {
+// generators. options: [{value, label, icon}] or plain strings.
+// opts.segmented joins the buttons into one bordered control.
+// Returns { get, set, el }.
+export function toggleRow(label, options, initial, onChange, { segmented = false } = {}) {
   const opts = options.map(o => (typeof o === 'string' ? { value: o, label: o } : o));
   let value = opts.some(o => o.value === initial) ? initial : opts[0]?.value;
   const wrap = el(`<div class="field toggle-field">
     ${label ? `<span>${esc(label)}</span>` : ''}
-    <div class="row toggle-row">${opts.map(o =>
-      `<button type="button" class="btn small" data-val="${esc(o.value)}">${esc(o.label)}</button>`).join('')}</div>
+    <div class="row toggle-row ${segmented ? 'segmented' : ''}">${opts.map(o =>
+      `<button type="button" class="btn small" data-val="${esc(o.value)}">${o.icon ? icon(o.icon) : ''}${esc(o.label)}</button>`).join('')}</div>
   </div>`);
   const row = wrap.querySelector('.toggle-row');
   const paint = () => row.querySelectorAll('.btn').forEach(b =>

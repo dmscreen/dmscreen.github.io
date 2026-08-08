@@ -1,6 +1,6 @@
 // Settings: theme, mobile tabs, campaigns, backup and restore.
 import { getPrefs, setPref, exportAll, exportCampaign, importAll, dbAll, dbPut, dbDelete, activeCampaignId, setActiveCampaign, STORES } from '../store.js';
-import { el, esc, toast, confirmDialog, promptDialog } from '../components/ui.js';
+import { el, esc, toast, confirmDialog, promptDialog, toggleRow } from '../components/ui.js';
 
 export default {
   id: 'settings', title: 'Settings', shortTitle: 'Settings', group: 'More', icon: 'gear',
@@ -13,18 +13,8 @@ export default {
       <div class="grid-2">
         <div class="card">
           <h2>Appearance</h2>
-          <label class="field"><span>Theme</span>
-            <select id="st-theme">
-              <option value="dark" ${prefs.theme !== 'light' ? 'selected' : ''}>Dark (default)</option>
-              <option value="light" ${prefs.theme === 'light' ? 'selected' : ''}>Light</option>
-            </select>
-          </label>
-          <label class="field mt"><span>Navigation switching</span>
-            <select id="st-navmode">
-              <option value="hover" ${prefs.navHover !== false ? 'selected' : ''}>Hover (default)</option>
-              <option value="click" ${prefs.navHover === false ? 'selected' : ''}>Click</option>
-            </select>
-          </label>
+          <div id="st-theme-row"></div>
+          <div id="st-navmode-row"></div>
           <p class="small faint">With hover, resting the pointer on a sidebar entry or a page's tab switches to it without a click.</p>
         </div>
         <div class="card">
@@ -48,15 +38,25 @@ export default {
         </div>
       </div>`;
 
-    container.querySelector('#st-theme').addEventListener('change', (e) => {
-      setPref('theme', e.target.value);
-      document.documentElement.dataset.theme = e.target.value;
-    });
+    const theme = toggleRow('Theme', [
+      { value: 'dark', label: 'Dark', icon: 'moon' },
+      { value: 'light', label: 'Light', icon: 'sun' },
+    ], prefs.theme === 'light' ? 'light' : 'dark', (v) => {
+      setPref('theme', v);
+      document.documentElement.dataset.theme = v;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = v === 'dark' ? '#191512' : '#f3eee5';
+    }, { segmented: true });
+    container.querySelector('#st-theme-row').append(theme.el);
 
-    container.querySelector('#st-navmode').addEventListener('change', (e) => {
-      setPref('navHover', e.target.value === 'hover');
-      toast(e.target.value === 'hover' ? 'Navigation switches on hover' : 'Navigation switches on click');
-    });
+    const navMode = toggleRow('Navigation switching', [
+      { value: 'hover', label: 'Hover', icon: 'hover' },
+      { value: 'click', label: 'Click', icon: 'cursor' },
+    ], prefs.navHover === false ? 'click' : 'hover', (v) => {
+      setPref('navHover', v === 'hover');
+      toast(v === 'hover' ? 'Navigation switches on hover' : 'Navigation switches on click');
+    }, { segmented: true });
+    container.querySelector('#st-navmode-row').append(navMode.el);
 
     const drawCampaigns = async () => {
       const all = await dbAll('campaigns');

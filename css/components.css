@@ -190,6 +190,35 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .toggle-field > span { display: block; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 4px; }
 .toggle-row { gap: 6px; margin-bottom: 12px; }
 
+/* segmented variant: buttons joined inside one bordered control */
+.toggle-row.segmented {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.toggle-row.segmented .btn {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  gap: 7px;
+  font-weight: 500;
+}
+.toggle-row.segmented .btn svg { width: 15px; height: 15px; }
+.toggle-row.segmented .btn:hover { color: var(--text); }
+.toggle-row.segmented .btn.primary {
+  background: color-mix(in srgb, var(--accent) 20%, var(--bg-raised));
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.toggle-row.segmented .btn.primary svg { color: var(--accent); }
+
 /* ---------- Page footer ---------- */
 .page-foot {
   margin-top: 28px;
