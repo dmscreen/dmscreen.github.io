@@ -25,7 +25,7 @@ export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
         active?.onExit?.();
         chipsEl.innerHTML = '';
         for (const t of tabs) {
-          const chip = el(`<button class="btn small ${t.id === tabId ? 'primary' : ''}">${esc(t.chipLabel || t.shortTitle || t.title)}</button>`);
+          const chip = el(`<button class="btn small ${t.id === tabId ? 'primary' : ''} ${t.mobileOnly ? 'mobile-only' : ''}">${esc(t.chipLabel || t.shortTitle || t.title)}</button>`);
           chip.addEventListener('click', () => {
             if (tabId === t.id) return;
             tabId = t.id;

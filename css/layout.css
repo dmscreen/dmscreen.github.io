@@ -160,6 +160,10 @@
 .more-tile svg { width: 24px; height: 24px; color: var(--accent); }
 .more-tile:active { background: var(--bg-hover); }
 
+@media (min-width: 900px) {
+  .mobile-only { display: none !important; }
+}
+
 @media (max-width: 899px) {
   #app { grid-template-columns: 1fr; }
   #sidebar { display: none; }

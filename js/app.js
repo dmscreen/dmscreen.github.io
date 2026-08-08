@@ -48,15 +48,18 @@ const session = categoryTool({
 });
 const more = categoryTool({
   id: 'more', title: 'More', icon: 'grid',
-  subtitle: 'Linked tools, settings, and about this site',
+  subtitle: 'Linked tools from around the community',
   tabs: [
     { ...linked, chipLabel: 'Linked Tools' },
-    settings,
-    about,
+    // on desktop these live in the sidebar; the chips only show on mobile
+    { ...settings, mobileOnly: true },
+    { ...about, mobileOnly: true },
   ],
 });
 
-const TOOLS = [combat, travel, generators, reference, session, more];
+// Settings and About are top-level sidebar entries on desktop/tablet;
+// the mobile tab bar reaches them through More instead.
+const TOOLS = [combat, travel, generators, reference, session, more, settings, about];
 const byId = new Map(TOOLS.map(t => [t.id, t]));
 const DEFAULT_TABS = ['combat', 'travel-page', 'generators', 'reference', 'session', 'more'];
 
@@ -70,7 +73,7 @@ const SUB_REDIRECTS = {
   shops: ['generators', 'shops'], quests: ['generators', 'quests'],
   weather: ['generators', 'weather'], tables: ['generators', 'tables'],
   notes: ['session', 'notes'], timer: ['session', 'timer'],
-  linked: ['more', 'linked'], settings: ['more', 'settings'], about: ['more', 'about'],
+  linked: ['more', 'linked'],
 };
 const REF_REDIRECTS = new Set(['monsters', 'spells', 'items', 'rules', 'conditions', 'character-options']);
 
