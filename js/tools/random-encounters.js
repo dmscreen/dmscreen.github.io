@@ -34,7 +34,7 @@ export default {
           ${customTables.length ? `<div class="row mt">
             <label class="field grow"><span>...or roll on a custom table</span><select id="re-custom">${customTables.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
             <button class="btn" id="re-roll-custom">Roll table</button>
-          </div>` : `<p class="small faint mt">Tip: build your own tables in Custom Random Tables and they'll show up here. For hundreds of ready-made tables, see <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</p>`}
+          </div>` : ''}
         </div>
         <div class="card">
           <h2>Encounter check</h2>

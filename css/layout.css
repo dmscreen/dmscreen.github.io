@@ -3,7 +3,7 @@
   margin: -10em;
   position: fixed;
   z-index: 0;
-  opacity: 0.15;
+  opacity: 0.075;
   pointer-events: none;
 }
 /* opt out of the global img max-width, and light-up the dark artwork for the
