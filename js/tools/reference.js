@@ -106,6 +106,21 @@ export default {
     const chipsEl = container.querySelector('#ref-chips');
     const body = container.querySelector('#ref-body');
 
+    // entry counts shown on each chip; filled in once the data is loaded
+    let counts = null;
+    const loadCounts = async () => {
+      const [m, s, i, r, c, f, b] = await Promise.all([
+        loadMonsters(), loadSpells(), loadItems(), loadRules(), loadConditions(), loadFeats(), loadBackgrounds(),
+      ]);
+      counts = {
+        monsters: m.length, spells: s.length, items: i.length,
+        rules: r.reduce((n, sec) => n + sec.entries.length, 0),
+        conditions: c.length, 'character-options': f.length + b.length,
+      };
+      counts.all = Object.values(counts).reduce((a, n) => a + n, 0);
+      return counts;
+    };
+
     const select = (id) => {
       if (!id || typeId === id) return;
       typeId = id;
@@ -114,12 +129,27 @@ export default {
     };
     attachHoverSwitch(chipsEl, '.btn', (chip) => select(chip.dataset.tab));
 
+    const chipLabel = (t) => {
+      const n = counts?.[t.id];
+      return `${esc(t.label)}${n != null ? ` <span class="chip-count">(${n.toLocaleString()})</span>` : ''}`;
+    };
+
     const draw = async () => {
       chipsEl.innerHTML = '';
-      for (const t of [{ id: 'all', label: 'All' }, ...REF_TYPES]) {
-        const chip = el(`<button class="btn small ${t.id === typeId ? 'primary' : ''}" data-tab="${esc(t.id)}">${esc(t.label)}</button>`);
+      const tabs = [{ id: 'all', label: 'All' }, ...REF_TYPES];
+      for (const t of tabs) {
+        const chip = el(`<button class="btn small ${t.id === typeId ? 'primary' : ''}" data-tab="${esc(t.id)}">${chipLabel(t)}</button>`);
         chip.addEventListener('click', () => select(t.id));
         chipsEl.append(chip);
+      }
+      if (!counts) {
+        // fill the counts in as soon as the data lands, without blocking the view
+        loadCounts().then(() => {
+          chipsEl.querySelectorAll('.btn').forEach(btn => {
+            const t = tabs.find(x => x.id === btn.dataset.tab);
+            if (t) btn.innerHTML = chipLabel(t);
+          });
+        }).catch(() => {});
       }
       body.innerHTML = '';
       try {

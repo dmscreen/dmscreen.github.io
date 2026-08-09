@@ -138,7 +138,10 @@ const EXTERNAL_LINKS = [
 function navHTML() {
   const items = TOOLS.filter(t => t.id !== 'settings').map(navItemHTML).join('');
   const links = EXTERNAL_LINKS.map(l => {
-    const mark = l.logo ? `<img class="nav-logo" src="${esc(l.logo)}" alt="" width="18" height="18">` : icon(l.icon);
+    // the logo is masked rather than drawn, so it takes the nav's own colour
+    const mark = l.logo
+      ? `<span class="nav-logo" style="-webkit-mask-image:url('${esc(l.logo)}');mask-image:url('${esc(l.logo)}')"></span>`
+      : icon(l.icon);
     return `<a class="nav-item" href="${esc(l.url)}" target="_blank" rel="noopener" style="margin-top:2px">${mark}<span>${esc(l.name)}</span>${icon('external', 'ext')}</a>`;
   }).join('');
   return `${items}<div class="nav-group-label">More</div>${links}`;
