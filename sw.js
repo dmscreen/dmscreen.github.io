@@ -1,6 +1,6 @@
 // Cache-first service worker so the screen works offline.
 // Bump VERSION on every deploy to refresh caches.
-const VERSION = 'v29';
+const VERSION = 'v30';
 const CACHE = `dmsk-${VERSION}`;
 
 const PRECACHE = [
@@ -8,6 +8,7 @@ const PRECACHE = [
   'index.html',
   'manifest.webmanifest',
   'css/base.css', 'css/layout.css', 'css/components.css',
+  'includes/dndlogo1.png',
   'assets/favicon.svg', 'assets/art-logo.png', 'assets/icon-16.png', 'assets/icon-32.png',
   'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png',
 ];

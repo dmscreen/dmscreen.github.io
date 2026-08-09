@@ -10,6 +10,7 @@
   /* dark theme (default) */
   --bg: #191512;
   --bg-panel: #211c18;
+  --bg-panel-75: rgba(33, 28, 24, 0.75);   /* lets the watermark show through */
   --bg-raised: #2a241f;
   --bg-hover: #332c26;
   --border: #3d352d;
@@ -33,6 +34,7 @@
 :root[data-theme="light"] {
   --bg: #f3eee5;
   --bg-panel: #faf6ee;
+  --bg-panel-75: rgba(250, 246, 238, 0.75);
   --bg-raised: #ffffff;
   --bg-hover: #ece4d6;
   --border: #d8cdbb;

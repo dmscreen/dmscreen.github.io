@@ -1,5 +1,20 @@
+/* Watermark behind the whole app */
+.bgimage {
+  margin: -10em;
+  position: fixed;
+  z-index: 0;
+  opacity: 0.15;
+  pointer-events: none;
+}
+/* opt out of the global img max-width, and light-up the dark artwork for the
+   dark theme the way the source site does */
+.bgimage img { max-width: none; filter: invert(1); }
+:root[data-theme="light"] .bgimage img { filter: none; }
+
 /* App shell layout: desktop sidebar, mobile bottom tabs */
 #app {
+  position: relative;   /* sit above the watermark */
+  z-index: 1;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   height: 100dvh;
@@ -9,7 +24,7 @@
 
 /* ---------- Sidebar ---------- */
 #sidebar {
-  background: var(--bg-panel);
+  background: var(--bg-panel-75);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;

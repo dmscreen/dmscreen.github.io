@@ -82,7 +82,7 @@ label.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.82re
 label.check { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; }
 
 .card {
-  background: var(--bg-panel);
+  background: var(--bg-panel-75);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 16px;
@@ -282,7 +282,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin-bottom: 6px;
-  background: var(--bg-panel);
+  background: var(--bg-panel-75);
   flex-wrap: wrap;
 }
 .init-row.current { border-color: var(--accent); background: var(--bg-raised); box-shadow: 0 0 0 1px var(--accent); }
