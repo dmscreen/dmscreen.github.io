@@ -32,6 +32,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; marg
 .stepper {
   display: inline-flex;
   align-items: stretch;
+  align-self: flex-start;   /* stay compact inside stretching flex columns */
+  width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
@@ -43,7 +46,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; marg
   background: transparent;
   text-align: center;
   padding: 6px 2px;
+  width: 72px;
   min-width: 0;
+  flex: 1 1 auto;           /* keeps + pinned to the right edge if stretched */
 }
 .stepper input[type="number"]:focus { outline: none; }
 .stepper:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
