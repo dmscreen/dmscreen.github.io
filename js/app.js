@@ -1,9 +1,10 @@
 // App shell: registry, router, nav, campaign switcher.
-import { getPrefs, setPref, ensureCampaign, activeCampaignId, setActiveCampaign, dbPut, onCampaignChange } from './store.js';
+import { getPrefs, setPref, onCampaignChange } from './store.js';
 import { preloadAll } from './srd.js';
-import { el, esc, toast, promptDialog, enhanceNumberInputs, attachHoverSwitch } from './components/ui.js';
+import { el, esc, enhanceNumberInputs, attachHoverSwitch } from './components/ui.js';
 import { icon } from './components/icons.js';
 import { categoryTool } from './components/category.js';
+import { campaignSelect, campaignCard } from './components/campaign.js';
 
 import initiative from './tools/initiative.js';
 import encounters from './tools/encounters.js';
@@ -49,6 +50,8 @@ const session = categoryTool({
 const more = categoryTool({
   id: 'more', title: 'More', icon: 'grid',
   subtitle: 'Tools from around the community',
+  // the sidebar switcher is hidden on mobile, so surface it here instead
+  header: () => campaignCard(),
   tabs: [
     { ...linked, chipLabel: 'Tools' },
     // on desktop these live in the sidebar; the chips only show on mobile
@@ -156,27 +159,9 @@ function renderTabbar() {
 }
 
 async function renderCampaignBar() {
-  const all = await ensureCampaign();
-  const active = activeCampaignId();
   const bar = $('#campaign-bar');
   bar.innerHTML = '';
-  const select = el(`<select aria-label="Campaign">${
-    all.map(c => `<option value="${c.id}" ${c.id === active ? 'selected' : ''}>${esc(c.name)}</option>`).join('')
-  }<option value="__new">+ New campaign...</option></select>`);
-  select.addEventListener('change', async () => {
-    if (select.value === '__new') {
-      promptDialog('New campaign', [{ key: 'name', label: 'Campaign name', value: '' }], async ({ name }) => {
-        if (!name.trim()) return false;
-        const c = await dbPut('campaigns', { name: name.trim(), created: Date.now() });
-        await setActiveCampaign(c.id);
-        toast(`Campaign "${name.trim()}" created`);
-      });
-      select.value = active;
-    } else {
-      await setActiveCampaign(select.value);
-    }
-  });
-  bar.append(select);
+  bar.append(await campaignSelect());
 }
 
 function applyTheme() {
