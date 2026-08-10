@@ -107,6 +107,9 @@
 #app.sidebar-collapsed .sidebar-head .collapse-btn { margin-left: 0; }
 #app.sidebar-collapsed .sidebar-head .logo { display: none; }
 
+/* ---------- Mobile title bar ---------- */
+#topbar { display: none; }
+
 /* ---------- Main ---------- */
 #main {
   overflow-y: auto;
@@ -187,14 +190,25 @@
 }
 
 @media (max-width: 899px) {
-  #app { grid-template-columns: 1fr; }
+  #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   #sidebar { display: none; }
+  #topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel-75);
+  }
+  #topbar .logo { width: 26px; height: 26px; flex: none; color: var(--accent); }
+  #topbar .title { font-family: var(--font-display); font-size: 1.05rem; }
   #tabbar { display: flex; }
   #main { padding: 14px 14px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); }
 }
 
 @media print {
-  #sidebar, #tabbar, #more-sheet { display: none !important; }
+  #sidebar, #tabbar, #more-sheet, #topbar { display: none !important; }
   #app { display: block; height: auto; }
   #main { overflow: visible; }
 }
