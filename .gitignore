@@ -1,3 +1,6 @@
 Trash/
 .DS_Store
 Thumbs.db
+.claude/
+
+claude.md
