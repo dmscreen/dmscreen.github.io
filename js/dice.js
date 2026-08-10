@@ -60,6 +60,14 @@ function detailString(terms) {
   }).join(' ');
 }
 
+// Roll several expressions at once: "3d6+2, 4d6kh3" gives one result per part.
+// Separators are commas or semicolons; a single expression still works.
+export function rollAll(input) {
+  const parts = String(input).split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+  if (!parts.length) throw new Error('Empty roll');
+  return parts.map(roll);
+}
+
 export const d20 = (mod = 0) => roll(`1d20${mod >= 0 ? '+' : ''}${mod}`);
 export const advantage = (mod = 0) => roll(`2d20kh1${mod >= 0 ? '+' : ''}${mod}`);
 export const disadvantage = (mod = 0) => roll(`2d20kl1${mod >= 0 ? '+' : ''}${mod}`);
