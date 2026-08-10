@@ -1,7 +1,6 @@
 // Storage layer: localStorage prefs + IndexedDB records + export/import.
 
 const DB_NAME = 'dmsk';
-const DB_VERSION = 1;
 export const STORES = [
   'campaigns', 'party', 'encounters', 'combats', 'npcs',
   'notes', 'customTables', 'shops', 'calendarEvents', 'misc',
@@ -11,10 +10,12 @@ const PREFS_KEY = 'dmsk:prefs';
 
 let dbPromise = null;
 
-function openDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+// Opening without a version uses whatever version already exists on this
+// device (and creates v1 for a first visit). Upgrades only ever add missing
+// stores, so existing records are never touched.
+function openAt(version) {
+  return new Promise((resolve, reject) => {
+    const req = version ? indexedDB.open(DB_NAME, version) : indexedDB.open(DB_NAME);
     req.onupgradeneeded = () => {
       const db = req.result;
       for (const name of STORES) {
@@ -26,8 +27,58 @@ function openDB() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('Another DM Screen tab is open and holding the database. Close it and reload.'));
   });
+}
+
+// Self-healing open: if a release adds an object store, an existing visitor's
+// database will not have it yet, and every read or write to it would throw
+// NotFoundError. Rather than relying on someone remembering to bump a version
+// constant, detect the gap and upgrade on the spot.
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = (async () => {
+    let db = await openAt();
+    const missing = STORES.filter(s => !db.objectStoreNames.contains(s));
+    if (missing.length) {
+      const next = db.version + 1;
+      db.close();
+      db = await openAt(next);
+    }
+    // another tab upgrading shouldn't leave this one holding a stale handle
+    db.onversionchange = () => { db.close(); dbPromise = null; };
+    db.onclose = () => { dbPromise = null; };
+    return db;
+  })().catch(err => { dbPromise = null; throw err; });
   return dbPromise;
+}
+
+/* ---------- durability ---------- */
+
+// Ask the browser to keep this origin's data instead of evicting it under
+// storage pressure. Chrome grants it silently on engaged sites; Safari and
+// Firefox may ignore or prompt. Safe to call on every load.
+export async function requestPersistence() {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
+
+export async function storageStatus() {
+  const out = { persisted: false, usage: null, quota: null, supported: !!navigator.storage?.estimate };
+  try {
+    if (navigator.storage?.persisted) out.persisted = await navigator.storage.persisted();
+    if (navigator.storage?.estimate) {
+      const { usage, quota } = await navigator.storage.estimate();
+      out.usage = usage ?? null;
+      out.quota = quota ?? null;
+    }
+  } catch { /* leave the defaults */ }
+  return out;
 }
 
 function tx(storeName, mode, fn) {
