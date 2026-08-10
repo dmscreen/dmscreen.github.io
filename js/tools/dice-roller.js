@@ -1,5 +1,5 @@
 // Dice Roller tool.
-import { roll } from '../dice.js';
+import { rollAll } from '../dice.js';
 import { el, esc, toast } from '../components/ui.js';
 import { getState, setState } from '../store.js';
 
@@ -11,7 +11,7 @@ const COMMON = [
 
 export default {
   id: 'dice', title: 'Dice Roller', shortTitle: 'Dice', group: 'Combat', icon: 'd20',
-  subtitle: 'Roll anything: 3d6+2, 4d6kh3, 2d20kl1',
+  subtitle: 'Roll anything, or several at once: 3d6+2, 4d6kh3, 2d20kl1',
 
   async render(container) {
     let history = (await getState('diceHistory', [])) || [];
@@ -23,7 +23,7 @@ export default {
             <div class="roll-result-big" id="roll-total">--</div>
             <div class="roll-detail" id="roll-detail">Roll something</div>
             <div class="row mt">
-              <input type="text" id="dice-expr" class="grow" placeholder="e.g. 3d6+2" autocomplete="off">
+              <input type="text" id="dice-expr" class="grow" placeholder="e.g. 3d6+2  or  3d6+2, 4d6kh3, 2d20kl1" autocomplete="off">
               <button class="btn primary" id="roll-btn">Roll</button>
             </div>
             <div class="row mt" id="quick-btns"></div>
@@ -63,10 +63,23 @@ export default {
 
     const doRoll = async (expr) => {
       try {
-        const r = roll(expr);
-        totalEl.textContent = r.total;
-        detailEl.textContent = `${r.expr} = ${r.detail}`;
-        history.unshift({ expr: r.expr, total: r.total, detail: r.detail });
+        const results = rollAll(expr);
+        if (results.length === 1) {
+          const r = results[0];
+          totalEl.textContent = r.total;
+          detailEl.textContent = `${r.expr} = ${r.detail}`;
+        } else {
+          // one total per expression, plus their sum underneath
+          totalEl.innerHTML = results.map(r => esc(String(r.total))).join('<span class="faint"> &middot; </span>');
+          const sum = results.reduce((a, r) => a + r.total, 0);
+          detailEl.innerHTML = results.map(r =>
+            `<div>${esc(r.expr)} = ${esc(r.detail)} <b>${r.total}</b></div>`).join('') +
+            `<div class="mt"><b>${results.length} rolls, sum ${sum}</b></div>`;
+        }
+        // newest first, but keep the typed left-to-right order reading downward
+        for (const r of [...results].reverse()) {
+          history.unshift({ expr: r.expr, total: r.total, detail: r.detail });
+        }
         history = history.slice(0, 50);
         renderHistory();
         await setState('diceHistory', history);
