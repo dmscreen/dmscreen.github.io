@@ -3,7 +3,7 @@
 import { getPrefs, setPref } from '../store.js';
 import { el, esc, attachHoverSwitch } from './ui.js';
 
-export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
+export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs, header }) {
   let active = null;
   return {
     id, title, shortTitle: shortTitle || title, icon, subtitle, group: title,
@@ -15,9 +15,19 @@ export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs }) {
       if (!usable(tabs.find(t => t.id === tabId))) tabId = tabs.find(usable)?.id || tabs[0].id;
 
       container.innerHTML = `
+        <div data-header></div>
         <div class="row mb" data-chips style="gap:6px"></div>
         <div class="sub muted small mb" data-sub></div>
         <div data-body></div>`;
+      // optional content above the chips (used for the mobile campaign switcher)
+      if (header) {
+        try {
+          const node = await header();
+          if (node) container.querySelector('[data-header]').append(node);
+        } catch (err) {
+          console.error(err);
+        }
+      }
       const chipsEl = container.querySelector('[data-chips]');
       const subEl = container.querySelector('[data-sub]');
       const body = container.querySelector('[data-body]');
