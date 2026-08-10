@@ -1,5 +1,5 @@
 // App shell: registry, router, nav, campaign switcher.
-import { getPrefs, setPref, onCampaignChange } from './store.js';
+import { getPrefs, setPref, onCampaignChange, requestPersistence } from './store.js';
 import { preloadAll } from './srd.js';
 import { el, esc, enhanceNumberInputs, attachHoverSwitch } from './components/ui.js';
 import { icon } from './components/icons.js';
@@ -202,6 +202,9 @@ async function boot() {
   onCampaignChange(async () => { await renderCampaignBar(); route(); });
   window.addEventListener('hashchange', route);
   await route();
+
+  // ask the browser not to evict the campaign data under storage pressure
+  requestPersistence();
 
   // warm all reference data in the background so later page switches are instant
   setTimeout(preloadAll, 400);

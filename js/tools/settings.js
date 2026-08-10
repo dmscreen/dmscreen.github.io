@@ -1,5 +1,5 @@
 // Settings: theme, mobile tabs, campaigns, backup and restore.
-import { getPrefs, setPref, exportAll, exportCampaign, importAll, dbAll, dbPut, dbDelete, activeCampaignId, setActiveCampaign, STORES } from '../store.js';
+import { getPrefs, setPref, exportAll, exportCampaign, importAll, dbAll, dbPut, dbDelete, activeCampaignId, setActiveCampaign, STORES, storageStatus, requestPersistence } from '../store.js';
 import { el, esc, toast, confirmDialog, promptDialog, toggleRow } from '../components/ui.js';
 
 export default {
@@ -31,6 +31,10 @@ export default {
             <button class="btn" id="st-import">Import...</button>
             <input type="file" id="st-file" accept=".json,application/json" style="display:none">
           </div>
+        </div>
+        <div class="card">
+          <h2>Storage health</h2>
+          <div id="st-storage"></div>
         </div>
         <div class="card">
           <h2>About your data</h2>
@@ -98,6 +102,38 @@ export default {
     };
     drawCampaigns();
 
+    const fmtBytes = (n) => {
+      if (n == null) return 'unknown';
+      if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+      return `${(n / 1024 / 1024).toFixed(1)} MB`;
+    };
+
+    const drawStorage = async () => {
+      const box = container.querySelector('#st-storage');
+      if (!box) return;
+      const s = await storageStatus();
+      const last = getPrefs().lastBackup;
+      box.innerHTML = `
+        <p class="small">
+          <span class="pill ${s.persisted ? 'success' : ''}">${s.persisted ? 'Persistent' : 'Best effort'}</span>
+          <span class="muted">${s.persisted
+            ? 'This browser has been asked to keep your data and will not evict it to reclaim space.'
+            : 'The browser may evict this site\'s data if it needs space, or after a long absence on iOS.'}</span>
+        </p>
+        <p class="small muted">Using ${fmtBytes(s.usage)}${s.quota ? ` of about ${fmtBytes(s.quota)} available` : ''}.</p>
+        <p class="small ${last ? 'muted' : ''}">${last
+          ? `Last backup exported ${new Date(last).toLocaleString()}.`
+          : '<b>No backup exported yet.</b> Export one below so a lost browser profile cannot take your campaign with it.'}</p>
+        ${s.persisted ? '' : '<button class="btn small" id="st-persist">Ask browser to keep my data</button>'}
+        <p class="small faint mt">Code updates to the site never clear this data; it lives in your browser, keyed to this address, not in the app files.</p>`;
+      box.querySelector('#st-persist')?.addEventListener('click', async () => {
+        const ok = await requestPersistence();
+        toast(ok ? 'Browser will keep your data' : 'The browser declined; keep exporting backups');
+        drawStorage();
+      });
+    };
+    drawStorage();
+
     const download = (dump, filename) => {
       const blob = new Blob([JSON.stringify(dump, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -111,12 +147,16 @@ export default {
 
     container.querySelector('#st-export').addEventListener('click', async () => {
       download(await exportAll(), `dm-screen-backup-${today()}.json`);
+      setPref('lastBackup', Date.now());
+      drawStorage();
       toast('Full backup downloaded');
     });
 
     container.querySelector('#st-export-campaign').addEventListener('click', async () => {
       const dump = await exportCampaign();
       download(dump, `dm-screen-campaign-${slugify(dump.campaign.name)}-${today()}.json`);
+      setPref('lastBackup', Date.now());
+      drawStorage();
       toast(`Campaign "${dump.campaign.name}" exported`);
     });
 
