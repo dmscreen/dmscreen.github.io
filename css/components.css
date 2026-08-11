@@ -406,6 +406,21 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .beat.clue, .beat.objective { border-left-color: var(--accent); }
 .beat p { margin: 3px 0; }
 .beat-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.story-map {
+  width: 100%;
+  max-height: 340px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel-75);
+  margin-top: 8px;
+}
+.story-map line { stroke: var(--border); stroke-width: 2; }
+.story-map circle { fill: var(--bg-raised); stroke: var(--text-faint); stroke-width: 1.5; }
+.story-map text { fill: var(--text); font-size: 11px; text-anchor: middle; font-family: var(--font-mono); pointer-events: none; }
+.story-map .encounter circle { stroke: var(--danger); stroke-width: 2.5; }
+.story-map .boss circle { stroke: var(--accent); stroke-width: 3; }
+.story-map .treasure circle { stroke: var(--success); stroke-width: 2.5; }
+.story-map .trap circle, .story-map .puzzle circle { stroke: var(--info); stroke-width: 2.5; }
 .npc-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);

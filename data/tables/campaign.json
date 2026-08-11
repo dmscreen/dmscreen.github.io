@@ -695,6 +695,34 @@
     "In the hands of someone who will hand it over for a price the party will not like.",
     "Sealed behind a lock that opens for one person, and that person is dead but not gone."
   ],
+  "openings": [
+    "Session one opens on the road into {hub}, late in the day, with the weather turning. The party shares the last miles with a carter who talks too much, and half of what he says about {region} turns out to matter. The gate is manned by too few people asking too many questions, and somewhere behind the party, out of sight, {villain}'s people are on the same road.",
+    "Start in the common room of the inn at {hub}, the night the news arrives. Let the players order drinks and introduce themselves before the door opens; whoever carries the news is bleeding, and what they say in front of the whole room is the campaign's first clue. Everyone hears it. Not everyone wants it heard.",
+    "Open mid-journey: the party has been travelling through {region} for three days on other business when they find the first sign that something is wrong, blocking the road where it cannot be ignored. {hub} is the nearest place with walls, beds, and answers, and by the time they reach it, word of what they found has somehow arrived first.",
+    "Begin with the job that was supposed to be simple: an escort, a delivery, a survey, paid for by {npc} and worth exactly enough to take. It goes wrong at the edge of {region} in a way that is clearly not an accident, and the survivors' road leads to {hub}.",
+    "Open on the aftermath: the party arrives at a place where {villain}'s people finished their work an hour ago. What is left tells them three things: what was taken, which way they went, and that whoever did it was not worried about being followed. {hub} is where the trail points."
+  ],
+  "characterHooks": [
+    "One PC grew up in {hub} and still owes somebody there; the trouble threatens the person they owe.",
+    "One PC's family signed something generations back that {villain}'s plan touches directly. They find their own surname in the first chapter.",
+    "One PC came to {region} looking for a person who has gone missing, and the trail runs straight through the campaign's chapters.",
+    "One PC served with, apprenticed under, or was saved by {npc}, and it is {npc} who asks for help.",
+    "One PC has a professional interest, a commission from {faction}, a bounty, a scholarly grant, that the campaign keeps paying, until the price changes.",
+    "One PC has met {villain} before, years ago and under another name, and will be recognised.",
+    "One PC's god, order, or teacher sent them here with instructions that made no sense at the time and are starting to.",
+    "One PC is from {region} and left for a reason; the campaign is the reason, older and larger than they knew."
+  ],
+  "clockTriggers": [
+    "the party spends a full week on downtime, rest, or unhurried travel",
+    "a chapter ends with its site alerted but not cleared",
+    "a named NPC dies who did not have to",
+    "the party publicly refuses or crosses {faction}",
+    "a lieutenant escapes a fight alive",
+    "the party leaves a mandatory chapter unfinished to go elsewhere",
+    "an objective item is found by the party and then lost, traded, or taken",
+    "the party's names reach {villain} through a survivor or a spy"
+  ],
+
   "npcConnections": [
     "Owes {npc} money and will not discuss it.",
     "Is the only person in {hub} that {npc} actually trusts.",

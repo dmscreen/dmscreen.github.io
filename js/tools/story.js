@@ -174,6 +174,34 @@ export default {
 
     const creatureLink = (c) => `<a href="javascript:void 0" data-mon="${esc(c.slug)}">${esc(c.name)}</a>`;
 
+    // A rough plan of the site: nodes laid out on a staggered grid with the
+    // exit connections drawn between them. Not a battle map, just enough that
+    // the DM does not have to sketch the graph from an exits list.
+    const mapSVG = (elt) => {
+      const ns = elt.nodes || [];
+      if (ns.length < 3) return '';
+      const cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(ns.length * 1.6))));
+      const pos = ns.map((n, i) => ({
+        x: 50 + (i % cols) * 100 + ((Math.floor(i / cols) % 2) ? 50 : 0),
+        y: 45 + Math.floor(i / cols) * 85,
+      }));
+      const idx = new Map(ns.map((n, i) => [n.id, i]));
+      const w = 100 + cols * 100;
+      const h = 45 + Math.ceil(ns.length / cols) * 85;
+      const lines = ns.flatMap((n, i) => n.exits.map(e => {
+        const j = idx.get(e);
+        return j == null ? '' : `<line x1="${pos[i].x}" y1="${pos[i].y}" x2="${pos[j].x}" y2="${pos[j].y}"/>`;
+      })).join('');
+      const dots = ns.map((n, i) => `<g class="mn ${esc(n.role)}">
+        <circle cx="${pos[i].x}" cy="${pos[i].y}" r="17"/>
+        <text x="${pos[i].x}" y="${pos[i].y + 4}">${esc(n.id)}</text>
+        <title>${esc(n.id)}: ${esc(n.roleLabel)}</title></g>`).join('');
+      return `<svg class="story-map" viewBox="0 0 ${w} ${h}" role="img" aria-label="Site plan">${lines}${dots}</svg>
+        <p class="small faint">Site plan: red rings are encounters, gold is the lair, green is treasure, blue is a trap or puzzle. Hover an area for its role.</p>`;
+    };
+
+    const leaderHTML = (b) => !b.leader ? '' : `<p class="small"><b>Led by</b> ${esc(b.leader.name)}${b.leader.statSuggestion ? `, use <a href="javascript:void 0" data-mon="${esc(b.leader.statSuggestion.slug)}">${esc(b.leader.statSuggestion.name)}</a> (CR ${esc(b.leader.statSuggestion.cr)})` : ''}${b.leader.note ? `. ${esc(b.leader.note)}` : ''}</p>`;
+
     const encounterHTML = (b) => `
       <div class="beat encounter">
         <div class="beat-head"><b>${esc(b.title)}</b>
@@ -182,6 +210,7 @@ export default {
           <button class="btn small" data-run="${esc(JSON.stringify(b.creatures))}">Run</button>
         </div>
         <p>${b.creatures.map(c => `${c.count} x ${creatureLink(c)} <span class="small faint">CR ${esc(c.cr)}</span>`).join(', ')}</p>
+        ${leaderHTML(b)}
         <p class="small"><b>Objective</b> ${esc(b.objective)}<br>
           <b>Tactics</b> ${esc(b.tactics)}<br>
           <b>Morale</b> ${esc(b.morale)}<br>
@@ -224,7 +253,7 @@ export default {
         ${elt.alerts ? `<p class="small"><b>Alert state</b> ${esc(elt.alerts)}</p>` : ''}
         ${elt.freeClues?.length ? `<p class="small"><b>Clues placed here</b> ${elt.freeClues.map(esc).join(' / ')}</p>` : ''}`;
 
-      if (elt.type === 'dungeon') return `${head}<div class="mt">${nodesHTML(elt)}</div>`;
+      if (elt.type === 'dungeon') return `${head}${mapSVG(elt)}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
         <div class="grid-2 mt">
@@ -264,21 +293,26 @@ export default {
       <span class="small faint">${esc(n.ancestry)} ${esc(n.occupation)}${n.where ? `, ${esc(n.where)}` : ''}</span>
       <p class="small">${esc(n.personality)}; ${esc(n.quirk)}.<br>
         <b>Wants</b> ${esc(n.wants)}<br>
-        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}</p></div>`;
+        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p></div>`;
 
     const chapterHTML = (ch) => `
       <h2>${ch.index}. ${esc(ch.title)}</h2>
       <p class="muted">${esc(ch.roleLabel)}, level ${ch.levelGate}, ${ch.mandatory ? 'mandatory' : 'optional'}. ${esc(ch.summary)}</p>
+      ${ch.lieutenant ? `<p class="small"><span class="pill danger">lieutenant</span> ${esc(ch.lieutenant)} commands here; see the boss encounter below.</p>` : ''}
       <div class="grid-2 mt">
         <div class="card"><h3>Getting them here</h3><p class="small">${esc(ch.entry)}</p></div>
         <div class="card"><h3>If they walk away</h3><p class="small">${esc(ch.stakes)}</p></div>
       </div>
+      ${ch.milestone ? `<p class="small"><b>Leveling</b> ${esc(ch.milestone)}</p>` : ''}
       ${ch.objective ? `<div class="card"><h3>${esc(ch.objective.name)}</h3><p class="small">${esc(ch.objective.note)}</p></div>` : ''}
+      ${ch.board?.length ? `<div class="card"><h3>Work available from here</h3>
+        <p class="small faint">These are optional and order-free; let the players pick.</p>
+        ${ch.board.map(b => `<p class="small"><a href="javascript:void 0" data-ch="${esc(b.id)}"><b>${esc(b.title)}</b></a> <span class="pill">${esc(b.role)}, level ${b.level}</span><br>${esc(b.entry)}</p>`).join('')}</div>` : ''}
       <h3>Elements</h3>
       ${ch.elements.map(e => `<p><a href="javascript:void 0" data-el="${esc(e.id)}"><b>${esc(e.title)}</b></a> <span class="pill">${esc(e.subtitle)}</span><br><span class="small muted">${esc(e.summary)}</span></p>`).join('')}
-      ${ch.link ? `<div class="card link-card"><h3>Leads to ${esc(ch.link.toTitle)}</h3>
+      ${ch.link ? `<div class="card link-card"><h3>${esc(ch.link.heading)}</h3>
         <p class="small">${esc(ch.link.summary)}</p>
-        <ul class="small">${ch.link.clues.map(c => `<li>${esc(c.text)} <span class="faint">(${esc(c.placement)})</span></li>`).join('')}</ul>
+        <ul class="small">${ch.link.clues.map(c => `<li>${esc(c.text)} <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
         <p class="small faint">Three independent pointers, so one missed roll never strands the party.</p></div>`
         : '<div class="card"><h3>This is the last chapter</h3><p class="small">See Endings for how it can land.</p></div>'}`;
 
@@ -293,6 +327,11 @@ export default {
           <span class="pill">${esc(c.pattern.label)}</span>
         </div>
         <p class="small muted mt">${esc(c.pattern.note)}</p>
+        ${c.opening ? `<div class="card"><h3>Opening the campaign</h3><p class="small">${esc(c.opening)}</p></div>` : ''}
+        ${c.playerHooks?.length ? `<div class="card"><h3>Character hooks, hand these to the players</h3>
+          <ul class="small">${c.playerHooks.map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
+        <div class="card"><h3>Running it</h3>
+          <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters assume four PCs at the chapter's level, so nudge counts up or down for other party sizes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p></div>
         <div class="grid-2 mt">
           <div class="card"><h3>The region</h3>
             <p class="small"><b>${esc(c.region.name)}</b>, ${esc(c.region.label)}. Base of operations: <b>${esc(c.hub)}</b>.</p>
@@ -311,7 +350,7 @@ export default {
     const villainHTML = () => {
       const v = campaign.villain;
       return `<h2>${esc(v.name)}, ${esc(v.title)}</h2>
-        <p class="muted">${esc(v.ancestry)} ${esc(v.kind)}${v.statSuggestion ? `. Run them with <a href="javascript:void 0" data-mon="${esc(v.statSuggestion.slug)}">${esc(v.statSuggestion.name)}</a> (CR ${esc(v.statSuggestion.cr)})` : ''}.</p>
+        <p class="muted">${esc(v.ancestry)} ${esc(v.kind)}${v.statSuggestion ? `. Run them with <a href="javascript:void 0" data-mon="${esc(v.statSuggestion.slug)}">${esc(v.statSuggestion.name)}</a> (CR ${esc(v.statSuggestion.cr)})` : ''}.${v.where ? ` Waiting at <b>${esc(v.where)}</b>.` : ''}</p>
         <div class="grid-2">
           <div class="card"><h3>Goal</h3><p class="small">${esc(v.goal)}</p>
             <h3>Method</h3><p class="small">${esc(v.method)}</p></div>
@@ -319,7 +358,7 @@ export default {
             <h3>Weakness</h3><p class="small">${esc(v.weakness)}</p></div>
         </div>
         <div class="card"><h3>Lieutenants</h3>
-          ${v.lieutenants.map(l => `<p class="small"><b>${esc(l.name)}</b> (${esc(l.ancestry)}) - ${esc(l.note)}${l.statSuggestion ? `. Use <a href="javascript:void 0" data-mon="${esc(l.statSuggestion.slug)}">${esc(l.statSuggestion.name)}</a>, CR ${esc(l.statSuggestion.cr)}` : ''}</p>`).join('')}</div>
+          ${v.lieutenants.map(l => `<p class="small"><b>${esc(l.name)}</b> (${esc(l.ancestry)}) - ${esc(l.note)}${l.statSuggestion ? `. Use <a href="javascript:void 0" data-mon="${esc(l.statSuggestion.slug)}">${esc(l.statSuggestion.name)}</a>, CR ${esc(l.statSuggestion.cr)}` : ''}${l.where ? `. Found at <b>${esc(l.where)}</b>` : ''}</p>`).join('')}</div>
         <div class="card"><h3>Schedule, if the party does nothing</h3>
           <ol class="small">${v.timeline.map(t => `<li><b>${esc(t.when)}:</b> ${esc(t.move)}</li>`).join('')}</ol></div>`;
     };
@@ -330,7 +369,8 @@ export default {
         ${campaign.factions.map(f => `<p class="small"><b>${esc(f.name)}</b> <span class="pill">${esc(f.attitude)}</span><br>
           Wants to ${esc(f.goal)}. Offers ${esc(f.offers)}. Demands ${esc(f.demands)}.</p>`).join('')}</div>
       <div class="card"><h3>Clocks</h3>
-        ${campaign.clocks.map(k => `<p class="small"><b>${esc(k.label)}</b> ${'&#9633;'.repeat(k.segments)} ${k.global ? '<span class="pill accent">campaign</span>' : ''}<br>${esc(k.onFill)}</p>`).join('')}</div>
+        ${campaign.clocks.map(k => `<p class="small"><b>${esc(k.label)}</b> ${'&#9633;'.repeat(k.segments)} ${k.global ? '<span class="pill accent">campaign</span>' : ''}<br>${esc(k.onFill)}</p>
+        ${k.advances?.length ? `<ul class="small faint">${k.advances.map(a => `<li>Advance a segment when ${esc(a)}</li>`).join('')}</ul>` : ''}`).join('')}</div>
       <div class="card"><h3>${esc(campaign.region.name)}</h3>
         <p class="small">${esc(campaign.region.label)}. Terrain: ${campaign.region.terrain.map(esc).join(', ')}.</p>
         <ul class="small">${campaign.region.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
