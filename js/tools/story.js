@@ -325,6 +325,8 @@ export default {
         <button class="btn small ${isDone(ch) ? 'primary' : ''}" data-done="${esc(ch.id)}">${isDone(ch) ? 'Completed &#10003; (click to unmark)' : 'Mark chapter complete'}</button>
         <button class="btn small" data-reroll="${esc(ch.id)}" title="Replace this chapter with a fresh roll; clues, objectives and leaders re-seat themselves">Reroll this chapter</button>
       </div>
+      ${ch.scene ? playerBox(esc(ch.scene), 'Read aloud, setting the scene') : ''}
+      ${ch.playerGoal ? playerBox(`<b>The goal, as the party understands it:</b> ${esc(ch.playerGoal)}`, 'Players know') : ''}
       ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
       ${ch.lieutenant ? `<p class="small"><span class="pill danger">lieutenant</span> ${esc(ch.lieutenant)} commands here; see the boss encounter below.</p>` : ''}
       <div class="grid-2 mt">
@@ -432,8 +434,7 @@ export default {
           ${k.advances?.length ? `<ul class="small faint">${k.advances.map(a => `<li>Advance a segment when ${esc(a)}</li>`).join('')}</ul>` : ''}`;
         }).join('')}</div>
       <div class="card"><h3>${esc(campaign.region.name)}</h3>
-        <p class="small">${esc(campaign.region.label)}. Terrain: ${campaign.region.terrain.map(esc).join(', ')}.</p>
-        <ul class="small">${campaign.region.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
+        <p class="small">${esc(campaign.region.label)}. Terrain: ${campaign.region.terrain.map(esc).join(', ')}. Landmarks are listed on the overview.</p></div>`;
 
     const actHTML = (act) => `
       <h2>${esc(act.title)}</h2>

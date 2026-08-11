@@ -756,6 +756,96 @@
     "Sign, not contact: something has been dragged through here since the party last looked."
   ],
 
+  "chapterScenes": {
+    "ambush": [
+      "The road out here is older than the kingdom, and it shows: worn cobbles, leaning mile-stones, hedges grown high enough to hide anything. You have been walking it long enough to stop watching the hedges. That is, of course, when the first arrow comes.",
+      "It is a good day for travel, which you will remember later with some bitterness. The road narrows where a stream cuts under it, the trees lean close, and the birdsong stops all at once, the way it does when something else got there first.",
+      "Carts pass you heading the other way, more of them than seems right, and none of the drivers will meet your eyes. A mile on, you find the reason: the road ahead is blocked, and the people blocking it have been waiting for someone. Possibly you."
+    ],
+    "arrival": [
+      "{region} announces itself slowly: the fields get thinner, the shrines get more frequent, and the people you pass stop asking where you are headed and start telling you to turn around. By the time you understand what they meant, the road behind you is no longer an option.",
+      "You cross into {region} in the late afternoon, and the country changes under you like a held breath. Whatever is wrong here has been wrong for a while; you can read it in the unharvested fields and the doors that close as you pass.",
+      "The last waypost before {region} has been painted over with a single word of warning. Past it, the land is beautiful and quiet and entirely too empty, and the way you came in does not look like it plans to let you back out."
+    ],
+    "hub": [
+      "{hub} appears around the last bend: walls that have been repaired more often than built, smoke from a hundred chimneys, and a gate that is open but watched. Whatever else is happening in {region}, this is where people still gather, trade, argue, and hope. It will do for a base. It may have to.",
+      "You reach {hub} as the light goes, and the town takes you in the way towns like this do: warily, then all at once. There are beds here, and work, and people who know more than they say. The talk in the taproom stops when you enter, and starts again a note lower.",
+      "{hub} is busier than a town this size should be, and more frightened. Refugee carts in the market square, notices three deep on the board, and a watch that checks faces at the gate. Somebody here knows what is going on. Probably several somebodies, and they will not all tell the same story."
+    ],
+    "site": [
+      "{place} is exactly where the directions said it would be, which is somehow worse. It sits in the land like a splinter, older than everything around it, and the path to it is more worn than an abandoned place has any right to be.",
+      "You smell {place} before you see it: cold air, old stone, something underneath both. The locals gave it a wide berth for generations and the land shows it, the fields ending in a clean line a half mile out, as if by agreement.",
+      "Whatever {place} was built for, it was built to last, and it has: through weather, war, and abandonment, down to this moment, with you standing at the edge of it deciding which way in. There are tracks here newer than any story about the place."
+    ],
+    "event": [
+      "Some days announce themselves as trouble from the first bell. This is not one of them. It is ordinary right up until it is not, and when it turns, it turns fast, in front of witnesses, with everything you care about in the room.",
+      "You had plans for today. So did everyone else involved, which is precisely the problem: too many intentions in one place, all of them on a schedule, and yours is the only party that has not rehearsed.",
+      "It begins with a crowd, the way these things do: everyone looking at the same thing, nobody yet understanding it. You have perhaps a minute of that confusion to spend before the situation notices you back."
+    ],
+    "region": [
+      "The maps of {region} agree on the towns and argue about everything in between. You are heading into the in-between: days of open country, weather with opinions, and the knowledge that out here, help is whatever you brought with you.",
+      "The road gives out a day past the last farm, and after that {region} is track, ford, and guesswork. It is beautiful country, if you can keep your eyes off the tree line long enough to notice.",
+      "Setting out across {region} feels less like travel and more like trespass. The country watches. Old cairns mark turnings nobody takes anymore, and the silence has a settled, proprietary quality, as if you are the first noise in years."
+    ],
+    "investigation": [
+      "The facts do not fit, and everyone you ask arranges them differently. Somebody in this tangle is lying, somebody is mistaken, and at least one person is telling the truth to the wrong people. The only way through is to pull a thread and follow it.",
+      "It would be easier if there were a monster. Monsters are simple. What you have instead is a town full of accounts that almost agree, a timeline with a hole in it, and the growing certainty that the hole is person-shaped.",
+      "Start with what you know for certain, which is not much: something happened, someone arranged it, and the arranging took money, access, and nerve. Money leaves ledgers. Access leaves keys. Nerve leaves witnesses."
+    ],
+    "climax": [
+      "Every road you have taken, every clue carried out of the dark, every name traded and favour spent, has pointed here: {place}. It stands ahead of you exactly as terrible as the stories said, and somewhere inside it, this ends, one way or the other.",
+      "There is no ceremony to arriving at {place}. The land simply runs out of other things to be, and there it is: the last place, the one under all the others. You have what you have, you know what you know, and the door is not locked. It was left open for you.",
+      "{place} has known you were coming for longer than you have. That is the plain truth of it, and you can feel it in the stillness as you approach: not the quiet of emptiness, but the quiet of something that has finished its preparations."
+    ]
+  },
+  "chapterGoals": {
+    "ambush": [
+      "Survive the road, and find out who wanted you stopped badly enough to pay for it.",
+      "Get through in one piece, then follow whoever attacked you back to wherever they sleep.",
+      "Protect what you are travelling with, and take at least one attacker able to answer questions."
+    ],
+    "arrival": [
+      "Find out what has gone wrong in {region}, and find shelter before dark does.",
+      "Reach safety, learn the shape of the trouble here, and discover why the way back is closed.",
+      "Get your bearings, find who is still willing to talk, and work out what this country is so afraid of."
+    ],
+    "hub": [
+      "Make {hub} yours: find lodging, find work, and find out who actually knows what is happening.",
+      "Learn who runs {hub}, who fears whom, and which of the rumours in the taproom is worth chasing.",
+      "Set up a base in {hub}, earn enough trust to be told the truth, and pick your first road out."
+    ],
+    "site": [
+      "Get into {place}, learn what {villainTitle} wants with it, and get out with proof.",
+      "Find out why {place} matters to the enemy, and take away whatever it is they are protecting there.",
+      "Clear {place}, or at least come back knowing what is inside and what it will cost to finish."
+    ],
+    "event": [
+      "Keep the worst from happening in front of you, and be seen to be on the right side of it.",
+      "See it through with the fewest people hurt, and come away knowing who arranged it.",
+      "Hold your nerve, protect who you can, and turn the day to your advantage."
+    ],
+    "region": [
+      "Cross {region} with your supplies, your health, and everyone you started with.",
+      "Get across the open country alive, and learn the land well enough to cross it again in a hurry.",
+      "Make the far side of {region} before the weather or the wildlife makes the decision for you."
+    ],
+    "investigation": [
+      "Follow the clues to a name you can prove, in front of people with the power to act on it.",
+      "Find out who is behind it, how it was done, and where the trail goes next.",
+      "Sort truth from rumour, name the guilty, and do not let the trail go cold while you argue."
+    ],
+    "climax": [
+      "End it: face {villainTitle} in {place}, and finish what the whole road has been leading to.",
+      "Get to the heart of {place}, stop {villainTitle} before the last piece falls into place, and get out alive.",
+      "Bring everything you have learned to bear, break {villainTitle}'s design, and decide what {region} becomes after."
+    ]
+  },
+  "goalObjectiveHints": [
+    "Word in {hub} says one of the {objects} is hidden somewhere here.",
+    "If the stories are true, a {object} waits inside, and the enemy knows it too.",
+    "The rumours agree on one thing: a {object} is here, for whoever reaches it first."
+  ],
+
   "npcConnections": [
     "Owes {npc} money and will not discuss it.",
     "Is the only person in {hub} that {npc} actually trusts.",

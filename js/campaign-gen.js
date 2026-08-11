@@ -531,6 +531,14 @@ function makeChapter(ctx, { roleId, level, index }) {
   const hookPool = index === 1 ? C.entryHooks.filter(h => !h.includes('previous chapter')) : C.entryHooks;
   chapter.entry = fill(pick(hookPool), ctx.slots);
   chapter.stakes = fill(pick(C.exitStakes), ctx.slots);
+
+  // Every chapter opens with a player-facing scene and a goal stated in the
+  // players' terms. Both use the villain's epithet, never the name, so they
+  // stay sayable even when the premise keeps the villain hidden.
+  const sceneSlots = { ...ctx.slots, place: chapter.title };
+  chapter.scene = fill(pick(C.chapterScenes[roleDef.build] || C.chapterScenes.site), sceneSlots);
+  chapter.playerGoal = fill(pick(C.chapterGoals[roleDef.build] || C.chapterGoals.site), sceneSlots);
+
   chapter.index = index;
   return chapter;
 }
@@ -657,8 +665,9 @@ function stripChain(chapters) {
 }
 
 // Drop an objective item into a chapter: last keyed area of its first mapped
-// element, or the element itself when there are no nodes.
-function placeObjectiveItem(item, ch) {
+// element, or the element itself when there are no nodes. The chapter's
+// player-facing goal picks up a rumour-level hint that the item is here.
+function placeObjectiveItem(ctx, item, ch) {
   item.chapterId = ch.id;
   item.chapterTitle = ch.title;
   ch.objective = item;
@@ -666,6 +675,9 @@ function placeObjectiveItem(item, ch) {
   const node = el.nodes?.length ? el.nodes[el.nodes.length - 1] : null;
   if (node) node.beats.push({ id: uid('beat'), kind: 'objective', title: item.name, text: item.note });
   else (el.objectiveNote ||= []).push(`${item.name}: ${item.note}`);
+  if (ch.playerGoal && !ch.playerGoal.includes(ctx.slots.object)) {
+    ch.playerGoal += ` ${fill(pick(ctx.C.goalObjectiveHints), { ...ctx.slots, place: ch.title })}`;
+  }
 }
 
 // The toughest fight in a chapter, preferring a boss chamber outright.
@@ -836,7 +848,7 @@ export async function generateCampaign(opts = {}) {
       reaction: fill(pick(C.objectiveReactions), { ...slots, place: ch.title }),
     };
     objective.items.push(item);
-    placeObjectiveItem(item, ch);
+    placeObjectiveItem(ctx, item, ch);
   });
 
   // Villain, lieutenants, and a schedule that runs whether the party shows up.
@@ -1022,7 +1034,7 @@ export async function rerollChapter(campaign, chapterId) {
   assignTravel(ctx, fresh, idx);
 
   const item = campaign.objective.items.find(it => it.chapterId === old.id);
-  if (item) placeObjectiveItem(item, fresh);
+  if (item) placeObjectiveItem(ctx, item, fresh);
 
   if (isClimax) {
     const spot = leadBeatOf(fresh);
@@ -1139,6 +1151,8 @@ export function campaignMarkdown(c) {
     L.push('', `## ${act.title} (level ${act.levelGate}+)`, '');
     for (const ch of act.chapters) {
       L.push(`### ${ch.index}. ${ch.title}`, '', `*${ch.roleLabel}, level ${ch.levelGate}${ch.mandatory ? ', mandatory' : ', optional'}*`, '', ch.summary, '');
+      if (ch.scene) L.push(`> **Setting the scene (read aloud):** ${ch.scene}`, '');
+      if (ch.playerGoal) L.push(`> **The goal, as the party understands it:** "${ch.playerGoal}"`, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
       if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
