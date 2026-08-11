@@ -6,6 +6,7 @@ import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter } from '../campaign-gen.js';
 import { launchCombat } from './encounters.js';
+import { getParty } from './party.js';
 
 const PATTERNS = [
   ['', 'Shape: let the premise decide'],
@@ -28,6 +29,12 @@ export default {
     const bySlug = new Map(monsters.map(m => [m.slug, m]));
     let items = null; // lazy, only needed when a magic item is clicked
 
+    // Encounters are budgeted for the real table, so read it from the Party
+    // Tracker: average level and head count, both overridable.
+    const party = await getParty();
+    const partyLevel = party.length ? Math.round(party.reduce((a, p) => a + (p.level || 1), 0) / party.length) : 1;
+    const partySize = party.length || 4;
+
     let record = null;   // the saved dbAll('stories') row: { id, data, progress }
     let campaign = null; // record.data
     let selection = { kind: 'overview' };
@@ -40,10 +47,13 @@ export default {
         <p class="small muted">One press builds the whole book: a premise, an antagonist with a schedule, factions, clocks, acts and chapters, keyed dungeons with encounters and treasure, settlements with rosters and rumours, and three separate clues in every chapter pointing at the next one.</p>
         <div class="row mt" style="align-items:flex-end">
           <div id="sg-length"></div>
+          <label class="field" title="Defaults from your Party Tracker"><span>Starting level</span><input type="number" id="sg-level" min="1" max="20" value="${partyLevel}" style="width:70px"></label>
+          <label class="field" title="Defaults from your Party Tracker"><span>Party size</span><input type="number" id="sg-size" min="1" max="8" value="${partySize}" style="width:70px"></label>
           <label class="field"><span>Shape</span><select id="sg-pattern">${PATTERNS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
           <label class="field"><span>Premise</span><select id="sg-premise"><option value="">Surprise me</option></select></label>
           <button class="btn primary" id="sg-go" style="font-size:1.05rem;padding:10px 18px">Generate campaign</button>
         </div>
+        <p class="small faint" style="margin-top:6px">Level and size default from your Party Tracker; every encounter in the campaign is budgeted against them.</p>
         <div id="sg-saved" class="mt"></div>
       </div>
       <div id="sg-out"></div>`;
@@ -51,9 +61,9 @@ export default {
     const out = container.querySelector('#sg-out');
 
     const length = toggleRow('Length', [
-      { value: 'short', label: 'Short (1-5)' },
-      { value: 'standard', label: 'Standard (1-10)' },
-      { value: 'epic', label: 'Epic (1-15)' },
+      { value: 'short', label: 'Short (5 levels)' },
+      { value: 'standard', label: 'Standard (10 levels)' },
+      { value: 'epic', label: 'Epic (15 levels)' },
     ], (await getState('storyLength')) || 'standard', (v) => setState('storyLength', v));
     container.querySelector('#sg-length').append(length.el);
 
@@ -110,6 +120,8 @@ export default {
       try {
         const c = await generateCampaign({
           length: length.get(),
+          startLevel: Number(container.querySelector('#sg-level').value) || 1,
+          partySize: Number(container.querySelector('#sg-size').value) || 4,
           pattern: container.querySelector('#sg-pattern').value || undefined,
           premiseId: container.querySelector('#sg-premise').value || undefined,
         });
@@ -318,6 +330,18 @@ export default {
         <b>Wants</b> ${esc(n.wants)}<br>
         <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}</div>`;
 
+    // Walk the story in order without going back to the tree.
+    const chapterNavHTML = (ch) => {
+      const chs = campaign.acts.flatMap(a => a.chapters);
+      const i = chs.findIndex(x => x.id === ch.id);
+      const prev = chs[i - 1], next = chs[i + 1];
+      return `<div class="row" style="margin-top:14px">
+        ${prev ? `<button class="btn small" data-ch="${esc(prev.id)}">&larr; ${ch.index - 1}. ${esc(prev.title)}</button>` : ''}
+        <span style="margin-left:auto"></span>
+        ${next ? `<button class="btn small" data-ch="${esc(next.id)}">${ch.index + 1}. ${esc(next.title)} &rarr;</button>` : ''}
+      </div>`;
+    };
+
     const chapterHTML = (ch) => `
       <h2>${ch.index}. ${esc(ch.title)}</h2>
       <p class="muted">${esc(ch.roleLabel)}, level ${ch.levelGate}, ${ch.mandatory ? 'mandatory' : 'optional'}. ${esc(ch.summary)}</p>
@@ -348,7 +372,8 @@ export default {
         <p class="small">${esc(ch.link.summary)}</p>
         <ul class="small">${ch.link.clues.map(c => `<li><span class="player-inline">${esc(c.text)}</span> <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
         <p class="small faint">Three independent pointers, so one missed roll never strands the party.</p></div>`
-        : '<div class="card"><h3>This is the last chapter</h3><p class="small">See Endings for how it can land.</p></div>'}`;
+        : '<div class="card"><h3>This is the last chapter</h3><p class="small">See Endings for how it can land.</p></div>'}
+      ${chapterNavHTML(ch)}`;
 
     const progressLine = () => {
       const chapters = campaign.acts.flatMap(a => a.chapters);
@@ -370,8 +395,14 @@ export default {
         ${c.opening ? `<div class="card"><h3>Opening the campaign</h3><p class="small">${esc(c.opening)}</p></div>` : ''}
         ${c.playerHooks?.length ? `<div class="card"><h3>Character hooks</h3>
           ${playerBox(`<ul class="small" style="margin:0">${c.playerHooks.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`, 'Hand to players')}</div>` : ''}
+        <div class="card"><h3>The story, in order</h3>
+          <p class="small faint">The whole tale chapter by chapter, each with the goal as the players will hear it. Click any step to open it.</p>
+          <ol class="small">${c.acts.flatMap(a => a.chapters).map(ch => `<li>
+            <a href="javascript:void 0" data-ch="${esc(ch.id)}"><b>${esc(ch.title)}</b></a>
+            ${ch.mandatory ? '' : '<span class="pill">optional</span>'}${isDone(ch) ? ' <span class="pill success">done</span>' : ''}<br>
+            <span class="muted">${esc(ch.playerGoal || ch.summary)}</span></li>`).join('')}</ol></div>
         <div class="card"><h3>Running it</h3>
-          <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters assume four PCs at the chapter's level, so nudge counts up or down for other party sizes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
+          <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters are budgeted for a party of ${c.gen?.partySize || 4} at each chapter's level, so nudge counts up or down if the table changes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
           <p class="small"><span class="facing player">Read aloud</span> boxed blue text is safe to say or show to the players verbatim. <span class="facing dm">DM only</span> fenced blocks are spoilers: secrets, solutions, and the true/false of things. Everything unmarked is ordinary working material, worded for you rather than for them.</p></div>
         <div class="grid-2 mt">
           <div class="card"><h3>The region</h3>

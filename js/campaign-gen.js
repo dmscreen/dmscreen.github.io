@@ -87,10 +87,11 @@ function buildPools(monsters, villainKind, terrain) {
 const inBand = (m, level, spread = 2) =>
   m.cr <= level + spread && m.cr >= (level <= 3 ? 0 : (level - 1) / 4);
 
-// One combat encounter budgeted against a party of four at this level.
-function buildEncounter(pool, level, difficulty = 2) {
+// One combat encounter budgeted against the actual party at this level.
+function buildEncounter(pool, level, difficulty = 2, partySize = 4) {
   const lvl = Math.min(20, Math.max(1, level));
-  const budget = XP_THRESHOLDS[lvl][difficulty] * 4;
+  const size = Math.min(8, Math.max(1, partySize));
+  const budget = XP_THRESHOLDS[lvl][difficulty] * size;
   let band = pool.filter(m => inBand(m, lvl) && monsterXP(m) <= budget);
   if (!band.length) band = pool.filter(m => monsterXP(m) <= budget);
   if (!band.length) return null;
@@ -100,7 +101,7 @@ function buildEncounter(pool, level, difficulty = 2) {
   const leadXP = monsterXP(lead) || 10;
   let count = 1;
   for (let c = 8; c >= 1; c--) {
-    if (leadXP * c * encounterMultiplier(c, 4) <= budget * 1.1) { count = c; break; }
+    if (leadXP * c * encounterMultiplier(c, size) <= budget * 1.1) { count = c; break; }
   }
 
   const creatures = [{ slug: lead.slug, name: lead.name, cr: fmtCR(lead.cr), count }];
@@ -108,7 +109,7 @@ function buildEncounter(pool, level, difficulty = 2) {
 
   // Spend leftover budget on a smaller supporting group, which reads more like
   // a published encounter than one block of identical monsters.
-  const spent = () => Math.round(raw * encounterMultiplier(creatures.reduce((a, c) => a + c.count, 0), 4));
+  const spent = () => Math.round(raw * encounterMultiplier(creatures.reduce((a, c) => a + c.count, 0), size));
   if (chance(0.45)) {
     const minions = band.filter(m => m.slug !== lead.slug && monsterXP(m) <= Math.max(25, leadXP / 3));
     if (minions.length) {
@@ -116,7 +117,7 @@ function buildEncounter(pool, level, difficulty = 2) {
       const mXP = monsterXP(minion) || 10;
       for (let n = int(2, 5); n >= 2; n--) {
         const total = raw + mXP * n;
-        const adj = Math.round(total * encounterMultiplier(count + n, 4));
+        const adj = Math.round(total * encounterMultiplier(count + n, size));
         if (adj <= budget * 1.25) {
           creatures.push({ slug: minion.slug, name: minion.name, cr: fmtCR(minion.cr), count: n });
           raw = total;
@@ -248,7 +249,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   if (kind.alerts || nodes.length >= 10) {
     wandering = Array.from({ length: 6 }, (_, i) => {
       if (i < 3) return { range: String(i + 1), text: pick(C.wanderingSigns) };
-      const enc = buildEncounter(pool, level, i < 5 ? 0 : 1);
+      const enc = buildEncounter(pool, level, i < 5 ? 0 : 1, ctx.partySize);
       return {
         range: String(i + 1),
         text: enc ? enc.creatures.map(c => `${c.count} x ${c.name}`).join(' and ') : 'nothing, this time',
@@ -275,7 +276,7 @@ function makeBeat(ctx, kindId, { level, pool, boss, items }) {
   const { C } = ctx;
   if (kindId === 'combat') {
     const diff = boss ? 3 : pick([1, 2, 2, 2, 3]);
-    const enc = buildEncounter(pool, boss ? level + 1 : level, diff);
+    const enc = buildEncounter(pool, boss ? level + 1 : level, diff, ctx.partySize);
     if (!enc) return null;
     return {
       id: uid('beat'),
@@ -358,7 +359,7 @@ function makeRegion(ctx, { title, level, pool }) {
   const { C, region } = ctx;
   const legs = some(C.regionLegs, 2).map(l => ({ ...l, complication: fill(l.complication, ctx.slots) }));
   const table = Array.from({ length: 6 }, (_, i) => {
-    const enc = buildEncounter(pool, level, i < 3 ? 0 : 1);
+    const enc = buildEncounter(pool, level, i < 3 ? 0 : 1, ctx.partySize);
     return {
       range: `${i + 1}`,
       text: enc ? enc.creatures.map(c => `${c.count} x ${c.name}`).join(' and ') : 'no encounter',
@@ -381,7 +382,7 @@ function makeRegion(ctx, { title, level, pool }) {
 function makeEvent(ctx, { title, level, pool, kindId }) {
   const { C } = ctx;
   const def = kindId ? C.eventElements.find(e => e.kind === kindId) || pick(C.eventElements) : pick(C.eventElements);
-  const enc = buildEncounter(pool, level, 3);
+  const enc = buildEncounter(pool, level, 3, ctx.partySize);
   return {
     id: uid('el'),
     type: 'event',
@@ -446,7 +447,6 @@ function makeChapter(ctx, { roleId, level, index }) {
     mandatory: ['opening_ambush', 'opening_arrival', 'hub_town', 'climax_dungeon', 'reconverge_event'].includes(roleId),
     elements: [],
     npcs: [],
-    clues: [],
   };
 
   switch (roleDef.build) {
@@ -606,7 +606,6 @@ function chainChapters(ctx, chapters) {
       }
       placements.push(clue);
     });
-    ch.clues = placements;
     ch.link = {
       toId: targets[0].id,
       toTitle: targets[0].title,
@@ -654,7 +653,6 @@ function stripChain(chapters) {
   for (const ch of chapters) {
     ch.board = undefined;
     ch.link = null;
-    ch.clues = [];
     for (const el of ch.elements) {
       el.freeClues = undefined;
       for (const node of el.nodes || []) {
@@ -751,9 +749,14 @@ export async function generateCampaign(opts = {}) {
   const region = C.regionKinds[premise.regionKind];
   const villainKind = C.villainKinds[pick(premise.villainKinds)];
 
+  // Level range and party size come from the table that will actually play
+  // it: the start level defaults from the Party Tracker in the UI, and every
+  // encounter budget in the campaign is computed against this party.
   const length = opts.length || 'standard';
-  const startLevel = opts.startLevel || (length === 'short' ? 1 : 1);
-  const endLevel = length === 'short' ? 5 : length === 'epic' ? 15 : 10;
+  const span = length === 'short' ? 4 : length === 'epic' ? 14 : 9;
+  const startLevel = Math.min(20, Math.max(1, Number(opts.startLevel) || 1));
+  const endLevel = Math.min(20, startLevel + span);
+  const partySize = Math.min(8, Math.max(1, Number(opts.partySize) || 4));
 
   const usedNames = new Set();
   const usedPlaces = new Set();
@@ -790,7 +793,7 @@ export async function generateCampaign(opts = {}) {
     next: climaxName,
   };
 
-  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName, partySize };
 
   // The patron exists before anything else so that every {npc} slot resolves
   // to a person who is actually in the campaign, seated in the hub roster,
@@ -973,7 +976,7 @@ export async function generateCampaign(opts = {}) {
       premiseId: premise.id,
       patternId,
       villainKindId: Object.keys(C.villainKinds).find(k => C.villainKinds[k] === villainKind),
-      length, startLevel, endLevel,
+      length, startLevel, endLevel, partySize,
     },
     slots: { ...slots },
   };
@@ -1010,7 +1013,7 @@ export async function rerollChapter(campaign, chapterId) {
   const usedPlaces = new Set([campaign.hub, campaign.region.name]);
   allChapters.forEach(c => { if (c !== old) { usedPlaces.add(c.title); c.elements.forEach(e => usedPlaces.add(e.title)); } });
 
-  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, partySize: gen.partySize || 4 };
   ctx.recurringPatron = campaign.appendices.npcs.find(n => n.roleId === 'patron') || null;
   // the climax keeps its name: half the campaign's lore already points at it
   if (isClimax) ctx.climaxName = old.title;
@@ -1114,7 +1117,7 @@ export function playerHandoutMarkdown(c) {
 export function campaignMarkdown(c) {
   const L = [];
   L.push(`# ${c.title}`, '', `*${c.logline}*`, '');
-  L.push(`**Tone** ${c.tone.join(', ')} | **Levels** ${c.levelRange.start}-${c.levelRange.end} | **Sessions** ${c.sessions} | **Pattern** ${c.pattern.label}`, '');
+  L.push(`**Tone** ${c.tone.join(', ')} | **Levels** ${c.levelRange.start}-${c.levelRange.end} (party of ${c.gen?.partySize || 4}) | **Sessions** ${c.sessions} | **Pattern** ${c.pattern.label}`, '');
   L.push(`**Region** ${c.region.name} (${c.region.label}). **Base** ${c.hub}.`, '');
   L.push(`> **How to read this book:** blockquoted or "quoted" text is player-facing, written to be read aloud or found. Everything else is for the DM, and lines marked *(DM only)* are spoilers even at a shared table.`, '');
   if (c.opening) L.push(`## Opening the campaign`, '', c.opening, '');
