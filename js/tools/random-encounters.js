@@ -1,11 +1,11 @@
 // Random Encounter Engine: terrain + party level -> a balanced surprise.
-import { loadMonsters, monsterXP, encounterMultiplier, fmtCR } from '../srd.js';
+import { loadMonsters, fmtCR } from '../srd.js';
 import { dbAll, activeCampaignId } from '../store.js';
 import { el, esc, toast, showStatBlock } from '../components/ui.js';
 import { historyList, timeStamp } from '../components/history.js';
-import { roll, pick, rollTable } from '../dice.js';
+import { roll, rollTable } from '../dice.js';
 import { getParty } from './party.js';
-import { difficultyFor, launchCombat } from './encounters.js';
+import { launchCombat, rollRandomEncounter } from './encounters.js';
 
 export default {
   id: 'random-encounters', title: 'Random Encounters', shortTitle: 'Random', group: 'Travel', icon: 'compass',
@@ -87,34 +87,18 @@ export default {
       const env = container.querySelector('#re-env').value;
       const level = Math.min(20, Math.max(1, Number(container.querySelector('#re-level').value) || 3));
       const diffIdx = Number(container.querySelector('#re-diff').value);
-      const partyForMath = party.length ? party : Array.from({ length: 4 }, () => ({ level }));
 
-      const { thresholds } = difficultyFor(partyForMath, 0);
-      const budget = thresholds[diffIdx]; // medium/hard target adjusted XP
+      const enc = rollRandomEncounter(monsters, party, { env, level, diffIdx });
+      if (!enc) { toast('No monsters fit that terrain and budget', 'danger'); return; }
+      const { monster: m, count, adjusted, label, partySize } = enc;
 
-      const pool = monsters.filter(m =>
-        (!env || m.environments.includes(env)) &&
-        monsterXP(m) > 0 &&
-        monsterXP(m) <= budget
-      );
-      if (!pool.length) { toast('No monsters fit that terrain and budget', 'danger'); return; }
-
-      // Weight toward CRs that matter at this level
-      const m = pick(pool.filter(x => monsterXP(x) >= budget / 12) .length ? pool.filter(x => monsterXP(x) >= budget / 12) : pool);
-      const xp = monsterXP(m) || 10;
-      let count = 1;
-      for (let c = 8; c >= 1; c--) {
-        if (xp * c * encounterMultiplier(c, partyForMath.length) <= budget * 1.15) { count = c; break; }
-      }
-      const adjusted = Math.round(xp * count * encounterMultiplier(count, partyForMath.length));
-      const { label } = difficultyFor(partyForMath, adjusted);
       lastEncounter = { monster: m, count };
       history.add({ slug: m.slug, name: m.name, count, cr: fmtCR(m.cr), label, env });
 
       resultEl.innerHTML = '';
       const card = el(`<div class="card">
         <h2>${count} x <a href="javascript:void 0" id="re-mon">${esc(m.name)}</a></h2>
-        <p class="muted">CR ${fmtCR(m.cr)} each. ${adjusted.toLocaleString()} adjusted XP: <b>${label}</b> for a party of ${partyForMath.length} (level ${level}).</p>
+        <p class="muted">CR ${fmtCR(m.cr)} each. ${adjusted.toLocaleString()} adjusted XP: <b>${label}</b> for a party of ${partySize} (level ${level}).</p>
         <div class="row mt">
           <button class="btn primary" id="re-run">Run it in the initiative tracker</button>
           <button class="btn" id="re-reroll">Re-roll</button>

@@ -1,11 +1,24 @@
 // Initiative / Combat Tracker.
 import { getState, setState } from '../store.js';
-import { loadMonsters, loadConditions, abilityMod } from '../srd.js';
+import { loadMonsters, loadConditions, abilityMod, fmtCR } from '../srd.js';
 import { el, esc, toast, confirmDialog, modal, promptDialog, showStatBlock, searchInput } from '../components/ui.js';
 import { roll } from '../dice.js';
 import { getParty } from './party.js';
+import { rollRandomEncounter } from './encounters.js';
 
 const EMPTY = () => ({ combatants: [], round: 0, turnIndex: 0, started: false });
+
+// Five static rows behind the empty-state message: a hint at the shape the
+// tracker takes once it has combatants. Deliberately not animated, since
+// nothing is actually loading.
+const SKELETON = () => el(`<div class="init-skeleton">
+  ${Array.from({ length: 5 }, () => `<div class="skel-row">
+    <span class="skel skel-init"></span>
+    <span class="skel skel-name"></span>
+    <span class="skel skel-hp"></span>
+  </div>`).join('')}
+  <div class="empty-state"><p>No combatants. Add your party and monsters, or build an encounter in the Encounter Builder and hit "Run".</p></div>
+</div>`);
 
 export default {
   id: 'initiative', title: 'Initiative Tracker', shortTitle: 'Initiative', group: 'Combat', icon: 'shield',
@@ -15,6 +28,9 @@ export default {
     let state = (await getState('combat')) || EMPTY();
     let monsters = null; // lazy
     const save = () => setState('combat', state);
+
+    container.innerHTML = '<div id="i-encounter"></div><div id="i-body"></div>';
+    const body = container.querySelector('#i-body');
 
     const sortCombatants = () => {
       state.combatants.sort((a, b) => (b.init ?? -99) - (a.init ?? -99) || (b.initMod ?? 0) - (a.initMod ?? 0));
@@ -59,7 +75,7 @@ export default {
         if (idx !== -1) state.turnIndex = idx;
         else if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
       }
-      container.innerHTML = '';
+      body.innerHTML = '';
 
       const controls = el(`<div class="row mb" style="align-items:center">
         <button class="btn primary" id="i-next">${state.started ? 'Next turn' : 'Start combat'}</button>
@@ -68,14 +84,12 @@ export default {
         <button class="btn" id="i-add-pc">+ Party</button>
         <button class="btn" id="i-add-mon">+ Monster</button>
         <button class="btn" id="i-add-custom">+ Custom</button>
-        <button class="btn" id="i-roll-init" title="Roll initiative for monsters without one">Roll NPCs</button>
+        <button class="btn" id="i-roll-init" title="Roll (or re-roll) initiative for every monster and NPC">Roll NPCs</button>
         <button class="btn danger" id="i-end">End combat</button>
       </div>`);
-      container.append(controls);
+      body.append(controls);
 
-      if (!state.combatants.length) {
-        container.append(el(`<div class="empty-state"><p>No combatants. Add your party and monsters, or build an encounter in the Encounter Builder and hit "Run".</p></div>`));
-      }
+      if (!state.combatants.length) body.append(SKELETON());
 
       state.combatants.forEach((c, idx) => {
         const isCurrent = state.started && idx === state.turnIndex;
@@ -117,7 +131,7 @@ export default {
           c.conditions.splice(Number(b.dataset.cond), 1); save(); draw();
         }));
         row.querySelector('[data-menu]').addEventListener('click', () => combatantMenu(c));
-        container.append(row);
+        body.append(row);
       });
 
       const hpDialog = (c, sign) => {
@@ -254,16 +268,106 @@ export default {
         });
       });
 
+      // Rolls every non-PC combatant, including ones that already have a
+      // number: monsters are added with initiative pre-rolled, so a
+      // blanks-only pass looked like a dead button.
       controls.querySelector('#i-roll-init').addEventListener('click', () => {
-        for (const c of state.combatants) {
-          if (c.type === 'monster' && c.init == null) {
-            c.init = roll(`1d20${c.initMod >= 0 ? '+' : ''}${c.initMod}`).total;
-          }
+        const npcs = state.combatants.filter(c => c.type !== 'pc');
+        if (!npcs.length) return toast('No monsters or NPCs to roll for', 'danger');
+        for (const c of npcs) {
+          const mod = Number(c.initMod) || 0;
+          c.init = roll(`1d20${mod >= 0 ? '+' : ''}${mod}`).total;
         }
         save(); draw();
+        toast(`Rolled initiative for ${npcs.length} ${npcs.length === 1 ? 'NPC' : 'NPCs'}`);
       });
     };
 
+    /* ---------- encounter tile ---------- */
+
+    // The same roller as Travel > Random, but here the result is added to the
+    // tracker rather than replacing whatever fight is already running.
+    const drawEncounterTile = async () => {
+      const host = container.querySelector('#i-encounter');
+      const party = await getParty();
+      const level = party.length
+        ? Math.round(party.reduce((a, p) => a + (p.level || 1), 0) / party.length)
+        : 3;
+
+      host.innerHTML = `<div class="card">
+        <h2>Roll an encounter</h2>
+        <div class="row">
+          <label class="field grow"><span>Terrain</span>
+            <select id="ie-env"><option value="">Any terrain</option></select></label>
+          <label class="field"><span>Party level</span>
+            <input type="number" id="ie-level" value="${level}" min="1" max="20" style="width:70px"></label>
+          <label class="field"><span>Difficulty</span><select id="ie-diff">
+            <option value="1">Easy</option><option value="2" selected>Medium</option><option value="3">Hard</option>
+          </select></label>
+          <button class="btn primary" id="ie-roll">Roll</button>
+        </div>
+        <div id="ie-out"></div>
+      </div>`;
+
+      const out = host.querySelector('#ie-out');
+      const envSel = host.querySelector('#ie-env');
+
+      // fill terrains once the monster list is in memory; the button works
+      // before then, it just defaults to any terrain
+      monsters ??= await loadMonsters();
+      const envs = [...new Set(monsters.flatMap(m => m.environments))].sort();
+      envSel.insertAdjacentHTML('beforeend', envs.map(e => `<option>${esc(e)}</option>`).join(''));
+
+      const rollOne = () => {
+        const enc = rollRandomEncounter(monsters, party, {
+          env: envSel.value,
+          level: Math.min(20, Math.max(1, Number(host.querySelector('#ie-level').value) || 3)),
+          diffIdx: Number(host.querySelector('#ie-diff').value),
+        });
+        if (!enc) return toast('No monsters fit that terrain and budget', 'danger');
+        const { monster: m, count, adjusted, label, partySize } = enc;
+
+        out.innerHTML = '';
+        const res = el(`<div class="mt">
+          <p><b>${count} x <a href="javascript:void 0" data-sb>${esc(m.name)}</a></b>
+            <span class="pill">CR ${fmtCR(m.cr)}</span> <span class="pill">${esc(label)}</span></p>
+          <p class="small muted">${adjusted.toLocaleString()} adjusted XP for a party of ${partySize}.</p>
+          <div class="row">
+            <button class="btn primary" data-add>Add to initiative</button>
+            <button class="btn" data-reroll>Re-roll</button>
+          </div>
+        </div>`);
+        res.querySelector('[data-sb]').addEventListener('click', () => showStatBlock(m));
+        res.querySelector('[data-reroll]').addEventListener('click', rollOne);
+        res.querySelector('[data-add]').addEventListener('click', () => {
+          addMonsters(m, count);
+          toast(`Added ${count} x ${m.name} to the tracker`);
+        });
+        out.append(res);
+      };
+
+      host.querySelector('#ie-roll').addEventListener('click', rollOne);
+    };
+
+    // Append to the tracker instead of starting over, so an encounter can
+    // reinforce a fight that is already under way.
+    const addMonsters = (monster, count) => {
+      const initMod = abilityMod(monster.dex);
+      let n = state.combatants.filter(c => c.slug === monster.slug).length;
+      for (let i = 0; i < count; i++) {
+        n++;
+        state.combatants.push({
+          id: crypto.randomUUID(), type: 'monster', slug: monster.slug,
+          name: n > 1 || count > 1 ? `${monster.name} ${n}` : monster.name,
+          ac: monster.ac, hp: monster.hp, maxHp: monster.hp, initMod,
+          init: roll(`1d20${initMod >= 0 ? '+' : ''}${initMod}`).total,
+          conditions: [], concentration: false,
+        });
+      }
+      save(); draw();
+    };
+
     draw();
+    drawEncounterTile();
   },
 };

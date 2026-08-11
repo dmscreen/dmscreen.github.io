@@ -2,7 +2,7 @@
 import { loadMonsters, fmtCR, monsterXP, XP_THRESHOLDS, encounterMultiplier, abilityMod } from '../srd.js';
 import { dbAll, dbPut, dbDelete, activeCampaignId, setState, getState } from '../store.js';
 import { el, esc, toast, confirmDialog, showStatBlock, searchInput, promptDialog } from '../components/ui.js';
-import { roll } from '../dice.js';
+import { roll, pick } from '../dice.js';
 import { getParty } from './party.js';
 
 export async function launchCombat(monsterEntries) {
@@ -45,6 +45,30 @@ export function difficultyFor(party, adjustedXP) {
   else if (adjustedXP >= t[1]) label = 'Medium';
   else if (adjustedXP >= t[0]) label = 'Easy';
   return { label, thresholds: t };
+}
+
+// Roll one random encounter sized to the party's XP budget. Shared by
+// Travel > Random and the Initiative tracker's encounter tile, so both build
+// fights the same way. Returns null when nothing fits the terrain and budget.
+export function rollRandomEncounter(monsters, party, { env = '', level = 3, diffIdx = 2 } = {}) {
+  const partyForMath = party.length ? party : Array.from({ length: 4 }, () => ({ level }));
+  const budget = difficultyFor(partyForMath, 0).thresholds[diffIdx];
+
+  const pool = monsters.filter(m =>
+    (!env || m.environments.includes(env)) && monsterXP(m) > 0 && monsterXP(m) <= budget);
+  if (!pool.length) return null;
+
+  // Weight toward CRs that matter at this level rather than a swarm of rats
+  const meaty = pool.filter(x => monsterXP(x) >= budget / 12);
+  const monster = pick(meaty.length ? meaty : pool);
+  const xp = monsterXP(monster) || 10;
+  let count = 1;
+  for (let c = 8; c >= 1; c--) {
+    if (xp * c * encounterMultiplier(c, partyForMath.length) <= budget * 1.15) { count = c; break; }
+  }
+  const adjusted = Math.round(xp * count * encounterMultiplier(count, partyForMath.length));
+  const { label } = difficultyFor(partyForMath, adjusted);
+  return { monster, count, adjusted, label, partySize: partyForMath.length, level, env };
 }
 
 const DIFF_PILL = { Trivial: '', Easy: 'success', Medium: 'info', Hard: 'accent', Deadly: 'danger' };
