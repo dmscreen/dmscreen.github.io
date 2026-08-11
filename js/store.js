@@ -4,6 +4,7 @@ const DB_NAME = 'dmsk';
 export const STORES = [
   'campaigns', 'party', 'encounters', 'combats', 'npcs',
   'notes', 'customTables', 'shops', 'calendarEvents', 'misc',
+  'stories',
 ];
 const SCHEMA_VERSION = 1;
 const PREFS_KEY = 'dmsk:prefs';
