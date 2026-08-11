@@ -1,0 +1,719 @@
+{
+  "_note": "Content library for the campaign generator. Text fields use {slots} filled from the campaign context: {villain} {villainTitle} {faction} {region} {hub} {place} {next} {npc} {object} {objects} {monster} {motif} {material} {name}.",
+
+  "premises": [
+    {
+      "id": "sundered-crown",
+      "title": "The Sundered Crown",
+      "logline": "The old king's crown was broken into three and buried apart for good reason. {villain} has found the first piece.",
+      "tone": ["heroic", "mythic"],
+      "themes": ["the cost of legacy", "what the dead are owed"],
+      "villainKinds": ["necromancer", "warlord", "cult_leader"],
+      "objective": { "noun": "Crown Shard", "plural": "Crown Shards", "count": 3, "why": "Reforged, the crown commands every soul buried under the border forts.", "ifLost": "{villain} wears a crown of bone, and four centuries of dead soldiers stand up at once." },
+      "clock": { "label": "The Crown Reforged", "segments": 8, "onFill": "The third shard is set. The barrow-line wakes." },
+      "regionKind": "borderland",
+      "patterns": ["funnel_to_hub", "branch_reconverge"]
+    },
+    {
+      "id": "drowning-bell",
+      "title": "The Drowning Bell",
+      "logline": "A bell no one can find rings under the water every night, and each time it does, {region} loses another mile of coast.",
+      "tone": ["eerie", "elegiac"],
+      "themes": ["a debt coming due", "the sea keeps its promises"],
+      "villainKinds": ["aberrant_mind", "cult_leader", "fey_bargainer"],
+      "objective": { "noun": "Tide Anchor", "plural": "Tide Anchors", "count": 3, "why": "Three anchors were sunk to hold the bell silent. Two have already been cut loose.", "ifLost": "The bell rings without stopping and the water takes the harbour towns in a single night." },
+      "clock": { "label": "The Water Rises", "segments": 6, "onFill": "The last anchor parts. High tide never goes out again." },
+      "regionKind": "coast",
+      "patterns": ["gated_sandbox", "hub_and_spoke"]
+    },
+    {
+      "id": "long-winter",
+      "title": "The Long Winter",
+      "logline": "Winter came early to {region} and has not moved since. Something is holding it in place on purpose.",
+      "tone": ["survival", "grim"],
+      "themes": ["scarcity", "who gets to be saved"],
+      "villainKinds": ["fey_bargainer", "giant_king", "aberrant_mind"],
+      "objective": { "noun": "Hearth Ember", "plural": "Hearth Embers", "count": 3, "why": "Three embers were carried out of the first fire. Rekindled together, they break any season held by force.", "ifLost": "The frost line reaches the lowlands and does not stop at the sea." },
+      "clock": { "label": "The Deepening Frost", "segments": 8, "onFill": "The last road out of {region} closes under forty feet of snow." },
+      "regionKind": "highland",
+      "patterns": ["gated_sandbox", "hexcrawl_mega"]
+    },
+    {
+      "id": "hollow-succession",
+      "title": "The Hollow Succession",
+      "logline": "The heir to {region} died three months ago. Someone is still wearing them, and the coronation is in six weeks.",
+      "tone": ["intrigue", "paranoid"],
+      "themes": ["who is real", "power without a face"],
+      "villainKinds": ["doppelganger_ring", "devil_broker", "cult_leader"],
+      "objective": { "noun": "Proof", "plural": "Proofs", "count": 3, "why": "Three pieces of evidence, taken together, unmake the impostor in front of witnesses who matter.", "ifLost": "The crown is placed on a thing that is not a person, and every noble house signs its name under it." },
+      "clock": { "label": "Days to the Coronation", "segments": 6, "onFill": "The coronation proceeds. The court belongs to {villain}." },
+      "regionKind": "heartland",
+      "patterns": ["act_structure", "node_investigation"]
+    },
+    {
+      "id": "green-flood",
+      "title": "The Green Flood",
+      "logline": "The forest has crossed the old boundary stones for the first time in nine hundred years, and it is not stopping at the fields.",
+      "tone": ["wild", "ominous"],
+      "themes": ["the world reclaiming itself", "bargains nobody remembers making"],
+      "villainKinds": ["fey_bargainer", "aberrant_mind", "cult_leader"],
+      "objective": { "noun": "Boundary Stone", "plural": "Boundary Stones", "count": 3, "why": "Three stones still stand. Re-cut and re-sworn, they hold the treaty line.", "ifLost": "The treaty is void. Everything built inside the old wood goes back to the wood." },
+      "clock": { "label": "The Wood Advances", "segments": 8, "onFill": "The last boundary stone is swallowed. {hub} has three days." },
+      "regionKind": "forest",
+      "patterns": ["hub_and_spoke", "hexcrawl_mega"]
+    },
+    {
+      "id": "ash-covenant",
+      "title": "The Ash Covenant",
+      "logline": "A contract signed a hundred years ago is being called in, and the collectors have started at the smallest villages in {region}.",
+      "tone": ["dark", "legalistic"],
+      "themes": ["inherited guilt", "the fine print"],
+      "villainKinds": ["devil_broker", "cult_leader", "necromancer"],
+      "objective": { "noun": "Signatory Seal", "plural": "Signatory Seals", "count": 3, "why": "Three seals authenticate the contract. Break them and the whole covenant is unenforceable.", "ifLost": "The debt is collected in full. Every soul named in the ledger is carried off on the same night." },
+      "clock": { "label": "The Ledger Closes", "segments": 6, "onFill": "The account is settled. {hub} is empty by morning." },
+      "regionKind": "heartland",
+      "patterns": ["node_investigation", "branch_reconverge"]
+    },
+    {
+      "id": "wyrm-tithe",
+      "title": "The Wyrm's Tithe",
+      "logline": "{villain} has begun taking a tithe from {region}: first gold, then livestock, and this season, people.",
+      "tone": ["classic", "escalating"],
+      "themes": ["tyranny by degrees", "the courage of small places"],
+      "villainKinds": ["dragon_tyrant", "warlord", "giant_king"],
+      "objective": { "noun": "Oath-Token", "plural": "Oath-Tokens", "count": 3, "why": "Three neighbouring powers each hold a token of the old alliance. Bring them together and there is an army instead of a rout.", "ifLost": "{region} pays the tithe every season forever, and the price only goes up." },
+      "clock": { "label": "The Next Tithe", "segments": 8, "onFill": "The tithe is collected. {hub} loses a generation." },
+      "regionKind": "highland",
+      "patterns": ["funnel_to_hub", "branch_reconverge"]
+    },
+    {
+      "id": "quiet-plague",
+      "title": "The Quiet Plague",
+      "logline": "People in {region} are not dying. They are forgetting, a little more each week, and something is eating what they lose.",
+      "tone": ["eerie", "tragic"],
+      "themes": ["identity", "what a place is without its memory"],
+      "villainKinds": ["aberrant_mind", "cult_leader", "doppelganger_ring"],
+      "objective": { "noun": "Remembrance", "plural": "Remembrances", "count": 3, "why": "Three objects still hold true memory of what is being erased. They are the only evidence that will survive.", "ifLost": "Nobody in {region} can remember there was ever anything wrong." },
+      "clock": { "label": "The Forgetting", "segments": 8, "onFill": "{hub} forgets its own name, and the maps go blank." },
+      "regionKind": "heartland",
+      "patterns": ["node_investigation", "gated_sandbox"]
+    },
+    {
+      "id": "iron-road",
+      "title": "The Iron Road",
+      "logline": "An army is marching a road that was not there last spring, and it runs straight through {region} to something older than the war.",
+      "tone": ["martial", "urgent"],
+      "themes": ["what war is actually for", "small people under big wheels"],
+      "villainKinds": ["warlord", "devil_broker", "giant_king"],
+      "objective": { "noun": "Road-Nail", "plural": "Road-Nails", "count": 3, "why": "The road is held down by three nails driven at its bends. Pull them and the road unmakes itself.", "ifLost": "The road reaches the gate it was built for, and what is behind that gate comes out." },
+      "clock": { "label": "The Column Advances", "segments": 6, "onFill": "The vanguard reaches the gate at the road's end." },
+      "regionKind": "borderland",
+      "patterns": ["branch_reconverge", "act_structure"]
+    },
+    {
+      "id": "buried-star",
+      "title": "The Buried Star",
+      "logline": "Something fell in {region} a long time ago and was covered over carefully. The digging started again this spring.",
+      "tone": ["weird", "cosmic"],
+      "themes": ["curiosity as a fault", "some doors were shut for us"],
+      "villainKinds": ["aberrant_mind", "cult_leader", "necromancer"],
+      "objective": { "noun": "Warding Key", "plural": "Warding Keys", "count": 3, "why": "Three keys turn the seal. All three must turn, and only from the outside.", "ifLost": "The seal opens from the inside instead, and {region} is the first thing it sees." },
+      "clock": { "label": "The Dig Deepens", "segments": 8, "onFill": "The excavation reaches the hull, and the light goes wrong for sixty miles." },
+      "regionKind": "wasteland",
+      "patterns": ["hexcrawl_mega", "gated_sandbox"]
+    }
+  ],
+
+  "villainKinds": {
+    "necromancer": {
+      "label": "necromancer",
+      "titles": ["the Pale Archivist", "Keeper of the Ninth Register", "the Grave-Warden", "the Unquiet Chancellor"],
+      "types": ["undead", "construct"],
+      "keywords": ["skeleton", "zombie", "ghoul", "wight", "wraith", "specter", "ghost", "revenant", "lich", "shadow"],
+      "goals": ["to finish a resurrection that was interrupted a century ago", "to prove that death is an administrative error and correct it", "to raise an army that never needs feeding, then present the bill"],
+      "methods": ["opening old battlefields and pressing what is under them into service", "buying corpses through a shell company of undertakers", "seeding graveyards with a slow contagion of animation"],
+      "resources": ["a charter house of grave-robbers", "three barrow-fields already emptied", "a ledger of every burial in {region} for two hundred years"],
+      "weaknesses": ["the anchoring phylactery is hidden but immobile", "the binding on their servants is spoken aloud, and can be answered aloud", "they cannot bear to destroy a record, even an incriminating one"],
+      "lieutenants": ["a wight who was a magistrate and still holds court", "a mortician who prepares the risen and hates them", "a child-shaped thing that carries the ledger"]
+    },
+    "cult_leader": {
+      "label": "cult leader",
+      "titles": ["the Voice of the Ninth Hour", "First Among the Kneeling", "the Hollow Shepherd", "Mouth of the Deep Choir"],
+      "types": ["fiend", "aberration", "monstrosity"],
+      "keywords": ["cult", "priest", "acolyte", "fanatic", "demon", "devil", "aberration", "tentacle"],
+      "goals": ["to complete a rite that has needed eight hundred participants and finally has them", "to bring their patron partway into the world, feet first", "to be the last person their god ever has to speak to"],
+      "methods": ["converting the desperate faster than the region can replace them", "buying up shrines and quietly changing what is worshipped in them", "staging miracles that cost exactly one life each"],
+      "resources": ["a congregation that includes the town watch", "a shrine network across four settlements", "a patron that answers, sometimes"],
+      "weaknesses": ["the rite requires their voice, so silence them and it stalls", "half the congregation is coerced, not converted", "their patron is impatient and punishes delay"],
+      "lieutenants": ["a former inquisitor who converted mid-interrogation", "a smiling almoner who buys children's silence with bread", "the celebrant who has read further than they were meant to"]
+    },
+    "warlord": {
+      "label": "warlord",
+      "titles": ["the Bannerless", "Hammer of the Long Reach", "the Iron Steward", "Marshal of Ash"],
+      "types": ["humanoid", "giant"],
+      "keywords": ["orc", "hobgoblin", "gnoll", "bugbear", "goblin", "bandit", "knight", "veteran", "berserker", "ogre"],
+      "goals": ["to take and hold {region} before the spring thaw makes it defensible", "to force a border that no treaty will be able to argue with", "to build the state that exiled them a rival they cannot ignore"],
+      "methods": ["taking the granaries first and the walls later", "hiring every free company within a hundred miles", "making examples of exactly one settlement per month"],
+      "resources": ["four companies of drilled infantry", "a siege train moving slower than the rumours about it", "a quartermaster who has never lost a supply column"],
+      "weaknesses": ["the army is loyal to pay, not to them", "their supply line crosses one bridge", "they will not refuse a formal challenge in front of their officers"],
+      "lieutenants": ["a scout captain who is quietly negotiating with the other side", "a siege engineer who loves the work more than the cause", "a standard-bearer who believes every word"]
+    },
+    "dragon_tyrant": {
+      "label": "dragon",
+      "titles": ["the Tithe-Taker", "Old Weight", "the Sleeping Assessor", "Crownsmoke"],
+      "types": ["dragon"],
+      "keywords": ["dragon", "kobold", "drake", "wyvern", "dragonborn"],
+      "goals": ["to formalise a protection racket into an actual sovereignty", "to grow the hoard past the point where anyone could buy them out", "to be owed something by every living thing in {region}"],
+      "methods": ["taxing through intermediaries who take the blame", "burning one holding a season as a demonstration", "cultivating a client aristocracy that depends on them"],
+      "resources": ["a lair no army has found", "a network of kobold assessors and clerks", "two noble houses already in their pocket"],
+      "weaknesses": ["vanity, and an inability to let an insult stand", "a hoard-item they will abandon a battle to protect", "they honour the exact letter of a bargain even when it ruins them"],
+      "lieutenants": ["a human factor who does the collecting and the lying", "a kobold archivist with the whole ledger memorised", "a knight who lost and now serves"]
+    },
+    "fey_bargainer": {
+      "label": "fey power",
+      "titles": ["the Thirteenth Guest", "Lady of the Unpaid Debt", "the Smiling Creditor", "Him Who Was Not Invited"],
+      "types": ["fey", "plant", "beast"],
+      "keywords": ["dryad", "satyr", "hag", "sprite", "pixie", "blink", "green", "treant", "boar", "wolf", "redcap"],
+      "goals": ["to collect on a promise made by people three generations dead", "to move the boundary of their court a few miles further every year", "to be given, freely, the one thing they cannot simply take"],
+      "methods": ["offering exactly what each person most wants, at a price paid later", "twisting old local customs into binding contract law", "making the seasons a negotiating position"],
+      "resources": ["every crossroads oath sworn in {region} for a century", "a court that finds the whole affair delightful", "the ability to be somewhere else instantly"],
+      "weaknesses": ["they cannot lie outright, only mislead", "iron, salt, and a guest-right honoured properly", "their true name, written down by someone who was there"],
+      "lieutenants": ["a mortal steward who has been sixteen for forty years", "a hag who handles the paperwork and enjoys it", "a knight of thorns bound by a promise they regret"]
+    },
+    "aberrant_mind": {
+      "label": "aberration",
+      "titles": ["the Attending Thought", "That Which Counts", "the Guest Beneath", "the Long Consideration"],
+      "types": ["aberration", "monstrosity", "ooze"],
+      "keywords": ["aboleth", "beholder", "mind flayer", "grell", "otyugh", "cloaker", "chuul", "slaad", "gibbering", "intellect"],
+      "goals": ["to finish thinking a thought that requires the whole region as scratch paper", "to make a place where its rules apply instead of the ones already here", "to be understood, once, by anything at all"],
+      "methods": ["editing what people remember rather than what they do", "spreading through wells, dreams, and shared meals", "recruiting brilliant people by answering their favourite question"],
+      "resources": ["a population that no longer trusts its own recollection", "thralls in every trade including the temple", "geometry that does not agree with the map"],
+      "weaknesses": ["it does not understand deception performed badly on purpose", "its influence thins in running water and in daylight", "one thrall was left deliberately unedited, as a control"],
+      "lieutenants": ["a physician who has been prescribing the contagion", "a cartographer redrawing the region to match", "a thrall who is aware and cannot say so"]
+    },
+    "devil_broker": {
+      "label": "infernal broker",
+      "titles": ["Factor of the Ninth Desk", "the Notary", "Underwriter of Small Sins", "the Auditor"],
+      "types": ["fiend", "construct"],
+      "keywords": ["devil", "imp", "hell", "erinyes", "cambion", "demon", "quasit", "chain"],
+      "goals": ["to call in a century-old covenant on schedule and under budget", "to establish enforceable infernal contract law in a mortal jurisdiction", "to earn a promotion measured in souls per quarter"],
+      "methods": ["buying debts nobody else wants and consolidating them", "arranging accidents that are technically breaches of contract", "hiring mortal lawyers who are very good and completely unaware"],
+      "resources": ["a chain of signed instruments going back four generations", "a compliant magistrate", "an office nobody can find twice"],
+      "weaknesses": ["a genuine procedural error voids the instrument", "they must state the terms truthfully when asked directly", "they cannot break their own contract, even to win"],
+      "lieutenants": ["a mortal solicitor with excellent handwriting", "an imp that handles filing and blackmail", "a repentant co-signatory who wants out"]
+    },
+    "giant_king": {
+      "label": "giant lord",
+      "titles": ["the Stone-Sworn", "Jarl of the Broken Ordning", "the Uphill King", "Bearer of the Old Measure"],
+      "types": ["giant", "elemental", "beast"],
+      "keywords": ["giant", "ogre", "troll", "ettin", "mammoth", "elemental", "yeti"],
+      "goals": ["to prove a claim in the old giant order and climb back up it", "to take back the high country by the measure their people used to use", "to make the small folk part of the accounting again"],
+      "methods": ["breaking the passes one at a time", "demanding tribute measured in an obsolete and impossible unit", "settling disputes personally and permanently"],
+      "resources": ["a hold above the snowline", "beasts that will not be turned by cavalry", "a claim that other giants take seriously"],
+      "weaknesses": ["bound by an oath-form they will not break in front of kin", "the hold has one supply route", "they underestimate anything smaller than a bear"],
+      "lieutenants": ["a runecarver who does not believe in the claim", "a human interpreter and hostage", "a younger kin waiting for a mistake"]
+    },
+    "doppelganger_ring": {
+      "label": "conspiracy",
+      "titles": ["the Second Face", "the Committee", "the Understudy", "the Kind Neighbour"],
+      "types": ["monstrosity", "aberration", "humanoid", "fiend"],
+      "keywords": ["doppelganger", "shapechanger", "spy", "assassin", "mimic", "oni", "rakshasa", "cambion"],
+      "goals": ["to replace enough of {region}'s officials that replacement stops being necessary", "to inherit a legitimate government rather than overthrow one", "to make one specific person's signature theirs"],
+      "methods": ["substitution, slowly, starting with people nobody visits", "keeping the originals alive somewhere as reference", "letting the real institutions do the actual work"],
+      "resources": ["seats on the council", "the originals, in a cellar, catalogued", "an alibi for everyone"],
+      "weaknesses": ["the copies share information poorly and imperfectly", "a detail of the original's habits they never get right", "the originals are kept alive, and can be found"],
+      "lieutenants": ["a copy who prefers the borrowed life to their own", "the handler who assigns the faces", "an original who was turned rather than replaced"]
+    }
+  },
+
+  "factions": [
+    { "name": "the {settlement} Watch", "goal": "keep order without admitting how bad it has got", "offers": "official cover and a key to the gate", "demands": "no bodies in the street and no questions in public", "attitude": "wary" },
+    { "name": "the Carters' Compact", "goal": "keep the roads profitable and open", "offers": "fast travel, cargo space, and every rumour on the route", "demands": "protection on one specific run nobody will take", "attitude": "transactional" },
+    { "name": "the Grey Almonry", "goal": "feed and shelter more people than it can afford to", "offers": "healing, safe beds, and the truth as they know it", "demands": "that the party never leave a settlement worse than they found it", "attitude": "trusting" },
+    { "name": "the Kettle Society", "goal": "recover and catalogue what the old world left buried", "offers": "maps, translations, and identification of anything you dig up", "demands": "first refusal on every artefact", "attitude": "acquisitive" },
+    { "name": "the House of Reeds", "goal": "restore a family name ruined two generations ago", "offers": "money, introductions, and a house to sleep in", "demands": "public credit for anything the party achieves", "attitude": "flattering" },
+    { "name": "the Quiet Hand", "goal": "run every illegal trade in the region without violence, if possible", "offers": "contraband, forged papers, and people who owe them", "demands": "a favour to be named later, and it will be named", "attitude": "polite" },
+    { "name": "the Ninth Vigil", "goal": "finish a war that officially ended forty years ago", "offers": "steel, veterans, and a fortified position", "demands": "that the party take a side in public", "attitude": "zealous" },
+    { "name": "the Cold Assembly", "goal": "govern by consensus and outlast whatever is happening", "offers": "legitimacy, records, and a vote", "demands": "procedure, patience, and paperwork", "attitude": "obstructive" },
+    { "name": "the Verge Wardens", "goal": "hold the boundary between the settled land and what is beyond it", "offers": "guides, safe camps, and knowledge of the deep country", "demands": "that nothing be brought back across the line", "attitude": "blunt" },
+    { "name": "the Gilded Ledger", "goal": "own the region's debt and therefore the region", "offers": "unlimited funding at a reasonable rate", "demands": "collateral, and eventual collection", "attitude": "generous" }
+  ],
+
+  "regionKinds": {
+    "borderland": { "label": "the borderland", "terrain": ["Grassland", "Hill", "Forest"], "features": ["a line of half-manned watchtowers", "a river that used to be a border and is now just a river", "burned fields nobody has replanted", "an old military road going the wrong way"] },
+    "coast": { "label": "the coast", "terrain": ["Coastal", "Ocean", "Swamp"], "features": ["a drowned village visible at low tide", "salt marsh that swallows anything heavier than a person", "a lighthouse keeping a schedule nobody set", "shipwrecks arranged in a line that looks deliberate"] },
+    "highland": { "label": "the high country", "terrain": ["Mountain", "Hill", "Arctic"], "features": ["a pass that closes without warning", "terraced fields abandoned mid-harvest", "cairns marking something other than graves", "a glacier with a road under it"] },
+    "heartland": { "label": "the settled country", "terrain": ["Grassland", "Forest", "Urban"], "features": ["prosperous villages a day's walk apart", "a canal with too much traffic", "hedgerows older than the kingdom", "a shrine at every crossroads and no priests"] },
+    "forest": { "label": "the great wood", "terrain": ["Forest", "Swamp", "Hill"], "features": ["boundary stones the wood has grown around", "charcoal camps gone quiet", "a clearing that is never in the same place", "trees marked with a script nobody local can read"] },
+    "wasteland": { "label": "the waste", "terrain": ["Desert", "Mountain", "Underdark"], "features": ["glassed ground in a perfect circle", "wind that carries voices in the wrong language", "salt flats with foundations under them", "a canyon that was cut in one afternoon"] }
+  },
+
+  "patterns": {
+    "funnel_to_hub": {
+      "label": "Funnel to hub",
+      "note": "A tight scripted opening, a settlement to breathe in, independent spokes, then the climax.",
+      "acts": [
+        { "title": "The Road In", "chapters": ["opening_ambush", "hub_town"] },
+        { "title": "What the Country Holds", "chapters": ["spoke_site", "spoke_site", "spoke_event"] },
+        { "title": "The Weight of It", "chapters": ["climax_dungeon"] }
+      ]
+    },
+    "gated_sandbox": {
+      "label": "Gated sandbox",
+      "note": "One region, no exit. The locations are fixed, the objectives float across them.",
+      "acts": [
+        { "title": "No Way Back", "chapters": ["opening_arrival", "hub_town"] },
+        { "title": "The Closed Country", "chapters": ["region_leg", "spoke_site", "spoke_site", "spoke_site"] },
+        { "title": "The Heart of It", "chapters": ["climax_dungeon"] }
+      ]
+    },
+    "hub_and_spoke": {
+      "label": "Hub and spoke",
+      "note": "A settlement at the centre and independent missions radiating out. Forgiving of absent players.",
+      "acts": [
+        { "title": "Setting Up Shop", "chapters": ["opening_ambush", "hub_town"] },
+        { "title": "Work Available", "chapters": ["spoke_site", "spoke_event", "spoke_site", "spoke_site"] },
+        { "title": "Collecting the Bill", "chapters": ["climax_dungeon"] }
+      ]
+    },
+    "branch_reconverge": {
+      "label": "Branch and reconverge",
+      "note": "Three routes to the same climax. Real agency without three times the prep.",
+      "acts": [
+        { "title": "First Blood", "chapters": ["opening_ambush", "hub_town"] },
+        { "title": "Three Roads", "chapters": ["branch_site", "branch_site", "branch_site"] },
+        { "title": "Where They Meet", "chapters": ["reconverge_event", "climax_dungeon"] }
+      ]
+    },
+    "hexcrawl_mega": {
+      "label": "Hexcrawl plus megadungeon",
+      "note": "Procedural travel and attrition feeding one very large site.",
+      "acts": [
+        { "title": "Outfitting", "chapters": ["hub_town"] },
+        { "title": "The Open Country", "chapters": ["region_leg", "spoke_site", "region_leg", "spoke_site"] },
+        { "title": "Down", "chapters": ["climax_dungeon"] }
+      ]
+    },
+    "act_structure": {
+      "label": "Act structure",
+      "note": "Chronological acts rather than places. Urban, factional, intrigue-driven.",
+      "acts": [
+        { "title": "Arrival", "chapters": ["hub_town", "spoke_event"] },
+        { "title": "Complication", "chapters": ["investigation_web", "spoke_site", "spoke_event"] },
+        { "title": "Resolution", "chapters": ["reconverge_event", "climax_dungeon"] }
+      ]
+    },
+    "node_investigation": {
+      "label": "Node investigation",
+      "note": "A clue graph. The order emerges from play; every conclusion has three ways in.",
+      "acts": [
+        { "title": "The First Body", "chapters": ["opening_arrival", "hub_town"] },
+        { "title": "Following It Back", "chapters": ["investigation_web", "spoke_site", "spoke_event"] },
+        { "title": "The Name at the End", "chapters": ["climax_dungeon"] }
+      ]
+    },
+    "linear": {
+      "label": "Linear",
+      "note": "Chapter one to the end, no branching. Short, tightly plotted, easy to run.",
+      "acts": [
+        { "title": "Setting Out", "chapters": ["opening_ambush", "hub_town"] },
+        { "title": "The Long Middle", "chapters": ["spoke_site", "spoke_event", "spoke_site"] },
+        { "title": "The End of It", "chapters": ["climax_dungeon"] }
+      ]
+    }
+  },
+
+  "dungeonKinds": [
+    { "id": "tomb", "label": "Vault / Tomb", "size": [9, 14], "motifs": ["grave dust", "funerary ash", "dried petals a century old", "powdered bone"], "materials": ["black basalt", "chalk-pale limestone", "unmortared granite"], "origins": ["raised over the barrow of a king whose name was struck out", "cut as a prison and re-consecrated as a grave", "built by a guild that buried its own secrets with its masters"], "trapHeavy": true },
+    { "id": "lair", "label": "Lair", "size": [5, 8], "motifs": ["shed chitin", "matted fur and bone splinters", "sour nesting straw"], "materials": ["raw stone", "packed earth and root"], "origins": ["a natural cave enlarged by something with claws", "an old cellar the country grew over", "a hollow under a fallen god-statue"], "trapHeavy": false },
+    { "id": "ruin", "label": "Ruin", "size": [10, 15], "motifs": ["ivy that grows the wrong direction", "collapsed roof slate", "birds' nests in the ledgers"], "materials": ["weathered sandstone", "fire-blackened brick"], "origins": ["a monastery abandoned in a single night", "a manor that burned with the family inside", "an outpost that lost its war quietly"], "trapHeavy": false },
+    { "id": "stronghold", "label": "Stronghold", "size": [12, 18], "motifs": ["boot-polish and lamp oil", "chalk duty rosters", "rust bleeding from the hinges"], "materials": ["fitted grey stone", "timber and iron banding"], "origins": ["a border keep that changed hands three times", "a customs house fortified past all reason", "a garrison built to watch something that is still there"], "trapHeavy": false, "alerts": true },
+    { "id": "temple", "label": "Desecrated temple", "size": [10, 16], "motifs": ["cold incense", "wax from candles nobody lit", "prayer strips in a dead script"], "materials": ["veined marble", "smoke-stained plaster"], "origins": ["a shrine rededicated by force", "a cathedral built over an older, worse altar", "a hermitage that answered the wrong prayer"], "trapHeavy": true },
+    { "id": "mine", "label": "Delve / mine", "size": [10, 16], "motifs": ["ore dust", "spent lamp wicks", "timber props gone soft"], "materials": ["hewn rock and shoring timber", "veined ore-stone"], "origins": ["a shaft sunk chasing a seam that turned into something else", "a company mine abandoned after the third collapse", "a delve that broke into a room nobody dug"], "trapHeavy": false },
+    { "id": "wreck", "label": "Wreck", "size": [7, 11], "motifs": ["salt rime", "wet rope and rot", "barnacle shell"], "materials": ["swollen ship timber", "corroded brass fitting"], "origins": ["a trader driven onto the rocks with its cargo intact", "a warship that sank at anchor with no survivors", "a hull that washed up already empty"], "trapHeavy": false },
+    { "id": "planar", "label": "Planar pocket", "size": [8, 12], "motifs": ["light that arrives late", "a smell of copper and cut grass", "shadows pointing the wrong way"], "materials": ["stone that remembers being touched", "surfaces that are almost glass"], "origins": ["a bubble of somewhere else pressed into a hillside", "a house that only has an inside", "a stair that goes down further than the hill is tall"], "trapHeavy": true },
+    { "id": "megadungeon", "label": "Megadungeon", "size": [18, 26], "motifs": ["the smell of deep water", "old graffiti in four alphabets", "cold air moving from somewhere below"], "materials": ["cyclopean block work", "layered construction from three different centuries"], "origins": ["a city that was buried on purpose", "a vault complex that outgrew its purpose", "a shaft that was a temple, then a prison, then a mine"], "trapHeavy": true, "alerts": true }
+  ],
+
+  "nodeRoles": [
+    { "id": "threshold", "label": "Threshold", "weight": 0, "beats": ["lore", "hazard"] },
+    { "id": "junction", "label": "Junction", "weight": 12, "beats": [] },
+    { "id": "encounter", "label": "Encounter room", "weight": 26, "beats": ["combat"] },
+    { "id": "puzzle", "label": "Puzzle room", "weight": 8, "beats": ["puzzle"] },
+    { "id": "trap", "label": "Trap corridor", "weight": 10, "beats": ["trap"] },
+    { "id": "treasure", "label": "Treasure room", "weight": 8, "beats": ["treasure"] },
+    { "id": "lore", "label": "Lore room", "weight": 12, "beats": ["lore"] },
+    { "id": "empty", "label": "Empty room", "weight": 26, "beats": [] },
+    { "id": "haven", "label": "Safe haven", "weight": 6, "beats": ["social"] },
+    { "id": "shortcut", "label": "Shortcut", "weight": 5, "beats": [] },
+    { "id": "boss", "label": "Lair", "weight": 0, "beats": ["combat"] }
+  ],
+
+  "roomTemplates": {
+    "threshold": [
+      "The way in: {material} steps down under a lintel carved with a warning in a script three centuries out of use. {motif} has drifted into the corners.",
+      "A doorway of {material}, propped open with a wedge somebody drove in recently. The air coming out is colder than the air going in.",
+      "The entrance hall stands open to the sky where the roof fell. {motif} lies over everything in an even layer, and there are fresh tracks through it."
+    ],
+    "junction": [
+      "Four passages meet under a sagging arch of {material}. Someone has scratched tally marks at eye height on every one.",
+      "A landing where the stair turns. Drips from above have cut a channel through {motif} on the floor.",
+      "A wide corridor of {material} with alcoves down both sides, all of them empty, all of them the right size for a person."
+    ],
+    "encounter": [
+      "A long room of {material}. Furniture has been dragged into a rough barricade at the far end and abandoned there.",
+      "A vaulted chamber where {motif} has been swept into piles, as if something tidy lives here.",
+      "The floor here is a foot deep in cold water. Whatever is in the room is standing in it, comfortably.",
+      "A hall with a gallery running around it at half height. Good ground for the things already up there."
+    ],
+    "puzzle": [
+      "Six {material} pillars, each carved with a different phase of the same event, and a socket in the floor that expects them in an order.",
+      "A door with no handle and a poem cut into it. The last line is missing and there is a chisel on the floor.",
+      "A dry fountain with nine spouts, and a valve wheel for each, and one basin that must fill before the far door unlocks."
+    ],
+    "trap": [
+      "A corridor of {material} flagstones, three of which sit a finger's width proud of the rest.",
+      "A gallery hung with old chain. Some of it is holding up the ceiling.",
+      "A narrow stair with a scored groove down the centre, worn by something heavy travelling it repeatedly at speed."
+    ],
+    "treasure": [
+      "A strongroom, its door already forced. Whoever opened it took the obvious things and missed the rest.",
+      "A collapsed store-chamber where {motif} half-buries crates stamped with a merchant house that no longer exists.",
+      "A shrine-niche where offerings were left and never collected, decades of them."
+    ],
+    "lore": [
+      "Wall paintings in flaking pigment run the length of the room, telling a story that stops abruptly two thirds along.",
+      "A records room. Damp has taken most of it, but not all, and the surviving pages are the interesting ones.",
+      "Someone died here writing on the wall in charcoal, and got fifteen words down."
+    ],
+    "empty": [
+      "An empty chamber of {material}. Cold, quiet, and the only sound is water somewhere below.",
+      "A store-room stripped to the shelves. {motif} on the floor is undisturbed.",
+      "Living quarters, long abandoned. Bedding rotted to fibre, a cup, a boot, nothing worth carrying.",
+      "A hall too big for its purpose, echoing, with nothing in it at all."
+    ],
+    "haven": [
+      "A barred side-chamber with a spring, a cold hearth, and signs of recent, careful occupation.",
+      "A cell that locks from the inside, which is the point.",
+      "A high gallery, defensible, with a view of the approach and someone already in it."
+    ],
+    "shortcut": [
+      "A collapsed wall opens onto a passage that runs back toward the entrance, once you clear it from this side.",
+      "A winch-lift, still rigged, that can be brought up but only from here.",
+      "A barred door with the bar on this side, opening straight onto the approach road."
+    ],
+    "boss": [
+      "The chamber the whole place was built around: {material} rising to a vault, {motif} in drifts against the walls, and a floor kept deliberately clear.",
+      "A flooded rotunda with a raised dais at its centre, and everything in the room angled to face it.",
+      "A hall of {material} pillars, half of them broken, arranged so that anyone entering is seen long before they see."
+    ]
+  },
+
+  "dressings": [
+    "A cold draught moves through steadily; something further in is open to the air.",
+    "The walls are damp to the touch and the damp is warm.",
+    "Every surface at knee height has been rubbed smooth by decades of passing traffic.",
+    "There are tallies scratched by the door, and the count reaches four hundred and stops.",
+    "Somewhere below, at irregular intervals, something heavy is set down.",
+    "The dust here has been disturbed within the last day.",
+    "A smell of old smoke that has nothing to burn.",
+    "The light behaves oddly at the edges of the room, arriving a half-second late.",
+    "Rats have made a road through here and will not use one particular corner.",
+    "Old bloodstains, scrubbed at, not successfully."
+  ],
+
+  "lightLevels": ["dark", "dark", "dark", "dim", "dim", "bright"],
+
+  "traps": [
+    { "name": "Scything blade", "telegraph": "a clean horizontal groove in both walls at hip height", "detect": "DC 14 Perception", "disarm": "DC 14 Thieves' Tools", "effect": "2d10 slashing, DC 14 Dexterity save for half", "consequence": "the mechanism resets audibly, and everything nearby now knows where you are" },
+    { "name": "Collapsing floor", "telegraph": "flagstones that ring hollow underfoot", "detect": "DC 13 Perception", "disarm": "DC 15 Thieves' Tools or simply spanning it", "effect": "a 20 ft drop, 2d6 bludgeoning, DC 13 Dexterity save to catch the lip", "consequence": "whoever falls is separated from the party and lands somewhere with its own occupants" },
+    { "name": "Poison needle lock", "telegraph": "a keyhole with a bright, un-tarnished rim", "detect": "DC 15 Investigation", "disarm": "DC 15 Thieves' Tools", "effect": "1 piercing plus 3d6 poison, DC 15 Constitution save for half", "consequence": "the poisoned character has disadvantage on the next long stretch until treated" },
+    { "name": "Sealing door and rising water", "telegraph": "a drain grate and a waterline stained a foot up the wall", "detect": "DC 12 Investigation", "disarm": "DC 16 Strength to hold the door, or find the sluice", "effect": "the room floods over six rounds", "consequence": "gear is soaked, torches are out, and the next room is entered wet and cold" },
+    { "name": "Glyph of alarm and binding", "telegraph": "a faint scorch outline on the threshold", "detect": "DC 15 Arcana", "disarm": "DC 15 Arcana or Dispel Magic", "effect": "DC 14 Wisdom save or restrained for 1 minute", "consequence": "the alarm carries, and reinforcements arrive in 1d4 rounds" },
+    { "name": "Falling portcullis and murder holes", "telegraph": "a slot in the ceiling and holes above the corridor", "detect": "DC 13 Perception", "disarm": "DC 14 Thieves' Tools on the counterweight", "effect": "the party is split, and 1d4 attackers fire from above", "consequence": "the split lasts until the winch is found, two rooms away" },
+    { "name": "Crushing walls", "telegraph": "vertical scrape marks the full height of the corridor", "detect": "DC 14 Perception", "disarm": "DC 16 Thieves' Tools, or jam it with something solid", "effect": "4d10 bludgeoning over three rounds unless stopped", "consequence": "whatever is used to jam it is destroyed" },
+    { "name": "Spore bloom", "telegraph": "a pale fringe of growth around a doorway", "detect": "DC 12 Nature", "disarm": "burn it, carefully", "effect": "DC 13 Constitution save or poisoned for 1 hour", "consequence": "the poisoned condition makes the next social encounter noticeably harder" }
+  ],
+
+  "puzzles": [
+    { "name": "The order of the seasons", "premise": "Four reliefs must be turned to show the seasons in the order this place used, which is not the order anyone uses now.", "solution": "the mural in the lore room shows the old calendar starting at first frost", "alternate": "DC 16 History, or DC 18 Thieves' Tools to force the mechanism", "failure": "the mechanism jams for an hour and something is alerted" },
+    { "name": "The weighed name", "premise": "A scale, a set of lead letters, and a door that opens when the correct name is weighed out.", "solution": "the name is written on the founder's coffin plate elsewhere in the site", "alternate": "DC 15 Investigation on the discarded letters to work out what is missing", "failure": "the wrong weight drops the counterweight and seals the room for ten minutes" },
+    { "name": "Nine spouts, one basin", "premise": "Nine valves, one basin, and only one combination fills it before it drains.", "solution": "the drain rate is written on the pipework in a maintenance hand", "alternate": "DC 16 Arcana to freeze the drain, or plug it with anything", "failure": "the overflow floods the corridor behind them" },
+    { "name": "The unlit lamp", "premise": "Eleven lamps, ten already burning, and a door that will not open while any of them is lit by ordinary fire.", "solution": "the eleventh must be lit with light rather than flame, and then all of them snuffed at once", "alternate": "DC 15 Arcana, or a well-argued use of any light cantrip", "failure": "the lamps relight themselves and the room grows warmer each attempt" },
+    { "name": "The false inventory", "premise": "A ledger lists twelve items stored here. Eleven are present. The door wants the twelfth.", "solution": "the twelfth was taken by a previous intruder whose body lies two rooms on", "alternate": "DC 17 Investigation to identify the substitution and forge it", "failure": "the room's guardian is roused, having been listed as item twelve" },
+    { "name": "The echoed word", "premise": "A word must be spoken here that was last spoken here, and the room remembers.", "solution": "the word is recoverable from the charcoal writing left by the dying scribe", "alternate": "DC 16 Perception to hear the room still whispering it", "failure": "the room answers with its own word, and everyone who hears it takes 2d6 psychic damage" }
+  ],
+
+  "hazards": [
+    "The floor of this section is rotten through; treat it as difficult terrain and roll for a drop each time a fight moves across it.",
+    "Bad air. After ten minutes, a DC 12 Constitution save each hour or gain a level of exhaustion.",
+    "The cold is severe enough to matter. No natural healing on a rest taken here.",
+    "Standing water conducts what is in it; lightning and cold effects have their radius doubled here.",
+    "Loose ceiling. Any thunderous noise brings down 2d6 bludgeoning on a random point in the room.",
+    "The growth on the walls reacts to light and closes passages behind a lit torch."
+  ],
+
+  "loreObjects": [
+    "a burial plate naming a family the party has already met in {hub}",
+    "a work roster showing {faction} paid for labour here last season",
+    "a letter, unsent, from {npc} refusing an offer from {villain}",
+    "a map with {next} circled and a note reading 'not until the third'",
+    "a devotional carving of the thing {villain} actually serves, rendered honestly",
+    "a child's drawing of the same symbol found on the bodies in {hub}",
+    "a survey chain and notebook recording a measurement that cannot be right",
+    "an inventory listing {object} as removed for safekeeping, with a destination"
+  ],
+
+  "clueTemplates": [
+    "A body here still holds a writ of passage stamped for {next}, dated for a week from now.",
+    "Scratched into the wall in a hurry: a route to {next} and the words 'do not use the front'.",
+    "{npc} is here, alive, and will trade what they know about {next} for a way out.",
+    "A courier's satchel, its seals broken, containing orders that name {next} and the hour they are expected.",
+    "A tally of shipments, all of them going to {next}, all of them signed with {villain}'s mark.",
+    "The prisoners here were taken from near {next} and can describe its approaches in detail.",
+    "A tool left behind that was made in {next} and nowhere else, still warm from use.",
+    "Someone has been keeping a diary. The last entries are about being reassigned to {next}."
+  ],
+
+  "entryHooks": [
+    "{npc} asks for help outright, in public, having run out of quieter options.",
+    "The party is followed here, and the followers do not survive to explain why.",
+    "A survivor arrives in {hub} with the news and one useful detail.",
+    "The party is paid to do something ordinary here, and the ordinary thing goes wrong immediately.",
+    "{faction} needs a witness they can trust, and the party is the only party available.",
+    "Something the party did in the previous chapter has consequences that are waiting here.",
+    "The road is closed and this is the only way through.",
+    "{villain}'s people get here first and the party arrives during the raid."
+  ],
+
+  "exitStakes": [
+    "If the party leaves without finishing, {villain} gets a full season's use out of this place.",
+    "Whatever is left alive here follows them to the next chapter and arrives first.",
+    "{faction}'s attitude toward the party shifts hard, in whichever direction the party earned.",
+    "The clock advances by two segments and the region notices.",
+    "The survivors carry a warning, and the next site is ready for them.",
+    "Somebody in {hub} pays for the party's decision here, by name."
+  ],
+
+  "settlement": {
+    "sizes": [
+      { "label": "hamlet", "population": [40, 160], "services": 2 },
+      { "label": "village", "population": [200, 700], "services": 3 },
+      { "label": "town", "population": [900, 3500], "services": 5 },
+      { "label": "small city", "population": [5000, 14000], "services": 6 }
+    ],
+    "problems": [
+      "the well has gone brackish and the priest will not say why",
+      "a third of the working-age population left in one week and did not say where",
+      "the militia captain has started arresting people for things that have not happened yet",
+      "two families are one insult away from a feud that will burn the place down",
+      "the granary is empty and the ledger says it is full",
+      "the nightly curfew is being enforced by people nobody hired",
+      "children have started sleepwalking, all of them in the same direction",
+      "the harvest was good and nobody can explain why the food is running out"
+    ],
+    "locations": [
+      "the market square, where the notice board is the fastest information in the region",
+      "the temple, which is short a priest and long on questions",
+      "the mill, whose owner hears everything the water carries",
+      "the gaol, holding two people who should not be in there together",
+      "the caravanserai, full of people who will be gone by morning",
+      "the graveyard, which is being used more efficiently than it should be",
+      "the guild hall, where the accounts are kept and edited",
+      "the old tower, condemned, occupied",
+      "the bathhouse, where every deal in town is actually made",
+      "the ferry landing, and the ferryman who decides who crosses"
+    ],
+    "events": [
+      "a public argument between {faction} and the watch that the party can end either way",
+      "a funeral for someone who died in a way nobody will describe",
+      "a market day that {villain}'s agents are using as cover",
+      "an execution scheduled for dawn, of somebody who might be innocent",
+      "a wedding that two factions have both decided to use",
+      "a caravan arriving with news, cargo, and a passenger who should not be here"
+    ],
+    "rumorsTrue": [
+      "the digging up at the old site started the same week the trouble did",
+      "{npc} has been paid twice this season and nobody knows by whom",
+      "there is a way into {place} that does not use the front door",
+      "the thing everyone blames is a symptom, and the cause is closer to home",
+      "{villain}'s people always come the night before market"
+    ],
+    "rumorsFalse": [
+      "it is the old family's curse, everyone knows that",
+      "the roads are safe as far as the river, they always have been",
+      "the watch has it under control and will say so if asked",
+      "whatever it is, it does not come inside the walls",
+      "the priest has already sent for help and it is on the way"
+    ]
+  },
+
+  "regionLegs": [
+    { "label": "The pass road", "days": 3, "checks": "Navigation DC 12, Foraging DC 13", "complication": "the weather turns and the only shelter is already occupied" },
+    { "label": "The river run", "days": 2, "checks": "Water Vehicles DC 13", "complication": "the ferry crew have been paid to deliver the party somewhere else" },
+    { "label": "The old military road", "days": 4, "checks": "Survival DC 12", "complication": "a toll post staffed by people with no authority to be there" },
+    { "label": "Off the roads entirely", "days": 5, "checks": "Survival DC 15, Navigation DC 15", "complication": "a guide who is competent, likeable, and reporting to {villain}" },
+    { "label": "The coast track", "days": 3, "checks": "Athletics DC 12 at the tidal crossings", "complication": "the tide table everyone uses is a season out of date" },
+    { "label": "Under the hills", "days": 2, "checks": "Navigation DC 15 in the dark", "complication": "the passage the map shows has been deliberately collapsed" }
+  ],
+
+  "eventElements": [
+    { "kind": "set_piece", "label": "Set piece", "titles": ["The Bridge at {place}", "The Night They Came Down", "The Collapse at {place}"], "phases": ["The situation is stable and obviously about to stop being stable", "The first failure, and a choice about what to save", "Everything moving at once, with a hard time limit", "The aftermath, and who is missing"], "objective": "save what can be saved, and be seen doing it", "failure": "the thing is lost, and {faction} remembers who was standing there" },
+    { "kind": "heist", "label": "Heist", "titles": ["The {place} Job", "Taking Back the Ledger", "Three Ways Into {place}"], "phases": ["Casing: three ways in, each with a cost", "The plan, and what they cannot know yet", "Execution, and the one thing that is not where it should be", "Getting out, which is the actual problem"], "objective": "remove {object} without the theft being noticed for three days", "failure": "the theft is noticed immediately and the party's faces are known" },
+    { "kind": "siege", "label": "Siege", "titles": ["The Siege of {place}", "Holding the Line at {place}", "Four Days at {place}"], "phases": ["Preparation, with fewer resources than the plan needs", "The first assault, testing the weakest point", "The night attack, aimed at morale rather than walls", "The breach, and where the party chooses to stand"], "objective": "hold until relief arrives, or make the cost too high to continue", "failure": "the wall comes down and the fight moves inside" },
+    { "kind": "ritual_interruption", "label": "Ritual interruption", "titles": ["The Ninth Hour", "Stopping the Rite at {place}", "Before the Last Word"], "phases": ["The countdown becomes visible and audible", "The outer circle, which must be broken in three places", "The celebrants, who cannot be allowed to finish a sentence", "The last word, and what is already partly through"], "objective": "break the rite before the final segment fills", "failure": "the rite completes, partially, and the campaign clock jumps two segments" },
+    { "kind": "negotiation", "label": "Negotiation", "titles": ["The Table at {place}", "Terms", "The Summit Nobody Wanted"], "phases": ["Arrival, and the seating that decides everything", "Opening positions, all of them dishonest", "The interruption, which is not an accident", "Terms, and who has to be handed over to get them"], "objective": "get three parties to agree to one thing, in writing", "failure": "the talks break down and one party leaves as an enemy" },
+    { "kind": "chase", "label": "Chase", "titles": ["Run", "Down the {place} Road", "Getting Out of {place}"], "phases": ["The moment it goes wrong and the running starts", "Terrain complications, three of them, in order", "The choice: keep the prize or keep the pace", "The turn, where the pursued decide to stop being pursued"], "objective": "reach the boundary with the prize and the party intact", "failure": "the pursuers take {object} back and one of them recognises somebody" },
+    { "kind": "trial", "label": "Trial", "titles": ["The Hearing", "Judgement at {place}", "The Charge"], "phases": ["The charge, which is technically accurate", "Evidence, and what {villain} has already arranged", "The witness who changes everything, if they can be found and kept alive", "The verdict, and its enforcement"], "objective": "produce enough proof in public to move a body that does not want to move", "failure": "the verdict stands and the party is barred from {hub}" },
+    { "kind": "festival", "label": "Festival", "titles": ["The {place} Fair", "Feast Night", "The Procession"], "phases": ["The crowd, the stalls, and six things happening at once", "The first sign that something is wrong under all of it", "The disruption, timed for maximum witnesses", "Order restored, or not, in front of everybody"], "objective": "identify the agent in the crowd before the procession reaches the square", "failure": "the disruption succeeds publicly and {hub}'s trust collapses" }
+  ],
+
+  "npcRoles": [
+    { "id": "patron", "label": "Patron", "desc": "brings the party in and pays, at least at first" },
+    { "id": "guide", "label": "Guide", "desc": "knows the country and the way through it" },
+    { "id": "broker", "label": "Broker", "desc": "sells information and sells the party out if the price is right" },
+    { "id": "rival", "label": "Rival", "desc": "wants the same thing and is not evil about it" },
+    { "id": "betrayer", "label": "Betrayer", "desc": "is genuinely helpful right up until the moment they are not" },
+    { "id": "witness", "label": "Witness", "desc": "saw something and is deciding whether to say so" },
+    { "id": "quartermaster", "label": "Quartermaster", "desc": "supplies, prices, and what came through last week" },
+    { "id": "authority", "label": "Local authority", "desc": "can help or obstruct, and is choosing based on appearances" },
+    { "id": "specialist", "label": "Specialist", "desc": "the only person who can read, open, or identify the thing" },
+    { "id": "survivor", "label": "Survivor", "desc": "got out of the last place and is not well" }
+  ],
+
+  "npcSecrets": [
+    "is being paid by {villain} and has not decided whether to earn it",
+    "was present when {object} was hidden and has never told anyone",
+    "is related to {villain} and will not say which way",
+    "has already lost someone to this and is not looking for justice, only a body",
+    "is the only person who can identify the impostor and does not know it yet",
+    "signed something years ago that is about to be called in",
+    "has been feeding {faction} information about the party since day one",
+    "knows the way into {place} because they helped build it",
+    "is dying, has about a season, and is spending it on this",
+    "took a bribe once and has been paying for it ever since"
+  ],
+
+  "npcWants": [
+    "someone competent to be responsible for once",
+    "their family's name back",
+    "out of {hub}, permanently, with enough money to matter",
+    "the person responsible named in public",
+    "to be told they did the right thing",
+    "one specific object returned, and will not say why",
+    "the roads open again before the season turns",
+    "to be left alone, which is no longer available"
+  ],
+
+  "clocks": [
+    { "label": "{faction} Patience", "segments": 4, "onFill": "{faction} stops offering and starts taking." },
+    { "label": "The Word Spreads", "segments": 6, "onFill": "{villain} learns the party's names and starts planning around them." },
+    { "label": "{hub} Holds", "segments": 6, "onFill": "{hub} is evacuated and the party loses their base." },
+    { "label": "The Winter Stores", "segments": 8, "onFill": "Famine conditions; every settlement becomes hostile to outsiders." }
+  ],
+
+  "villainMoves": [
+    "sends a competent lieutenant to negotiate, honestly, once",
+    "takes something from {hub} that the party will notice",
+    "moves {object} somewhere harder to reach",
+    "buys someone the party trusts",
+    "makes an example of a settlement that had nothing to do with it",
+    "accelerates the timetable and stops being careful",
+    "offers the party exactly what they want in exchange for one step back",
+    "removes the witness before the party can reach them"
+  ],
+
+  "endings": [
+    { "label": "Clean", "text": "{villain} is stopped before the last segment fills. {region} keeps its shape, {hub} rebuilds, and the {objects} are accounted for." },
+    { "label": "Costly", "text": "{villain} is stopped, but the {objects} are spent doing it and {hub} pays a price that shows on the map." },
+    { "label": "Bargained", "text": "{villain} is not defeated but bound: the plan stops, the terms hold, and everyone involved has to live with the wording." },
+    { "label": "Too Late", "text": "The clock fills. {villain} succeeds, and the campaign continues in the world that makes: the party is now the only thing that knows how it happened." },
+    { "label": "Inherited", "text": "{villain} is destroyed and the vacancy is filled by something the party had been treating as an ally." }
+  ],
+
+  "encounterObjectives": [
+    "hold the party here long enough for someone else to finish something",
+    "take one of them alive and leave the rest as a message",
+    "stop anyone reaching the far door, whatever it costs",
+    "recover what the party is carrying and withdraw",
+    "buy time for the ritual two rooms on",
+    "identify the party, then report back to {villain}",
+    "protect the thing in the corner that nobody has looked at yet",
+    "drive them back the way they came without killing anyone, if possible"
+  ],
+  "encounterTactics": [
+    "opens at range, falls back through prepared ground, forces the party to come to it",
+    "attacks the rearmost character first and tries to separate them",
+    "fights in the doorway where numbers do not help",
+    "waits until the party commits to the room, then closes the way out",
+    "targets whoever is holding a light source",
+    "one holds the front while the others work around through the side passage",
+    "does not fight fairly and has no interest in a standing battle",
+    "sacrifices the weakest of its number to set up a single decisive attack"
+  ],
+  "encounterMorale": [
+    "breaks at half strength and runs deeper in to warn the rest",
+    "will not break; it has been told what happens if it does",
+    "surrenders if offered anything at all, and will talk",
+    "fights to the last, then the survivor tries to take one of the party with it",
+    "withdraws in good order once its objective is impossible",
+    "breaks if its leader falls, and not before"
+  ],
+  "encounterIfAvoided": [
+    "these forces are somewhere else in the site later, and better positioned",
+    "the alarm goes up an hour later and the deeper rooms are ready",
+    "nothing immediately, but they are between the party and the way out on the way back",
+    "they carry word to {villain}, who moves {object}",
+    "they follow at a distance and pick a worse moment",
+    "the site simply gets quieter, and something notices the silence"
+  ],
+  "havenOccupants": [
+    "a handful of survivors from the last group who came in, out of food and out of nerve",
+    "a deserter from {villain}'s people who will trade the layout for safe passage",
+    "a rival crew who got here first, currently resting, currently reasonable",
+    "a scholar who has been living here for a month and does not want to be rescued yet",
+    "prisoners, locked in, who have heard everything through the wall"
+  ],
+  "treasureGoods": [
+    "a bundle of correspondence in {villain}'s hand, unsigned but distinctive",
+    "trade bars stamped with a house that will want to know where they came from",
+    "a map case holding surveys of three sites, one of them {next}",
+    "ceremonial gear worth a great deal to exactly one buyer",
+    "a strongbox of coin from a mint that closed sixty years ago"
+  ],
+  "linkSummaries": [
+    "What the party takes out of here names {next} plainly; the only question is how fast they move.",
+    "{next} is where the trail goes. Anyone who survives this place is already on the road there.",
+    "The work here was being done for somewhere else, and the paperwork says {next}.",
+    "Someone here was expected at {next} and is not going to make it. The party can go in their place.",
+    "The route to {next} is the thing worth carrying out of this chapter, and three separate people here know it."
+  ],
+  "objectiveNotes": [
+    "Held in the deepest room, and its keeper knows exactly what it is.",
+    "Hidden in plain sight and mislabelled; the party will walk past it once.",
+    "Already being moved when the party arrives, which is the whole encounter.",
+    "In the hands of someone who will hand it over for a price the party will not like.",
+    "Sealed behind a lock that opens for one person, and that person is dead but not gone."
+  ],
+  "npcConnections": [
+    "Owes {npc} money and will not discuss it.",
+    "Is the only person in {hub} that {npc} actually trusts.",
+    "Has been quietly writing to {villain}'s people for a year.",
+    "Lost family at {place} and cannot go back there.",
+    "Will vouch for the party to {faction} once, and only once.",
+    "Knows {npc} is lying and has said nothing yet."
+  ],
+
+  "titleWords": {
+    "adjectives": ["Sundered", "Drowning", "Hollow", "Quiet", "Iron", "Buried", "Long", "Ashen", "Broken", "Last", "Cold", "Bitter", "Gilded", "Sleeping", "Nameless"],
+    "nouns": ["Crown", "Bell", "Covenant", "Succession", "Road", "Winter", "Star", "Tithe", "Ledger", "Vigil", "Bargain", "Harvest", "Boundary", "Reckoning", "Inheritance"]
+  },
+
+  "siteNames": {
+    "prefixes": ["Barrow", "Grim", "Kell", "Mourn", "Thal", "Vask", "Wold", "Draken", "Hollow", "Stark", "Ember", "Fen", "Gall", "Rook"],
+    "suffixes": ["hold", "mere", "gate", "deep", "fell", "crag", "barrow", "spire", "hallow", "reach", "warren", "vault"],
+    "forms": ["{prefix}{suffix}", "the {adj} {noun}", "{prefix}{suffix}", "{noun} of {prefix}{suffix}"],
+    "adjectives": ["Sunken", "Weeping", "Silent", "Blackened", "Riven", "Forgotten", "Crooked", "Frozen"],
+    "nouns": ["Vault", "Keep", "Delve", "Chapel", "Warren", "Reliquary", "Mill", "Barrows", "Tower", "Sanctum"]
+  }
+}
