@@ -169,19 +169,18 @@ function makeNPC(ctx, roleId, where) {
   const { C, names, npcTable } = ctx;
   const role = C.npcRoles.find(r => r.id === roleId) || pick(C.npcRoles);
   const { name, ancestry } = personName(names, null, ctx.usedNames);
+  // Deliberately no ideals/bonds/flaws: they are PC-sheet concepts that never
+  // come up from the DM's chair. Personality, quirk, wants and secret are
+  // what improvisation actually runs on.
   return {
     id: uid('npc'),
     name,
     ancestry,
     role: role.label,
     roleId: role.id,
-    roleNote: role.desc,
     occupation: pick(npcTable.occupations),
     personality: pick(npcTable.personalities),
     quirk: pick(npcTable.quirks),
-    ideal: pick(npcTable.ideals),
-    bond: pick(npcTable.bonds),
-    flaw: pick(npcTable.flaws),
     wants: fill(pick(C.npcWants), ctx.slots),
     secret: fill(pick(C.npcSecrets), ctx.slots),
     statSuggestion: npcStat(ctx, role.id),
@@ -281,7 +280,6 @@ function makeBeat(ctx, kindId, { level, pool, boss, items }) {
     return {
       id: uid('beat'),
       kind: 'encounter',
-      encounterType: 'combat',
       title: boss ? 'Lair confrontation' : 'Combat',
       creatures: enc.creatures,
       xp: enc.xp,
@@ -730,9 +728,9 @@ function computeTotals(chapters) {
 /* ---------- top level ---------- */
 
 export async function generateCampaign(opts = {}) {
-  const [monsters, items, C, names, npcTable, quests, shops] = await Promise.all([
+  const [monsters, items, C, names, npcTable, shops] = await Promise.all([
     loadMonsters(), loadItems(), loadTables('campaign'),
-    loadTables('names'), loadTables('npc'), loadTables('quests'), loadTables('shops'),
+    loadTables('names'), loadTables('npc'), loadTables('shops'),
   ]);
 
   const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
@@ -780,7 +778,7 @@ export async function generateCampaign(opts = {}) {
     next: climaxName,
   };
 
-  const ctx = { C, names, npcTable, quests, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName };
 
   // The patron exists before anything else so that every {npc} slot resolves
   // to a person who is actually in the campaign, seated in the hub roster,
@@ -975,9 +973,9 @@ export async function generateCampaign(opts = {}) {
 // everything else: the chain is rebuilt, the objective item and any leader
 // stationed there are re-seated, milestones and appendices recomputed.
 export async function rerollChapter(campaign, chapterId) {
-  const [monsters, items, C, names, npcTable, quests, shops] = await Promise.all([
+  const [monsters, items, C, names, npcTable, shops] = await Promise.all([
     loadMonsters(), loadItems(), loadTables('campaign'),
-    loadTables('names'), loadTables('npc'), loadTables('quests'), loadTables('shops'),
+    loadTables('names'), loadTables('npc'), loadTables('shops'),
   ]);
   const gen = campaign.gen;
   if (!gen || !campaign.slots) throw new Error('This campaign predates rerolling; generate a new one.');
@@ -1000,7 +998,7 @@ export async function rerollChapter(campaign, chapterId) {
   const usedPlaces = new Set([campaign.hub, campaign.region.name]);
   allChapters.forEach(c => { if (c !== old) { usedPlaces.add(c.title); c.elements.forEach(e => usedPlaces.add(e.title)); } });
 
-  const ctx = { C, names, npcTable, quests, shops, items, monsters, pools, region, slots, usedNames, usedPlaces };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces };
   ctx.recurringPatron = campaign.appendices.npcs.find(n => n.roleId === 'patron') || null;
   // the climax keeps its name: half the campaign's lore already points at it
   if (isClimax) ctx.climaxName = old.title;
@@ -1076,18 +1074,19 @@ export function campaignMarkdown(c) {
   L.push(`# ${c.title}`, '', `*${c.logline}*`, '');
   L.push(`**Tone** ${c.tone.join(', ')} | **Levels** ${c.levelRange.start}-${c.levelRange.end} | **Sessions** ${c.sessions} | **Pattern** ${c.pattern.label}`, '');
   L.push(`**Region** ${c.region.name} (${c.region.label}). **Base** ${c.hub}.`, '');
+  L.push(`> **How to read this book:** blockquoted or "quoted" text is player-facing, written to be read aloud or found. Everything else is for the DM, and lines marked *(DM only)* are spoilers even at a shared table.`, '');
   if (c.opening) L.push(`## Opening the campaign`, '', c.opening, '');
   if (c.playerHooks?.length) {
     L.push(`## Character hooks (hand these to the players)`, '');
-    c.playerHooks.forEach(h => L.push(`- ${h}`));
+    c.playerHooks.forEach(h => L.push(`- "${h}"`));
     L.push('');
   }
   L.push(`## The objective`, '', `${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '', `If ${c.villain.name} succeeds: ${c.objective.ifLost}`, '');
   c.objective.items.forEach(i => {
     L.push(`- **${i.name}** - ${i.chapterTitle}. ${i.note}`);
-    if (i.power) L.push(`  - While held: ${i.power}`);
-    if (i.cost) L.push(`  - The catch: ${i.cost}`);
-    if (i.reaction) L.push(`  - When claimed: ${i.reaction}`);
+    if (i.power) L.push(`  - While held (players learn on identify): "${i.power}"`);
+    if (i.cost) L.push(`  - The catch (players learn on identify): "${i.cost}"`);
+    if (i.reaction) L.push(`  - When claimed *(DM only)*: ${i.reaction}`);
   });
   L.push('', `## Antagonist`, '', `**${c.villain.name}, ${c.villain.title}** (${c.villain.kind})`, '');
   L.push(`- Goal: ${c.villain.goal}`, `- Method: ${c.villain.method}`, `- Weakness: ${c.villain.weakness}`);
@@ -1127,18 +1126,19 @@ export function campaignMarkdown(c) {
           L.push('Wandering (d6, roll each half hour of dawdling or after loud noise):', ...el.wandering.map(r => `- ${r.range}: ${r.text}`), '');
         }
         for (const n of el.nodes || []) {
-          L.push(`**${n.id}. ${n.roleLabel}** (${n.light}${n.exits.length ? `, exits to ${n.exits.join(', ')}` : ''})`, '', n.description, '');
+          L.push(`**${n.id}. ${n.roleLabel}** (${n.light}${n.exits.length ? `, exits to ${n.exits.join(', ')}` : ''})`, '', `> ${n.description}${n.dressing ? ` ${n.dressing}` : ''}`, '');
           for (const b of n.beats) {
             if (b.kind === 'encounter') L.push(`- *${b.title === 'The final confrontation' ? b.title : 'Encounter'} (${b.difficulty}, ${b.xp.toLocaleString()} adj XP):* ${b.leader ? `Led by ${b.leader.name}${b.leader.statSuggestion ? ` (use ${b.leader.statSuggestion.name}, CR ${b.leader.statSuggestion.cr})` : ''}. ` : ''}${b.creatures.map(x => `${x.count} x ${x.name} (CR ${x.cr})`).join(', ')}. Objective: ${b.objective} Tactics: ${b.tactics} Morale: ${b.morale} If avoided: ${b.ifAvoided}`);
-            else if (b.kind === 'trap') L.push(`- *Trap - ${b.name}:* ${b.telegraph}. Detect ${b.detect}, disarm ${b.disarm}. ${b.effect}. ${b.consequence}`);
-            else if (b.kind === 'puzzle') L.push(`- *Puzzle - ${b.name}:* ${b.premise} Solution: ${b.solution}. Alternate: ${b.alternate}. Failure: ${b.failure}`);
+            else if (b.kind === 'trap') L.push(`- *Trap - ${b.name}:* players notice "${b.telegraph}". Detect ${b.detect}, disarm ${b.disarm}. ${b.effect}. ${b.consequence}`);
+            else if (b.kind === 'puzzle') L.push(`- *Puzzle - ${b.name}:* players see "${b.premise}" Solution *(DM only)*: ${b.solution}. Alternate: ${b.alternate}. Failure: ${b.failure}`);
             else if (b.kind === 'treasure') L.push(`- *Treasure:* ${b.treasure.map(t => t.name).join('; ')}`);
+            else if (b.kind === 'clue') L.push(`- *Clue (players find):* "${b.text}" (points to ${b.pointsToTitle})`);
             else L.push(`- *${b.title}:* ${b.text || ''}`);
           }
           L.push('');
         }
         if (el.type === 'settlement') {
-          L.push(`Ruler: ${el.ruler}. Tavern: ${el.tavern}.`, '', 'Locations:', ...el.locations.map(x => `- ${x}`), '', 'Rumours:', ...el.rumors.map(r => `- ${r.text} (${r.true ? 'true' : 'false'})`), '');
+          L.push(`Ruler: ${el.ruler}. Tavern: ${el.tavern}.`, '', 'Locations:', ...el.locations.map(x => `- ${x}`), '', 'Rumours (text is player-facing; true/false is DM only):', ...el.rumors.map(r => `- "${r.text}" *(${r.true ? 'true' : 'false'})*`), '');
         }
         if (el.type === 'region') {
           L.push('Routes:', ...el.legs.map(l => `- ${l.label}, ${l.days} days. ${l.checks}. Complication: ${l.complication}`), '', 'Encounters (d6):', ...el.encounterTable.map(r => `- ${r.range}: ${r.text}`), '');
@@ -1152,14 +1152,14 @@ export function campaignMarkdown(c) {
       }
       if (ch.link) {
         L.push(`**${ch.link.heading}:** ${ch.link.summary}`, '');
-        ch.link.clues.forEach(cl => L.push(`- ${cl.text} *(${cl.placement}, points to ${cl.pointsToTitle})*`));
+        ch.link.clues.forEach(cl => L.push(`- "${cl.text}" *(${cl.placement}, points to ${cl.pointsToTitle})*`));
         L.push('');
       }
     }
   }
 
   L.push('', '## Appendix: NPCs', '');
-  c.appendices.npcs.forEach(n => L.push(`- **${n.name}** (${n.ancestry} ${n.occupation}, ${n.role}${n.statSuggestion ? `; use ${n.statSuggestion.name} if it comes to blows` : ''}) - ${n.personality}; ${n.quirk}. Wants ${n.wants}. Secret: ${n.secret}. ${n.connection}`));
+  c.appendices.npcs.forEach(n => L.push(`- **${n.name}** (${n.ancestry} ${n.occupation}) - ${n.personality}; ${n.quirk}. *(DM only: ${n.role}${n.statSuggestion ? `, use ${n.statSuggestion.name} if it comes to blows` : ''}. Wants ${n.wants}. Secret: ${n.secret}. ${n.connection})*`));
   L.push('', '## Appendix: Creatures', '', c.appendices.creatures.map(m => `${m.name} (CR ${m.cr})`).join(', '), '');
   if (c.appendices.magicItems.length) L.push('## Appendix: Magic items', '', c.appendices.magicItems.map(i => `${i.name} (${i.rarity})`).join(', '), '');
   if (c.treasure) {

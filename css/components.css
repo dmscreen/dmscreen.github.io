@@ -424,6 +424,42 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .story-map .boss circle { stroke: var(--accent); stroke-width: 3; }
 .story-map .treasure circle { stroke: var(--success); stroke-width: 2.5; }
 .story-map .trap circle, .story-map .puzzle circle { stroke: var(--info); stroke-width: 2.5; }
+/* The player/DM boundary. Blue boxes hold text safe to say or show to the
+   players; amber-fenced blocks hold spoilers; unmarked text is DM material. */
+.player-text {
+  border: 1px solid var(--info);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--info) 7%, transparent);
+  padding: 6px 10px 8px;
+  margin: 6px 0;
+  font-size: 0.88rem;
+}
+.player-inline {
+  border-bottom: 1px dotted var(--info);
+  padding-bottom: 1px;
+}
+.dm-note {
+  border-top: 1px dashed var(--accent);
+  margin-top: 8px;
+  padding-top: 4px;
+}
+.dm-note > p { margin-top: 2px; }
+.facing {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0 7px;
+  border-radius: 99px;
+  border: 1px solid;
+  margin: 2px 0 4px;
+  vertical-align: middle;
+}
+.facing.player { color: var(--info); border-color: var(--info); }
+.facing.dm { color: var(--accent); border-color: var(--accent); }
+
 .npc-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);

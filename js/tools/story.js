@@ -177,6 +177,14 @@ export default {
 
     const creatureLink = (c) => `<a href="javascript:void 0" data-mon="${esc(c.slug)}">${esc(c.name)}</a>`;
 
+    // The player/DM boundary, made visible. Boxed blue text is safe to say or
+    // show; fenced amber blocks are spoilers. Everything unmarked is ordinary
+    // DM working material.
+    const playerBox = (html, tag = 'Read aloud') =>
+      `<div class="player-text"><span class="facing player">${esc(tag)}</span>${html}</div>`;
+    const dmBox = (html) =>
+      `<div class="dm-note"><span class="facing dm">DM only</span>${html}</div>`;
+
     // A rough plan of the site: nodes laid out on a staggered grid with the
     // exit connections drawn between them. Not a battle map, just enough that
     // the DM does not have to sketch the graph from an exits list.
@@ -228,13 +236,15 @@ export default {
     const beatHTML = (b) => {
       if (b.kind === 'encounter') return encounterHTML(b);
       if (b.kind === 'trap') return `<div class="beat trap"><b>Trap: ${esc(b.name)}</b>
-        <p class="small">${esc(b.telegraph)}. <b>Detect</b> ${esc(b.detect)}. <b>Disarm</b> ${esc(b.disarm)}.<br>
+        ${playerBox(`They notice: ${esc(b.telegraph)}.`, 'Players perceive')}
+        <p class="small"><b>Detect</b> ${esc(b.detect)}. <b>Disarm</b> ${esc(b.disarm)}.<br>
         <b>Effect</b> ${esc(b.effect)}<br><b>Consequence</b> ${esc(b.consequence)}</p></div>`;
       if (b.kind === 'puzzle') return `<div class="beat puzzle"><b>Puzzle: ${esc(b.name)}</b>
-        <p class="small">${esc(b.premise)}<br><b>Solution</b> ${esc(b.solution)}<br>
+        ${playerBox(esc(b.premise), 'Players perceive')}
+        <p class="small"><b>Solution</b> ${esc(b.solution)}<br>
         <b>Alternate route</b> ${esc(b.alternate)}<br><b>On failure</b> ${esc(b.failure)}</p></div>`;
       if (b.kind === 'treasure') return `<div class="beat treasure"><b>Treasure</b> <span class="small">${treasureHTML(b.treasure)}</span></div>`;
-      if (b.kind === 'clue') return `<div class="beat clue"><b>Clue &rarr; ${esc(b.pointsToTitle)}</b> <span class="small">${esc(b.text)}</span></div>`;
+      if (b.kind === 'clue') return `<div class="beat clue"><b>Clue &rarr; ${esc(b.pointsToTitle)}</b> ${playerBox(esc(b.text), 'Players find')}</div>`;
       if (b.kind === 'objective') return `<div class="beat objective"><b>${esc(b.title)}</b> <span class="small">${esc(b.text)}</span></div>`;
       return `<div class="beat"><b>${esc(b.title)}</b> <span class="small">${esc(b.text || '')}</span></div>`;
     };
@@ -245,7 +255,7 @@ export default {
           <span class="small faint">${esc(n.light)}${n.exits.length ? ` &rarr; ${esc(n.exits.join(', '))}` : ''}</span>
           ${n.beats.map(b => `<span class="pill ${b.kind === 'encounter' ? 'danger' : ''}">${esc(b.kind)}</span>`).join('')}
         </summary>
-        <p>${esc(n.description)}${n.dressing ? ` ${esc(n.dressing)}` : ''}</p>
+        ${playerBox(`${esc(n.description)}${n.dressing ? ` ${esc(n.dressing)}` : ''}`)}
         ${n.beats.map(beatHTML).join('')}
       </details>`).join('');
 
@@ -270,7 +280,9 @@ export default {
             <h3>Services</h3><p class="small">${elt.services.map(esc).join(', ')}. The tavern is ${esc(elt.tavern)}.</p>
             <h3>Locations of interest</h3><ul class="small">${elt.locations.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
             <h3>While they are here</h3><p class="small">${esc(elt.event)}</p></div>
-          <div><h3>Rumours</h3><ul class="small">${elt.rumors.map(r => `<li>${esc(r.text)} <span class="pill ${r.true ? 'success' : 'danger'}">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul>
+          <div><h3>Rumours</h3>
+            <p class="small faint">The rumour text is player-facing; the true/false tags are yours alone.</p>
+            <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul>
             <h3>Roster</h3>${elt.roster.map(npcCardHTML).join('')}</div>
         </div>`;
 
@@ -291,18 +303,21 @@ export default {
         ${elt.climaxEncounter ? `<h3>The fight, if it comes to one</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'Climax encounter', objective: elt.objective, tactics: 'The event drives the tactics; terrain and the clock matter more than the numbers.', morale: 'Withdraws the moment the objective is out of reach.', ifAvoided: 'The event resolves without a fight, which is a legitimate outcome.' })}` : ''}`;
 
       if (elt.type === 'investigation') return `${head}
-        ${elt.conclusions.map(c => `<div class="mt"><b>Conclusion</b> ${esc(c.text)}
-          <ul class="small">${c.clues.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}`;
+        ${elt.conclusions.map(c => `<div class="mt"><b>Conclusion</b> <span class="faint small">(DM only until earned)</span><br>${esc(c.text)}
+          <ul class="small">${c.clues.map(x => `<li><span class="player-inline">${esc(x)}</span></li>`).join('')}</ul></div>`).join('')}`;
 
       return head;
     };
 
+    // Top half is safe on a shared screen; the fenced block is where the role
+    // tag lives too, since "Betrayer" next to a name is itself a spoiler.
     const npcCardHTML = (n) => `<div class="npc-card">
-      <b>${esc(n.name)}</b> <span class="pill">${esc(n.role)}</span>
+      <b>${esc(n.name)}</b>
       <span class="small faint">${esc(n.ancestry)} ${esc(n.occupation)}${n.where ? `, ${esc(n.where)}` : ''}</span>
-      <p class="small">${esc(n.personality)}; ${esc(n.quirk)}.<br>
+      <p class="small">${esc(n.personality)}; ${esc(n.quirk)}.</p>
+      ${dmBox(`<p class="small"><span class="pill">${esc(n.role)}</span><br>
         <b>Wants</b> ${esc(n.wants)}<br>
-        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p></div>`;
+        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}</div>`;
 
     const chapterHTML = (ch) => `
       <h2>${ch.index}. ${esc(ch.title)}</h2>
@@ -319,7 +334,8 @@ export default {
       </div>
       ${ch.milestone ? `<p class="small"><b>Leveling</b> ${esc(ch.milestone)}</p>` : ''}
       ${ch.objective ? `<div class="card"><h3>${esc(ch.objective.name)}</h3><p class="small">${esc(ch.objective.note)}</p>
-        ${ch.objective.power ? `<p class="small"><b>While held</b> ${esc(ch.objective.power)}<br><b>The catch</b> ${esc(ch.objective.cost)}<br><b>When claimed</b> ${esc(ch.objective.reaction)}</p>` : ''}</div>` : ''}
+        ${ch.objective.power ? playerBox(`<b>While held</b> ${esc(ch.objective.power)}<br><b>The catch</b> ${esc(ch.objective.cost)}`, 'Players learn on identify') : ''}
+        ${ch.objective.reaction ? dmBox(`<p class="small"><b>When claimed</b> ${esc(ch.objective.reaction)}</p>`) : ''}</div>` : ''}
       ${ch.board?.length ? `<div class="card"><h3>Work available from here</h3>
         <p class="small faint">These are optional and order-free; let the players pick.</p>
         ${ch.board.map(b => `<p class="small"><a href="javascript:void 0" data-ch="${esc(b.id)}"><b>${esc(b.title)}</b></a> <span class="pill">${esc(b.role)}, level ${b.level}</span><br>${esc(b.entry)}</p>`).join('')}</div>` : ''}
@@ -327,7 +343,7 @@ export default {
       ${ch.elements.map(e => `<p><a href="javascript:void 0" data-el="${esc(e.id)}"><b>${esc(e.title)}</b></a> <span class="pill">${esc(e.subtitle)}</span><br><span class="small muted">${esc(e.summary)}</span></p>`).join('')}
       ${ch.link ? `<div class="card link-card"><h3>${esc(ch.link.heading)}</h3>
         <p class="small">${esc(ch.link.summary)}</p>
-        <ul class="small">${ch.link.clues.map(c => `<li>${esc(c.text)} <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
+        <ul class="small">${ch.link.clues.map(c => `<li><span class="player-inline">${esc(c.text)}</span> <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
         <p class="small faint">Three independent pointers, so one missed roll never strands the party.</p></div>`
         : '<div class="card"><h3>This is the last chapter</h3><p class="small">See Endings for how it can land.</p></div>'}`;
 
@@ -349,10 +365,11 @@ export default {
         </div>
         <p class="small muted mt">${esc(c.pattern.note)}</p>
         ${c.opening ? `<div class="card"><h3>Opening the campaign</h3><p class="small">${esc(c.opening)}</p></div>` : ''}
-        ${c.playerHooks?.length ? `<div class="card"><h3>Character hooks, hand these to the players</h3>
-          <ul class="small">${c.playerHooks.map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
+        ${c.playerHooks?.length ? `<div class="card"><h3>Character hooks</h3>
+          ${playerBox(`<ul class="small" style="margin:0">${c.playerHooks.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`, 'Hand to players')}</div>` : ''}
         <div class="card"><h3>Running it</h3>
-          <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters assume four PCs at the chapter's level, so nudge counts up or down for other party sizes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p></div>
+          <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters assume four PCs at the chapter's level, so nudge counts up or down for other party sizes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
+          <p class="small"><span class="facing player">Read aloud</span> boxed blue text is safe to say or show to the players verbatim. <span class="facing dm">DM only</span> fenced blocks are spoilers: secrets, solutions, and the true/false of things. Everything unmarked is ordinary working material, worded for you rather than for them.</p></div>
         <div class="grid-2 mt">
           <div class="card"><h3>The region</h3>
             <p class="small"><b>${esc(c.region.name)}</b>, ${esc(c.region.label)}. Base of operations: <b>${esc(c.hub)}</b>.</p>
@@ -365,7 +382,7 @@ export default {
           <ul class="small">${c.objective.items.map(i => `<li><b>${esc(i.name)}</b> - ${esc(i.chapterTitle)}. ${esc(i.note)}
             ${i.power ? `<br><span class="faint">While held: ${esc(i.power)} The catch: ${esc(i.cost)}</span>` : ''}</li>`).join('')}</ul></div>
         <div class="card"><h3>By the numbers</h3>
-          <p class="small">${c.stats.acts} acts, ${c.stats.chapters} chapters, ${c.stats.elements} elements, ${c.stats.nodes} keyed areas,
+          <p class="small">${c.stats.chapters} chapters across ${c.stats.acts} acts, ${c.stats.nodes} keyed areas,
           ${c.stats.encounters} built encounters, ${c.stats.npcs} named NPCs, ${c.stats.xp.toLocaleString()} adjusted XP in placed fights${c.treasure ? `, ${c.treasure.gp.toLocaleString()} gp in placed treasure` : ''}.</p>
           ${progressLine()}</div>`;
     };
