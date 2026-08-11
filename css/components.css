@@ -139,6 +139,40 @@ table.data tr.clickable:hover { background: var(--bg-hover); }
 }
 .empty-state svg { width: 40px; height: 40px; margin: 0 auto 10px; opacity: 0.5; }
 
+/* Placeholder rows sitting behind the initiative tracker's empty-state text.
+   Static on purpose: this is a hint at the shape, not a loading animation. */
+.init-skeleton { position: relative; }
+.init-skeleton .skel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  margin-bottom: 6px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  opacity: 0.6;
+}
+.init-skeleton .skel { height: 12px; border-radius: 6px; background: var(--border); }
+.init-skeleton .skel-init { width: 34px; height: 26px; flex: none; border-radius: var(--radius); }
+.init-skeleton .skel-name { flex: 1 1 auto; max-width: 200px; }
+.init-skeleton .skel-hp { width: 90px; margin-left: auto; }
+.init-skeleton .empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+}
+.init-skeleton .empty-state p {
+  margin: 0;
+  max-width: 440px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+
 /* ---------- Modal ---------- */
 dialog.modal {
   border: 1px solid var(--border);
