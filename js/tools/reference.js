@@ -93,7 +93,7 @@ async function renderAll(body) {
 
 export default {
   id: 'reference', title: 'Reference', shortTitle: 'Reference', group: 'Reference', icon: 'book',
-  subtitle: 'Bestiary, spells, items, rules, conditions, and character options',
+  subtitle: 'Bestiary, spells, items, rules, conditions, and character options across every bundled source',
 
   async render(container) {
     let typeId = getPrefs().refType || 'all';

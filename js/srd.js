@@ -53,6 +53,31 @@ export function preloadAll() {
   runNext();
 }
 
+/* ---------- sources ---------- */
+
+// Short badge for a source, for lists too tight to spell the book out.
+// Returns '' for the SRD, which is the unmarked default.
+const SOURCE_TAGS = [
+  [/^SRD/i, ''],
+  [/A5E|Adventurer's Guide|Monstrous Menagerie|Level Up|Dungeon Delver|Gate Pass/i, 'A5E'],
+  [/Tome of Beasts 2/i, 'ToB2'],
+  [/Tome of Beasts 3/i, 'ToB3'],
+  [/Tome of Beasts/i, 'ToB'],
+  [/Creature Codex/i, 'CC'],
+  [/Deep Magic Extended/i, 'DMX'],
+  [/Deep Magic/i, 'DM'],
+  [/Spells That Don't Suck/i, 'STDS'],
+  [/Vault of Magic/i, 'VoM'],
+  [/Tome of Heroes/i, 'ToH'],
+  [/Tal.?Dorei/i, 'TDCS'],
+];
+
+export function sourceTag(source) {
+  if (!source) return '';
+  for (const [re, tag] of SOURCE_TAGS) if (re.test(source)) return tag;
+  return source.length <= 6 ? source : source.slice(0, 5) + '.';
+}
+
 /* ---------- 5e math ---------- */
 
 export const abilityMod = (score) => Math.floor((score - 10) / 2);
