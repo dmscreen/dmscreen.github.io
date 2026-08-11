@@ -63,10 +63,24 @@ export function modal(title, bodyNode, { actions = [], wide = false, onClose } =
   d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
   d.addEventListener('close', () => d.close()); // Esc key path
   d.addEventListener('cancel', () => d.close());
+  // Enter confirms. Handled on the dialog itself rather than relying on
+  // focus, which mouse interactions do not reliably leave in the right
+  // place. Textareas keep Enter for newlines, and a deliberately focused
+  // Cancel (or other) button keeps its own click.
+  if (actions.length) {
+    d.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const affirm = d.querySelector('.modal-foot .btn:last-child');
+      if (!affirm) return;
+      const t = e.target;
+      if (t && t.tagName === 'TEXTAREA') return;
+      if (t && t.closest?.('.btn') && t.closest('.btn') !== affirm) return;
+      e.preventDefault();
+      affirm.click();
+    });
+  }
   document.body.append(d);
   d.showModal();
-  // Focus the affirmative action so Enter confirms straight away. Dialogs
-  // with inputs re-focus their first field right after (promptDialog).
   if (actions.length) d.querySelector('.modal-foot .btn:last-child')?.focus();
   return d;
 }

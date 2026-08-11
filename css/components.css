@@ -408,22 +408,24 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .beat.clue, .beat.objective { border-left-color: var(--accent); }
 .beat p { margin: 3px 0; }
 .beat-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Solid background and strong strokes: in light theme, panel-tinted fills
+   and faint 1.5px strokes washed the whole plan out to near-white. */
 .story-map {
   width: 100%;
   max-height: 340px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--bg-panel-75);
+  background: var(--bg-panel);
   margin-top: 8px;
 }
-.story-map line { stroke: var(--border); stroke-width: 2; }
-.story-map circle { fill: var(--bg-raised); stroke: var(--text-faint); stroke-width: 1.5; }
-.story-map text { fill: var(--text); font-size: 11px; text-anchor: middle; font-family: var(--font-mono); pointer-events: none; }
-.story-map .threshold circle { stroke: var(--text); stroke-width: 2.5; stroke-dasharray: 4 3; }
-.story-map .encounter circle { stroke: var(--danger); stroke-width: 2.5; }
-.story-map .boss circle { stroke: var(--accent); stroke-width: 3; }
-.story-map .treasure circle { stroke: var(--success); stroke-width: 2.5; }
-.story-map .trap circle, .story-map .puzzle circle { stroke: var(--info); stroke-width: 2.5; }
+.story-map line { stroke: var(--text-faint); stroke-width: 2.5; }
+.story-map circle { fill: var(--bg-hover); stroke: var(--text-dim); stroke-width: 2; }
+.story-map text { fill: var(--text); font-size: 12px; font-weight: 600; text-anchor: middle; font-family: var(--font-mono); pointer-events: none; }
+.story-map .threshold circle { stroke: var(--text); stroke-width: 3; stroke-dasharray: 4 3; }
+.story-map .encounter circle { stroke: var(--danger); stroke-width: 3; }
+.story-map .boss circle { stroke: var(--accent); stroke-width: 3.5; }
+.story-map .treasure circle { stroke: var(--success); stroke-width: 3; }
+.story-map .trap circle, .story-map .puzzle circle { stroke: var(--info); stroke-width: 3; }
 /* The player/DM boundary. Blue boxes hold text safe to say or show to the
    players; amber-fenced blocks hold spoilers; unmarked text is DM material. */
 .player-text {
@@ -469,3 +471,18 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .npc-card p { margin: 4px 0 0; }
 .link-card { border-color: var(--accent); }
+
+/* Clickable clock segments: fill up to the one you click, click the last
+   filled one to clear it back. */
+.clock-row { display: inline-flex; gap: 3px; vertical-align: middle; margin: 0 4px; }
+.clock-seg {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.clock-seg:hover { border-color: var(--accent); }
+.clock-seg.filled { background: var(--accent); border-color: var(--accent); }

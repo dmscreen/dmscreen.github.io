@@ -4,7 +4,7 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
-import { generateCampaign, campaignMarkdown, rerollChapter } from '../campaign-gen.js';
+import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter } from '../campaign-gen.js';
 import { launchCombat } from './encounters.js';
 
 const PATTERNS = [
@@ -298,7 +298,6 @@ export default {
       if (elt.type === 'event') return `${head}
         <h3 class="mt">Phases</h3>
         <ol>${elt.phases.map(p => `<li>${esc(p.text)}</li>`).join('')}</ol>
-        <p><b>Objective</b> ${esc(elt.objective)}</p>
         <p><b>If it goes wrong</b> ${esc(elt.failure)}</p>
         ${elt.climaxEncounter ? `<h3>The fight, if it comes to one</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'Climax encounter', objective: elt.objective, tactics: 'The event drives the tactics; terrain and the clock matter more than the numbers.', morale: 'Withdraws the moment the objective is out of reach.', ifAvoided: 'The event resolves without a fight, which is a legitimate outcome.' })}` : ''}`;
 
@@ -341,6 +340,8 @@ export default {
         ${ch.board.map(b => `<p class="small"><a href="javascript:void 0" data-ch="${esc(b.id)}"><b>${esc(b.title)}</b></a> <span class="pill">${esc(b.role)}, level ${b.level}</span><br>${esc(b.entry)}</p>`).join('')}</div>` : ''}
       <h3>Elements</h3>
       ${ch.elements.map(e => `<p><a href="javascript:void 0" data-el="${esc(e.id)}"><b>${esc(e.title)}</b></a> <span class="pill">${esc(e.subtitle)}</span><br><span class="small muted">${esc(e.summary)}</span></p>`).join('')}
+      <label class="field mt"><span>Your notes on this chapter (autosaved, DM only)</span>
+        <textarea data-chnote="${esc(ch.id)}" rows="3" placeholder="What actually happened, who died, what the party broke...">${esc(record?.notes?.[ch.id] || '')}</textarea></label>
       ${ch.link ? `<div class="card link-card"><h3>${esc(ch.link.heading)}</h3>
         <p class="small">${esc(ch.link.summary)}</p>
         <ul class="small">${ch.link.clues.map(c => `<li><span class="player-inline">${esc(c.text)}</span> <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
@@ -403,14 +404,33 @@ export default {
           <ol class="small">${v.timeline.map(t => `<li><b>${esc(t.when)}:</b> ${esc(t.move)}</li>`).join('')}</ol></div>`;
     };
 
+    // Standing runs -3..+3 relative to the faction's written attitude.
+    const standingOf = (f) => record?.factionStanding?.[f.id] || 0;
+    const fmtStanding = (n) => n === 0 ? 'as written' : (n > 0 ? `+${n}` : String(n));
+
     const worldHTML = () => `
       <h2>Factions, clocks &amp; region</h2>
       <div class="card"><h3>Factions</h3>
-        ${campaign.factions.map(f => `<p class="small"><b>${esc(f.name)}</b> <span class="pill">${esc(f.attitude)}</span><br>
+        <p class="small faint">Standing tracks how the party has shifted each faction from its written attitude. It saves with the campaign.</p>
+        ${campaign.factions.map(f => `<p class="small"><b>${esc(f.name)}</b> <span class="pill">${esc(f.attitude)}</span>
+          <span class="hp-ctrl" style="display:inline-flex;gap:4px;margin-left:6px">
+            <button class="btn small" data-fac="${esc(f.id)}" data-shift="-1" title="The party crossed them">&minus;</button>
+            <span class="pill ${standingOf(f) > 0 ? 'success' : standingOf(f) < 0 ? 'danger' : ''}">${fmtStanding(standingOf(f))}</span>
+            <button class="btn small" data-fac="${esc(f.id)}" data-shift="1" title="The party earned favor">+</button>
+          </span><br>
           Wants to ${esc(f.goal)}. Offers ${esc(f.offers)}. Demands ${esc(f.demands)}.</p>`).join('')}</div>
       <div class="card"><h3>Clocks</h3>
-        ${campaign.clocks.map(k => `<p class="small"><b>${esc(k.label)}</b> ${'&#9633;'.repeat(k.segments)} ${k.global ? '<span class="pill accent">campaign</span>' : ''}<br>${esc(k.onFill)}</p>
-        ${k.advances?.length ? `<ul class="small faint">${k.advances.map(a => `<li>Advance a segment when ${esc(a)}</li>`).join('')}</ul>` : ''}`).join('')}</div>
+        <p class="small faint">Click a segment to fill up to it; click the last filled segment to clear it back. Fills save with the campaign.</p>
+        ${campaign.clocks.map(k => {
+          const fill = record?.clockFill?.[k.id] || 0;
+          return `<p class="small"><b>${esc(k.label)}</b>
+            <span class="clock-row">${Array.from({ length: k.segments }, (_, i) =>
+              `<button class="clock-seg ${i < fill ? 'filled' : ''}" data-clock="${esc(k.id)}" data-seg="${i + 1}" title="Segment ${i + 1} of ${k.segments}"></button>`).join('')}</span>
+            <span class="faint">${fill}/${k.segments}</span>
+            ${k.global ? '<span class="pill accent">campaign</span>' : ''}
+            ${fill >= k.segments ? '<span class="pill danger">FILLED</span>' : ''}<br>${esc(k.onFill)}</p>
+          ${k.advances?.length ? `<ul class="small faint">${k.advances.map(a => `<li>Advance a segment when ${esc(a)}</li>`).join('')}</ul>` : ''}`;
+        }).join('')}</div>
       <div class="card"><h3>${esc(campaign.region.name)}</h3>
         <p class="small">${esc(campaign.region.label)}. Terrain: ${campaign.region.terrain.map(esc).join(', ')}.</p>
         <ul class="small">${campaign.region.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
@@ -459,7 +479,14 @@ export default {
       box.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', async () => {
         const list = JSON.parse(b.dataset.run).map(x => ({ monster: bySlug.get(x.slug), count: x.count })).filter(x => x.monster);
         if (!list.length) return toast('No stat blocks for that encounter', 'danger');
-        await launchCombat(list);
+        // launching replaces the tracker; never wipe a live fight silently
+        const combat = await getState('combat');
+        if (combat?.started && combat.combatants?.length) {
+          confirmDialog(`A fight is already running (round ${combat.round}). Replace it with this encounter?`,
+            () => launchCombat(list), { label: 'Replace fight' });
+        } else {
+          await launchCombat(list);
+        }
       }));
       box.querySelectorAll('[data-ch]').forEach(a => a.addEventListener('click', () => {
         const ch = campaign.acts.flatMap(x => x.chapters).find(x => x.id === a.dataset.ch);
@@ -470,6 +497,29 @@ export default {
         const hit = all.find(x => x.e.id === a.dataset.el);
         if (hit) { selection = { kind: 'element', ref: hit.e, chapter: hit.ch }; drawTree(); drawDetail(); }
       }));
+      box.querySelectorAll('[data-clock]').forEach(b => b.addEventListener('click', async () => {
+        const { clock, seg } = b.dataset;
+        record.clockFill ||= {};
+        const cur = record.clockFill[clock] || 0;
+        record.clockFill[clock] = Number(seg) === cur ? cur - 1 : Number(seg);
+        await persistRecord();
+        drawDetail();
+      }));
+      box.querySelectorAll('[data-fac]').forEach(b => b.addEventListener('click', async () => {
+        record.factionStanding ||= {};
+        const cur = record.factionStanding[b.dataset.fac] || 0;
+        record.factionStanding[b.dataset.fac] = Math.max(-3, Math.min(3, cur + Number(b.dataset.shift)));
+        await persistRecord();
+        drawDetail();
+      }));
+      box.querySelector('[data-chnote]')?.addEventListener('input', (e) => {
+        clearTimeout(e.target._t);
+        e.target._t = setTimeout(async () => {
+          record.notes ||= {};
+          record.notes[e.target.dataset.chnote] = e.target.value;
+          await persistRecord();
+        }, 500);
+      });
       box.querySelector('[data-done]')?.addEventListener('click', async (e) => {
         const id = e.currentTarget.dataset.done;
         record.progress ||= {};
@@ -507,6 +557,7 @@ export default {
           <h2 style="margin:0">${esc(c.title)}</h2>
           <span class="pill accent">${esc(c.pattern.label)}</span>
           <span style="margin-left:auto"></span>
+          <button class="btn small" id="sg-handout" title="Only player-facing text: the pitch, hooks, and rumours with the true/false stripped">Player handout</button>
           <button class="btn small" id="sg-export">Export .md</button>
         </div>
         <div class="story-layout">
@@ -514,6 +565,15 @@ export default {
           <div class="story-detail card" id="sg-detail"></div>
         </div>`;
       out.querySelector('#sg-export').addEventListener('click', () => downloadMarkdown(c));
+      out.querySelector('#sg-handout').addEventListener('click', () => {
+        const blob = new Blob([playerHandoutMarkdown(c)], { type: 'text/markdown' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${c.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-player-handout.md`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('Player handout downloaded; safe to share as-is');
+      });
       drawTree();
       drawDetail();
     };
