@@ -65,6 +65,9 @@ export function modal(title, bodyNode, { actions = [], wide = false, onClose } =
   d.addEventListener('cancel', () => d.close());
   document.body.append(d);
   d.showModal();
+  // Focus the affirmative action so Enter confirms straight away. Dialogs
+  // with inputs re-focus their first field right after (promptDialog).
+  if (actions.length) d.querySelector('.modal-foot .btn:last-child')?.focus();
   return d;
 }
 

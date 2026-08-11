@@ -29,27 +29,43 @@ function fill(text, ctx) {
 
 /* ---------- names ---------- */
 
-function settlementName(names) {
-  return `${pick(names.settlement.prefixes)}${pick(names.settlement.suffixes)}`;
+// Every name generator takes a `used` set and retries, because a campaign
+// with two Kellspires makes its own clue text ambiguous, and two NPCs
+// sharing a name reads as an error even when it is not.
+function unique(used, make) {
+  let name = make();
+  for (let t = 0; used?.has(name) && t < 30; t++) name = make();
+  used?.add(name);
+  return name;
+}
+
+function settlementName(names, used) {
+  return unique(used, () => `${pick(names.settlement.prefixes)}${pick(names.settlement.suffixes)}`);
 }
 
 // `short` keeps to one-word place names, for cases where the name gets
 // embedded in a longer chapter title.
-function siteName(C, short = false) {
+function siteName(C, short = false, used) {
   const s = C.siteNames;
-  const form = short ? '{prefix}{suffix}' : pick(s.forms);
-  const name = form
-    .replace('{prefix}', pick(s.prefixes))
-    .replace('{suffix}', pick(s.suffixes))
-    .replace('{adj}', pick(s.adjectives))
-    .replace('{noun}', pick(s.nouns));
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  return unique(used, () => {
+    const form = short ? '{prefix}{suffix}' : pick(s.forms);
+    const name = form
+      .replace('{prefix}', pick(s.prefixes))
+      .replace('{suffix}', pick(s.suffixes))
+      .replace('{adj}', pick(s.adjectives))
+      .replace('{noun}', pick(s.nouns));
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  });
 }
 
-function personName(names, ancestry) {
-  const a = ancestry || pick(Object.keys(names.people));
-  const set = names.people[a];
-  return { name: `${pick(set.first)} ${pick(set.last)}`, ancestry: a };
+function personName(names, ancestry, used) {
+  let a = ancestry || pick(Object.keys(names.people));
+  const name = unique(used, () => {
+    a = ancestry || pick(Object.keys(names.people));
+    const set = names.people[a];
+    return `${pick(set.first)} ${pick(set.last)}`;
+  });
+  return { name, ancestry: a };
 }
 
 /* ---------- monsters ---------- */
@@ -126,7 +142,7 @@ function treasureFor(items, level, ctx, { major = false } = {}) {
     out.push({ kind: 'magic', slug: it.slug, name: it.name, rarity: it.rarity, attunement: !!it.attunement });
   }
   const coin = major ? roll(`${level * 2}d10`).total * 10 : roll(`${Math.max(2, level)}d10`).total;
-  out.push({ kind: 'coin', name: `${coin.toLocaleString()} gp in coin and portable valuables` });
+  out.push({ kind: 'coin', gp: coin, name: `${coin.toLocaleString()} gp in coin and portable valuables` });
   if (chance(0.4)) out.push({ kind: 'goods', name: fill(pick(ctx.C.treasureGoods), ctx) });
   return out;
 }
@@ -152,7 +168,7 @@ function npcStat(ctx, roleId) {
 function makeNPC(ctx, roleId, where) {
   const { C, names, npcTable } = ctx;
   const role = C.npcRoles.find(r => r.id === roleId) || pick(C.npcRoles);
-  const { name, ancestry } = personName(names);
+  const { name, ancestry } = personName(names, null, ctx.usedNames);
   return {
     id: uid('npc'),
     name,
@@ -226,6 +242,22 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     }
   }
 
+  // Larger and alert-capable sites get a wandering table: a layer on the
+  // element, per the taxonomy, not more rooms. Half the entries are sign
+  // rather than contact, which is what keeps a dungeon feeling inhabited.
+  let wandering = null;
+  if (kind.alerts || nodes.length >= 10) {
+    wandering = Array.from({ length: 6 }, (_, i) => {
+      if (i < 3) return { range: String(i + 1), text: pick(C.wanderingSigns) };
+      const enc = buildEncounter(pool, level, i < 5 ? 0 : 1);
+      return {
+        range: String(i + 1),
+        text: enc ? enc.creatures.map(c => `${c.count} x ${c.name}`).join(' and ') : 'nothing, this time',
+        creatures: enc?.creatures,
+      };
+    });
+  }
+
   return {
     id: uid('el'),
     type: 'dungeon',
@@ -235,6 +267,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     summary: `${kind.label}, ${nodes.length} keyed areas. ${cap1(fill(pick(kind.origins), ctx.slots))}.`,
     hazard: chance(0.5) ? pick(C.hazards) : null,
     alerts: kind.alerts ? 'Once the site is alerted, surviving occupants regroup at the deepest defensible room and post watches on the approach.' : null,
+    wandering,
     nodes,
   };
 }
@@ -420,7 +453,7 @@ function makeChapter(ctx, { roleId, level, index }) {
 
   switch (roleDef.build) {
     case 'ambush': {
-      const place = siteName(C, true);
+      const place = siteName(C, true, ctx.usedPlaces);
       chapter.title = `Trouble on the ${place} Road`;
       chapter.summary = `A scripted ambush that introduces ${ctx.slots.villain}'s people, followed by the small site the survivors run back to.`;
       chapter.elements.push(makeEvent(ctx, { title: `Ambush on the ${place} Road`, level, pool: pools.faction, kindId: 'chase' }));
@@ -428,7 +461,7 @@ function makeChapter(ctx, { roleId, level, index }) {
       break;
     }
     case 'arrival': {
-      const place = siteName(C);
+      const place = siteName(C, false, ctx.usedPlaces);
       chapter.title = `Arrival at ${place}`;
       chapter.summary = `The party reaches ${ctx.slots.region} and finds the way behind them closed. First contact with what is wrong here.`;
       chapter.elements.push(makeEvent(ctx, { title: `The Road Closes`, level, pool: pools.wild, kindId: 'set_piece' }));
@@ -445,16 +478,20 @@ function makeChapter(ctx, { roleId, level, index }) {
       break;
     }
     case 'site': {
-      const place = siteName(C);
+      const place = siteName(C, false, ctx.usedPlaces);
       chapter.title = place;
       const kindId = pick(['tomb', 'ruin', 'stronghold', 'temple', 'mine', 'wreck', 'planar']);
       chapter.summary = `A self-contained site. ${ctx.slots.villain} has an interest here and has left people to protect it.`;
       chapter.elements.push(makeDungeon(ctx, { kindId, level, title: place, pool: pools.faction }));
-      if (chance(0.5)) chapter.elements.push(makeSettlement(ctx, { title: settlementName(ctx.names), level, isHub: false }));
+      if (chance(0.5)) {
+        const town = makeSettlement(ctx, { title: settlementName(ctx.names, ctx.usedPlaces), level, isHub: false });
+        chapter.elements.push(town);
+        chapter.npcs = town.roster; // so the appendix knows these people exist
+      }
       break;
     }
     case 'event': {
-      const place = chance(0.5) ? ctx.slots.hub : siteName(C, true);
+      const place = chance(0.5) ? ctx.slots.hub : siteName(C, true, ctx.usedPlaces);
       const def = pick(C.eventElements);
       const title = fill(pick(def.titles), { ...ctx.slots, place });
       chapter.title = title;
@@ -463,10 +500,13 @@ function makeChapter(ctx, { roleId, level, index }) {
       break;
     }
     case 'region': {
-      chapter.title = `Across ${ctx.slots.region}`;
+      // hexcrawl patterns take two travel legs; give the second its own name
+      ctx.regionLegs = (ctx.regionLegs || 0) + 1;
+      const legTitle = ctx.regionLegs === 1 ? `Across ${ctx.slots.region}` : `Deeper into ${ctx.slots.region}`;
+      chapter.title = legTitle;
       chapter.summary = 'Procedural travel: routes, days, checks, and a table that keeps the country dangerous.';
-      chapter.elements.push(makeRegion(ctx, { title: `Across ${ctx.slots.region}`, level, pool: pools.wild }));
-      chapter.elements.push(makeDungeon(ctx, { kindId: pick(['lair', 'wreck', 'ruin']), level, title: siteName(C), pool: pools.wild, sizeScale: 0.7 }));
+      chapter.elements.push(makeRegion(ctx, { title: legTitle, level, pool: pools.wild }));
+      chapter.elements.push(makeDungeon(ctx, { kindId: pick(['lair', 'wreck', 'ruin']), level, title: siteName(C, false, ctx.usedPlaces), pool: pools.wild, sizeScale: 0.7 }));
       break;
     }
     case 'investigation': {
@@ -476,7 +516,9 @@ function makeChapter(ctx, { roleId, level, index }) {
       break;
     }
     case 'climax': {
-      const place = siteName(C);
+      // Named before any chapter was built, so lore objects and treasure
+      // maps could foreshadow the finale by its real name.
+      const place = ctx.climaxName || siteName(C, false, ctx.usedPlaces);
       chapter.title = place;
       chapter.summary = `The last site. ${ctx.slots.villain} is here, and so is everything they have left.`;
       chapter.elements.push(makeDungeon(ctx, {
@@ -569,6 +611,122 @@ function chainChapters(ctx, chapters) {
   });
 }
 
+/* ---------- shared assembly helpers (used by generate and reroll) ---------- */
+
+// Milestone leveling, spelled out so nobody has to count XP unless they
+// want to. Mandatory chapters gate the level; optional ones share credit.
+function assignMilestones(chapters) {
+  chapters.forEach((ch, i) => {
+    const next = chapters[i + 1];
+    if (!next) {
+      ch.milestone = `Finishing this chapter ends the campaign at level ${ch.levelGate}.`;
+    } else if (ch.mandatory) {
+      ch.milestone = next.levelGate > ch.levelGate
+        ? `Milestone: the party reaches level ${next.levelGate} when this chapter's business is resolved.`
+        : 'No level change here; the next gate comes with the next mandatory chapter.';
+    } else {
+      ch.milestone = 'Optional: no level gate of its own. Completing any two optional chapters in this act advances the party one level.';
+    }
+  });
+}
+
+// How far each chapter sits from the hub, so the country has distances.
+function assignTravel(ctx, ch, index) {
+  if (ch.role === 'hub_town') { ch.travel = null; return; }
+  if (index === 0) {
+    ch.travel = `On the road into ${ctx.slots.region}, before ${ctx.slots.hub} is reached.`;
+    return;
+  }
+  const leg = pick(ctx.C.regionLegs);
+  const days = Math.max(1, Math.round(leg.days * (0.6 + Math.random() * 0.9)));
+  ch.travel = `${days} day${days > 1 ? 's' : ''} from ${ctx.slots.hub}: ${leg.label.toLowerCase()}. ${leg.checks}.`;
+}
+
+// Remove everything chainChapters and objective placement wrote into other
+// people's nodes, so both can be re-run after a chapter is replaced.
+function stripChain(chapters) {
+  for (const ch of chapters) {
+    ch.board = undefined;
+    ch.link = null;
+    ch.clues = [];
+    for (const el of ch.elements) {
+      el.freeClues = undefined;
+      for (const node of el.nodes || []) {
+        node.beats = node.beats.filter(b => b.kind !== 'clue');
+      }
+    }
+  }
+}
+
+// Drop an objective item into a chapter: last keyed area of its first mapped
+// element, or the element itself when there are no nodes.
+function placeObjectiveItem(item, ch) {
+  item.chapterId = ch.id;
+  item.chapterTitle = ch.title;
+  ch.objective = item;
+  const el = ch.elements.find(e => e.nodes?.length) || ch.elements[0];
+  const node = el.nodes?.length ? el.nodes[el.nodes.length - 1] : null;
+  if (node) node.beats.push({ id: uid('beat'), kind: 'objective', title: item.name, text: item.note });
+  else (el.objectiveNote ||= []).push(`${item.name}: ${item.note}`);
+}
+
+// The toughest fight in a chapter, preferring a boss chamber outright.
+function leadBeatOf(ch) {
+  let best = null;
+  for (const el of ch.elements) {
+    for (const node of el.nodes || []) {
+      for (const b of node.beats) {
+        if (b.kind === 'encounter' && (!best || (b.xp || 0) > (best.beat.xp || 0) || node.role === 'boss')) {
+          best = { beat: b, el, node };
+          if (node.role === 'boss') return best;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// Appendix and totals walk. Travel and wandering tables are deliberately
+// excluded from the XP figure: it counts fights the book actually places.
+function computeTotals(chapters) {
+  const creatures = new Map();
+  const magicItems = new Map();
+  let encounterCount = 0, nodeCount = 0, xpTotal = 0, gp = 0;
+  const rarities = {};
+  const takeTreasure = (list) => {
+    for (const t of list || []) {
+      if (t.kind === 'magic') { magicItems.set(t.slug, t); rarities[t.rarity] = (rarities[t.rarity] || 0) + 1; }
+      if (t.kind === 'coin') gp += t.gp || 0;
+    }
+  };
+  for (const ch of chapters) {
+    for (const el of ch.elements) {
+      nodeCount += el.nodes?.length || 0;
+      for (const node of el.nodes || []) {
+        for (const b of node.beats) {
+          if (b.kind === 'encounter') {
+            encounterCount++;
+            xpTotal += b.xp || 0;
+            for (const c of b.creatures) creatures.set(c.slug, { slug: c.slug, name: c.name, cr: c.cr });
+          }
+          takeTreasure(b.treasure);
+        }
+      }
+      if (el.climaxEncounter) {
+        encounterCount++;
+        xpTotal += el.climaxEncounter.xp || 0;
+        for (const c of el.climaxEncounter.creatures) creatures.set(c.slug, { slug: c.slug, name: c.name, cr: c.cr });
+      }
+    }
+  }
+  return {
+    creatures: [...creatures.values()].sort((a, b) => parseFloat(a.cr) - parseFloat(b.cr)),
+    magicItems: [...magicItems.values()],
+    treasure: { gp, rarities },
+    encounterCount, nodeCount, xpTotal,
+  };
+}
+
 /* ---------- top level ---------- */
 
 export async function generateCampaign(opts = {}) {
@@ -587,9 +745,12 @@ export async function generateCampaign(opts = {}) {
   const startLevel = opts.startLevel || (length === 'short' ? 1 : 1);
   const endLevel = length === 'short' ? 5 : length === 'epic' ? 15 : 10;
 
+  const usedNames = new Set();
+  const usedPlaces = new Set();
   const regionName = `${pick(names.settlement.prefixes)}${pick(['march', 'reach', 'vale', 'hollow', 'moor', 'downs', 'weald'])}`;
-  const hubName = settlementName(names);
-  const villainPerson = personName(names);
+  usedPlaces.add(regionName);
+  const hubName = settlementName(names, usedPlaces);
+  const villainPerson = personName(names, null, usedNames);
   const villainTitle = pick(villainKind.titles);
 
   const pools = buildPools(monsters, villainKind, region.terrain);
@@ -600,6 +761,12 @@ export async function generateCampaign(opts = {}) {
     goal: f.goal, offers: f.offers, demands: f.demands, attitude: f.attitude,
   }));
 
+  // The climax site is named before anything else exists, and {next} defaults
+  // to it. Any lore object or treasure map generated mid-campaign that
+  // mentions {next} therefore foreshadows the finale by its real name,
+  // instead of reading "a map with the next site circled".
+  const climaxName = siteName(C, false, usedPlaces);
+
   const slots = {
     villain: villainPerson.name,
     villainTitle,
@@ -608,12 +775,12 @@ export async function generateCampaign(opts = {}) {
     faction: factionDefs[0].name,
     object: premise.objective.noun,
     objects: premise.objective.plural,
-    npc: personName(names).name,
+    npc: '',
     place: hubName,
-    next: 'the next site',
+    next: climaxName,
   };
 
-  const ctx = { C, names, npcTable, quests, shops, items, monsters, pools, region, slots };
+  const ctx = { C, names, npcTable, quests, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName };
 
   // The patron exists before anything else so that every {npc} slot resolves
   // to a person who is actually in the campaign, seated in the hub roster,
@@ -649,24 +816,12 @@ export async function generateCampaign(opts = {}) {
   }
 
   chainChapters(ctx, allChapters);
-
-  // Milestone leveling, spelled out so nobody has to count XP unless they
-  // want to. Mandatory chapters gate the level; optional ones share credit.
-  allChapters.forEach((ch, i) => {
-    const next = allChapters[i + 1];
-    if (!next) {
-      ch.milestone = `Finishing this chapter ends the campaign at level ${ch.levelGate}.`;
-    } else if (ch.mandatory) {
-      ch.milestone = next.levelGate > ch.levelGate
-        ? `Milestone: the party reaches level ${next.levelGate} when this chapter's business is resolved.`
-        : 'No level change here; the next gate comes with the next mandatory chapter.';
-    } else {
-      ch.milestone = 'Optional: no level gate of its own. Completing any two optional chapters in this act advances the party one level.';
-    }
-  });
+  assignMilestones(allChapters);
+  allChapters.forEach((ch, i) => assignTravel(ctx, ch, i));
 
   // Scatter the campaign objects across non-hub chapters, back to front, so
-  // the last one is always in the climax.
+  // the last one is always in the climax. Each is a real object at the
+  // table: a use, a burden, and a villain reaction when it is claimed.
   const candidates = allChapters.filter(c => c.role !== 'hub_town');
   const climaxChapter = candidates[candidates.length - 1];
   const holders = [
@@ -677,20 +832,18 @@ export async function generateCampaign(opts = {}) {
     const item = {
       id: uid('obj'),
       name: `The ${['First', 'Second', 'Third', 'Fourth', 'Fifth'][i] || `${i + 1}th`} ${objective.noun}`,
-      chapterId: ch.id,
-      chapterTitle: ch.title,
       note: fill(pick(C.objectiveNotes), { ...slots, place: ch.title }),
+      power: fill(pick(C.objectivePowers), slots),
+      cost: fill(pick(C.objectiveCosts), slots),
+      reaction: fill(pick(C.objectiveReactions), { ...slots, place: ch.title }),
     };
     objective.items.push(item);
-    ch.objective = item;
-    const el = ch.elements.find(e => e.nodes?.length) || ch.elements[0];
-    const node = el.nodes?.length ? el.nodes[el.nodes.length - 1] : null;
-    if (node) node.beats.push({ id: uid('beat'), kind: 'objective', title: item.name, text: item.note });
-    else (el.freeClues ||= []).push(`${item.name}: ${item.note}`);
+    placeObjectiveItem(item, ch);
   });
 
   // Villain, lieutenants, and a schedule that runs whether the party shows up.
-  const villainStat = pools.faction.filter(m => m.cr >= endLevel - 3 && m.cr <= endLevel + 4);
+  const villainBand = pools.faction.filter(m => m.cr >= endLevel - 3 && m.cr <= endLevel + 4);
+  const villainStat = villainBand.length ? pick(villainBand) : null;
   const villain = {
     id: uid('vil'),
     name: villainPerson.name,
@@ -701,10 +854,14 @@ export async function generateCampaign(opts = {}) {
     method: pick(villainKind.methods),
     resources: some(villainKind.resources, 2).map(r => fill(r, slots)),
     weakness: pick(villainKind.weaknesses),
-    statSuggestion: villainStat.length ? (() => { const m = pick(villainStat); return { slug: m.slug, name: m.name, cr: fmtCR(m.cr) }; })() : null,
+    statSuggestion: villainStat ? { slug: villainStat.slug, name: villainStat.name, cr: fmtCR(villainStat.cr) } : null,
     lieutenants: some(villainKind.lieutenants, 2).map(l => {
-      const p = personName(names);
-      const band = pools.faction.filter(m => m.cr >= Math.max(1, endLevel / 2) && m.cr <= endLevel);
+      const p = personName(names, null, usedNames);
+      // strictly below the boss: a lieutenant outranking the villain reads
+      // as a mistake at the table
+      const cap = villainStat ? villainStat.cr : endLevel;
+      let band = pools.faction.filter(m => m.cr >= Math.max(1, endLevel / 2) && m.cr < cap);
+      if (!band.length) band = pools.faction.filter(m => m.cr >= 1 && m.cr < cap);
       const stat = band.length ? pick(band) : null;
       return {
         id: uid('lt'), name: p.name, ancestry: p.ancestry, note: fill(l, slots),
@@ -720,21 +877,6 @@ export async function generateCampaign(opts = {}) {
   // Put the antagonist layer on the map instead of leaving it in an appendix:
   // the villain personally leads the climax boss fight, and each lieutenant
   // commands the toughest encounter of a mid-campaign chapter.
-  const leadBeatOf = (ch) => {
-    let best = null;
-    for (const el of ch.elements) {
-      for (const node of el.nodes || []) {
-        for (const b of node.beats) {
-          if (b.kind === 'encounter' && (!best || (b.xp || 0) > (best.beat.xp || 0) || node.role === 'boss')) {
-            best = { beat: b, el, node };
-            if (node.role === 'boss') return best;
-          }
-        }
-      }
-    }
-    return best;
-  };
-
   const climaxCh = allChapters[allChapters.length - 1];
   const climaxSpot = leadBeatOf(climaxCh);
   if (climaxSpot) {
@@ -774,33 +916,7 @@ export async function generateCampaign(opts = {}) {
     ...some(C.clocks, 2).map(c => ({ id: uid('clk'), label: fill(c.label, slots), segments: c.segments, onFill: fill(c.onFill, slots), global: false, advances: some(C.clockTriggers, 2).map(t => fill(t, slots)) })),
   ];
 
-  // Appendices and totals.
-  const creatures = new Map();
-  const magicItems = new Map();
-  let encounterCount = 0;
-  let nodeCount = 0;
-  let xpTotal = 0;
-  for (const ch of allChapters) {
-    for (const el of ch.elements) {
-      nodeCount += el.nodes?.length || 0;
-      for (const node of el.nodes || []) {
-        for (const b of node.beats) {
-          if (b.kind === 'encounter') {
-            encounterCount++;
-            xpTotal += b.xp || 0;
-            for (const c of b.creatures) creatures.set(c.slug, { slug: c.slug, name: c.name, cr: c.cr });
-          }
-          for (const t of b.treasure || []) if (t.kind === 'magic') magicItems.set(t.slug, t);
-        }
-      }
-      if (el.climaxEncounter) {
-        encounterCount++;
-        xpTotal += el.climaxEncounter.xp || 0;
-        for (const c of el.climaxEncounter.creatures) creatures.set(c.slug, { slug: c.slug, name: c.name, cr: c.cr });
-      }
-      for (const row of el.encounterTable || []) xpTotal += row.xp || 0;
-    }
-  }
+  const totals = computeTotals(allChapters);
 
   const title = chance(0.5)
     ? premise.title
@@ -829,19 +945,128 @@ export async function generateCampaign(opts = {}) {
     endings: C.endings.map(e => ({ label: e.label, text: fill(e.text, slots) })),
     appendices: {
       npcs,
-      creatures: [...creatures.values()].sort((a, b) => parseFloat(a.cr) - parseFloat(b.cr)),
-      magicItems: [...magicItems.values()],
+      creatures: totals.creatures,
+      magicItems: totals.magicItems,
     },
+    treasure: totals.treasure,
     stats: {
       acts: acts.length,
       chapters: totalChapters,
       elements: allChapters.reduce((a, c) => a + c.elements.length, 0),
-      nodes: nodeCount,
-      encounters: encounterCount,
+      nodes: totals.nodeCount,
+      encounters: totals.encounterCount,
       npcs: npcs.length,
-      xp: xpTotal,
+      xp: totals.xpTotal,
     },
+    // everything a partial reroll needs to rebuild its generation context
+    gen: {
+      premiseId: premise.id,
+      patternId,
+      villainKindId: Object.keys(C.villainKinds).find(k => C.villainKinds[k] === villainKind),
+      length, startLevel, endLevel,
+    },
+    slots: { ...slots },
   };
+}
+
+/* ---------- partial reroll ---------- */
+
+// Replace one chapter with a fresh roll of the same role and level, keeping
+// everything else: the chain is rebuilt, the objective item and any leader
+// stationed there are re-seated, milestones and appendices recomputed.
+export async function rerollChapter(campaign, chapterId) {
+  const [monsters, items, C, names, npcTable, quests, shops] = await Promise.all([
+    loadMonsters(), loadItems(), loadTables('campaign'),
+    loadTables('names'), loadTables('npc'), loadTables('quests'), loadTables('shops'),
+  ]);
+  const gen = campaign.gen;
+  if (!gen || !campaign.slots) throw new Error('This campaign predates rerolling; generate a new one.');
+
+  const villainKind = C.villainKinds[gen.villainKindId] || pick(Object.values(C.villainKinds));
+  const region = C.regionKinds[campaign.region.kind];
+  const pools = buildPools(monsters, villainKind, campaign.region.terrain);
+  const slots = { ...campaign.slots };
+
+  const allChapters = campaign.acts.flatMap(a => a.chapters);
+  const idx = allChapters.findIndex(c => c.id === chapterId);
+  if (idx === -1) throw new Error('Chapter not found.');
+  const old = allChapters[idx];
+  const isClimax = idx === allChapters.length - 1;
+
+  // seed the dedupe sets with everything that survives the reroll
+  const usedNames = new Set(campaign.appendices.npcs.map(n => n.name));
+  usedNames.add(campaign.villain.name);
+  campaign.villain.lieutenants.forEach(l => usedNames.add(l.name));
+  const usedPlaces = new Set([campaign.hub, campaign.region.name]);
+  allChapters.forEach(c => { if (c !== old) { usedPlaces.add(c.title); c.elements.forEach(e => usedPlaces.add(e.title)); } });
+
+  const ctx = { C, names, npcTable, quests, shops, items, monsters, pools, region, slots, usedNames, usedPlaces };
+  ctx.recurringPatron = campaign.appendices.npcs.find(n => n.roleId === 'patron') || null;
+  // the climax keeps its name: half the campaign's lore already points at it
+  if (isClimax) ctx.climaxName = old.title;
+  // travel legs are numbered by position, so a reroll keeps its own title
+  // ("Across X" vs "Deeper into X") instead of duplicating its sibling's
+  ctx.regionLegs = allChapters.slice(0, idx).filter(c => c.role === 'region_leg').length;
+
+  const fresh = makeChapter(ctx, { roleId: old.role, level: old.levelGate, index: old.index });
+  fresh.id = old.id; // progress marks and objective references survive
+
+  for (const act of campaign.acts) {
+    const i = act.chapters.indexOf(old);
+    if (i !== -1) act.chapters[i] = fresh;
+  }
+  allChapters[idx] = fresh;
+
+  // rebuild every cross-chapter layer against the new list
+  stripChain(allChapters);
+  chainChapters(ctx, allChapters);
+  assignMilestones(allChapters);
+  assignTravel(ctx, fresh, idx);
+
+  const item = campaign.objective.items.find(it => it.chapterId === old.id);
+  if (item) placeObjectiveItem(item, fresh);
+
+  if (isClimax) {
+    const spot = leadBeatOf(fresh);
+    if (spot) {
+      spot.beat.leader = {
+        name: `${campaign.villain.name}, ${campaign.villain.title}`,
+        statSuggestion: campaign.villain.statSuggestion,
+        note: `Exploit at the table: ${campaign.villain.weakness}`,
+      };
+      spot.beat.title = 'The final confrontation';
+      campaign.villain.where = `${fresh.title}, area ${spot.node.id}`;
+    }
+  } else if (old.lieutenant) {
+    const lt = campaign.villain.lieutenants.find(l => l.name === old.lieutenant);
+    const spot = lt && leadBeatOf(fresh);
+    if (spot) {
+      spot.beat.leader = { name: lt.name, statSuggestion: lt.statSuggestion, note: lt.note };
+      lt.where = `${fresh.title}, area ${spot.node.id}`;
+      fresh.lieutenant = lt.name;
+    }
+  }
+
+  // roster: swap the old chapter's people for the new chapter's people
+  const oldIds = new Set(old.npcs.map(n => n.id));
+  campaign.appendices.npcs = campaign.appendices.npcs.filter(n => !oldIds.has(n.id)).concat(fresh.npcs);
+  fresh.npcs.forEach(n => { n.connection ||= fill(pick(C.npcConnections), { ...slots, npc: campaign.villain.name }); });
+
+  const entry = campaign.villain.timeline[idx];
+  if (entry) entry.when = `While chapter ${idx + 1} (${fresh.title}) sits unresolved`;
+
+  const totals = computeTotals(allChapters);
+  campaign.appendices.creatures = totals.creatures;
+  campaign.appendices.magicItems = totals.magicItems;
+  campaign.treasure = totals.treasure;
+  Object.assign(campaign.stats, {
+    elements: allChapters.reduce((a, c) => a + c.elements.length, 0),
+    nodes: totals.nodeCount,
+    encounters: totals.encounterCount,
+    npcs: campaign.appendices.npcs.length,
+    xp: totals.xpTotal,
+  });
+  return fresh;
 }
 
 /* ---------- markdown export ---------- */
@@ -858,7 +1083,12 @@ export function campaignMarkdown(c) {
     L.push('');
   }
   L.push(`## The objective`, '', `${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '', `If ${c.villain.name} succeeds: ${c.objective.ifLost}`, '');
-  c.objective.items.forEach(i => L.push(`- **${i.name}** - ${i.chapterTitle}. ${i.note}`));
+  c.objective.items.forEach(i => {
+    L.push(`- **${i.name}** - ${i.chapterTitle}. ${i.note}`);
+    if (i.power) L.push(`  - While held: ${i.power}`);
+    if (i.cost) L.push(`  - The catch: ${i.cost}`);
+    if (i.reaction) L.push(`  - When claimed: ${i.reaction}`);
+  });
   L.push('', `## Antagonist`, '', `**${c.villain.name}, ${c.villain.title}** (${c.villain.kind})`, '');
   L.push(`- Goal: ${c.villain.goal}`, `- Method: ${c.villain.method}`, `- Weakness: ${c.villain.weakness}`);
   c.villain.resources.forEach(r => L.push(`- Resource: ${r}`));
@@ -881,6 +1111,7 @@ export function campaignMarkdown(c) {
     for (const ch of act.chapters) {
       L.push(`### ${ch.index}. ${ch.title}`, '', `*${ch.roleLabel}, level ${ch.levelGate}${ch.mandatory ? ', mandatory' : ', optional'}*`, '', ch.summary, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
+      if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');
       if (ch.objective) L.push(`**Holds:** ${ch.objective.name}. ${ch.objective.note}`, '');
@@ -891,6 +1122,10 @@ export function campaignMarkdown(c) {
       }
       for (const el of ch.elements) {
         L.push(`#### ${el.title} (${el.subtitle})`, '', el.summary, '');
+        if (el.objectiveNote?.length) el.objectiveNote.forEach(o => L.push(`**Holds:** ${o}`, ''));
+        if (el.wandering) {
+          L.push('Wandering (d6, roll each half hour of dawdling or after loud noise):', ...el.wandering.map(r => `- ${r.range}: ${r.text}`), '');
+        }
         for (const n of el.nodes || []) {
           L.push(`**${n.id}. ${n.roleLabel}** (${n.light}${n.exits.length ? `, exits to ${n.exits.join(', ')}` : ''})`, '', n.description, '');
           for (const b of n.beats) {
@@ -927,6 +1162,10 @@ export function campaignMarkdown(c) {
   c.appendices.npcs.forEach(n => L.push(`- **${n.name}** (${n.ancestry} ${n.occupation}, ${n.role}${n.statSuggestion ? `; use ${n.statSuggestion.name} if it comes to blows` : ''}) - ${n.personality}; ${n.quirk}. Wants ${n.wants}. Secret: ${n.secret}. ${n.connection}`));
   L.push('', '## Appendix: Creatures', '', c.appendices.creatures.map(m => `${m.name} (CR ${m.cr})`).join(', '), '');
   if (c.appendices.magicItems.length) L.push('## Appendix: Magic items', '', c.appendices.magicItems.map(i => `${i.name} (${i.rarity})`).join(', '), '');
+  if (c.treasure) {
+    const rar = Object.entries(c.treasure.rarities || {}).map(([r, n]) => `${n} ${r}`).join(', ');
+    L.push('', '## Appendix: Treasure totals', '', `${c.treasure.gp.toLocaleString()} gp in placed coin and valuables${rar ? `, plus magic items: ${rar}` : ''}.`, '');
+  }
   L.push('', '## Endings', '');
   c.endings.forEach(e => L.push(`- **${e.label}:** ${e.text}`));
   return L.join('\n');

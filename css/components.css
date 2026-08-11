@@ -382,6 +382,8 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .story-node .sn-label { display: block; font-weight: 600; font-size: 0.92rem; }
 .story-node.d2 .sn-label { font-weight: 400; }
 .story-node .sn-sub { display: block; font-size: 0.76rem; color: var(--text-faint); }
+.story-node.done .sn-label::after { content: ' \2713'; color: var(--success); }
+.story-node.done .sn-label { text-decoration: line-through; text-decoration-color: var(--text-faint); }
 .story-detail { min-height: 300px; }
 .story-detail h3 { margin: 12px 0 4px; font-size: 0.95rem; }
 .story-detail .card { margin: 10px 0; }
@@ -417,6 +419,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .story-map line { stroke: var(--border); stroke-width: 2; }
 .story-map circle { fill: var(--bg-raised); stroke: var(--text-faint); stroke-width: 1.5; }
 .story-map text { fill: var(--text); font-size: 11px; text-anchor: middle; font-family: var(--font-mono); pointer-events: none; }
+.story-map .threshold circle { stroke: var(--text); stroke-width: 2.5; stroke-dasharray: 4 3; }
 .story-map .encounter circle { stroke: var(--danger); stroke-width: 2.5; }
 .story-map .boss circle { stroke: var(--accent); stroke-width: 3; }
 .story-map .treasure circle { stroke: var(--success); stroke-width: 2.5; }

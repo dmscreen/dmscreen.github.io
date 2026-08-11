@@ -4,7 +4,7 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
-import { generateCampaign, campaignMarkdown } from '../campaign-gen.js';
+import { generateCampaign, campaignMarkdown, rerollChapter } from '../campaign-gen.js';
 import { launchCombat } from './encounters.js';
 
 const PATTERNS = [
@@ -28,8 +28,11 @@ export default {
     const bySlug = new Map(monsters.map(m => [m.slug, m]));
     let items = null; // lazy, only needed when a magic item is clicked
 
-    let campaign = null;
+    let record = null;   // the saved dbAll('stories') row: { id, data, progress }
+    let campaign = null; // record.data
     let selection = { kind: 'overview' };
+    const persistRecord = () => record && dbPut('stories', record);
+    const isDone = (ch) => !!record?.progress?.[ch.id];
 
     container.innerHTML = `
       <div class="card">
@@ -78,12 +81,12 @@ export default {
             <button class="btn small" data-md>Export .md</button>
             <button class="btn small danger" data-del>Delete</button>
           </span></div>`);
-        row.querySelector('[data-load]').addEventListener('click', () => { show(s.data); });
+        row.querySelector('[data-load]').addEventListener('click', () => { show(s); });
         row.querySelector('[data-md]').addEventListener('click', () => downloadMarkdown(s.data));
         row.querySelector('[data-del]').addEventListener('click', () => {
           confirmDialog(`Delete "${s.data.title}"?`, async () => {
             await dbDelete('stories', s.id);
-            if (campaign?.id === s.data.id) { campaign = null; out.innerHTML = ''; }
+            if (campaign?.id === s.data.id) { campaign = null; record = null; out.innerHTML = ''; }
             drawSaved();
           });
         });
@@ -110,8 +113,8 @@ export default {
           pattern: container.querySelector('#sg-pattern').value || undefined,
           premiseId: container.querySelector('#sg-premise').value || undefined,
         });
-        await dbPut('stories', { campaignId: activeCampaignId(), created: Date.now(), data: c });
-        show(c);
+        const rec = await dbPut('stories', { campaignId: activeCampaignId(), created: Date.now(), data: c, progress: {} });
+        show(rec);
         drawSaved();
         toast(`"${c.title}" generated: ${c.stats.chapters} chapters, ${c.stats.encounters} encounters`);
       } catch (err) {
@@ -134,7 +137,7 @@ export default {
       campaign.acts.forEach((act, ai) => {
         rows.push({ kind: 'act', ref: act, label: act.title, sub: `Act ${ai + 1}, level ${act.levelGate}+`, depth: 0 });
         for (const ch of act.chapters) {
-          rows.push({ kind: 'chapter', ref: ch, label: `${ch.index}. ${ch.title}`, sub: `${ch.roleLabel}, level ${ch.levelGate}`, depth: 1 });
+          rows.push({ kind: 'chapter', ref: ch, label: `${ch.index}. ${ch.title}`, sub: `${ch.roleLabel}, level ${ch.levelGate}`, depth: 1, done: isDone(ch) });
           for (const elt of ch.elements) {
             rows.push({ kind: 'element', ref: elt, chapter: ch, label: elt.title, sub: elt.subtitle, depth: 2 });
           }
@@ -142,7 +145,7 @@ export default {
       });
       rows.push({ kind: 'npcs', label: 'NPCs', sub: `${campaign.appendices.npcs.length} in the roster`, depth: 0 });
       rows.push({ kind: 'creatures', label: 'Creatures', sub: `${campaign.appendices.creatures.length} stat blocks used`, depth: 0 });
-      rows.push({ kind: 'items', label: 'Magic items', sub: `${campaign.appendices.magicItems.length} placed`, depth: 0 });
+      rows.push({ kind: 'items', label: 'Treasure & items', sub: `${campaign.appendices.magicItems.length} magic items, ${(campaign.treasure?.gp || 0).toLocaleString()} gp`, depth: 0 });
       rows.push({ kind: 'endings', label: 'Endings', depth: 0 });
       return rows;
     };
@@ -154,7 +157,7 @@ export default {
       const box = out.querySelector('#sg-tree');
       box.innerHTML = '';
       for (const row of treeRows()) {
-        const node = el(`<button class="story-node d${row.depth} ${sameSelection(row) ? 'active' : ''}">
+        const node = el(`<button class="story-node d${row.depth} ${sameSelection(row) ? 'active' : ''} ${row.done ? 'done' : ''}">
           <span class="sn-label">${esc(row.label)}</span>
           ${row.sub ? `<span class="sn-sub">${esc(row.sub)}</span>` : ''}
         </button>`);
@@ -197,7 +200,7 @@ export default {
         <text x="${pos[i].x}" y="${pos[i].y + 4}">${esc(n.id)}</text>
         <title>${esc(n.id)}: ${esc(n.roleLabel)}</title></g>`).join('');
       return `<svg class="story-map" viewBox="0 0 ${w} ${h}" role="img" aria-label="Site plan">${lines}${dots}</svg>
-        <p class="small faint">Site plan: red rings are encounters, gold is the lair, green is treasure, blue is a trap or puzzle. Hover an area for its role.</p>`;
+        <p class="small faint">Site plan: the dashed ring is the way in; red rings are encounters, gold is the lair, green is treasure, blue is a trap or puzzle. Hover an area for its role.</p>`;
     };
 
     const leaderHTML = (b) => !b.leader ? '' : `<p class="small"><b>Led by</b> ${esc(b.leader.name)}${b.leader.statSuggestion ? `, use <a href="javascript:void 0" data-mon="${esc(b.leader.statSuggestion.slug)}">${esc(b.leader.statSuggestion.name)}</a> (CR ${esc(b.leader.statSuggestion.cr)})` : ''}${b.leader.note ? `. ${esc(b.leader.note)}` : ''}</p>`;
@@ -251,9 +254,15 @@ export default {
         <p class="muted">${esc(elt.subtitle)}. ${esc(elt.summary)}</p>
         ${elt.hazard ? `<p class="small"><b>Site hazard</b> ${esc(elt.hazard)}</p>` : ''}
         ${elt.alerts ? `<p class="small"><b>Alert state</b> ${esc(elt.alerts)}</p>` : ''}
+        ${elt.objectiveNote?.length ? `<p class="small"><b>Holds</b> ${elt.objectiveNote.map(esc).join(' / ')}</p>` : ''}
         ${elt.freeClues?.length ? `<p class="small"><b>Clues placed here</b> ${elt.freeClues.map(esc).join(' / ')}</p>` : ''}`;
 
-      if (elt.type === 'dungeon') return `${head}${mapSVG(elt)}<div class="mt">${nodesHTML(elt)}</div>`;
+      const wanderingHTML = !elt.wandering ? '' : `
+        <h3 class="mt">Wandering (d6, each half hour of dawdling or after loud noise)</h3>
+        <table class="data"><tbody>${elt.wandering.map(r =>
+          `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
+
+      if (elt.type === 'dungeon') return `${head}${mapSVG(elt)}${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
         <div class="grid-2 mt">
@@ -298,13 +307,19 @@ export default {
     const chapterHTML = (ch) => `
       <h2>${ch.index}. ${esc(ch.title)}</h2>
       <p class="muted">${esc(ch.roleLabel)}, level ${ch.levelGate}, ${ch.mandatory ? 'mandatory' : 'optional'}. ${esc(ch.summary)}</p>
+      <div class="row mb">
+        <button class="btn small ${isDone(ch) ? 'primary' : ''}" data-done="${esc(ch.id)}">${isDone(ch) ? 'Completed &#10003; (click to unmark)' : 'Mark chapter complete'}</button>
+        <button class="btn small" data-reroll="${esc(ch.id)}" title="Replace this chapter with a fresh roll; clues, objectives and leaders re-seat themselves">Reroll this chapter</button>
+      </div>
+      ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
       ${ch.lieutenant ? `<p class="small"><span class="pill danger">lieutenant</span> ${esc(ch.lieutenant)} commands here; see the boss encounter below.</p>` : ''}
       <div class="grid-2 mt">
         <div class="card"><h3>Getting them here</h3><p class="small">${esc(ch.entry)}</p></div>
         <div class="card"><h3>If they walk away</h3><p class="small">${esc(ch.stakes)}</p></div>
       </div>
       ${ch.milestone ? `<p class="small"><b>Leveling</b> ${esc(ch.milestone)}</p>` : ''}
-      ${ch.objective ? `<div class="card"><h3>${esc(ch.objective.name)}</h3><p class="small">${esc(ch.objective.note)}</p></div>` : ''}
+      ${ch.objective ? `<div class="card"><h3>${esc(ch.objective.name)}</h3><p class="small">${esc(ch.objective.note)}</p>
+        ${ch.objective.power ? `<p class="small"><b>While held</b> ${esc(ch.objective.power)}<br><b>The catch</b> ${esc(ch.objective.cost)}<br><b>When claimed</b> ${esc(ch.objective.reaction)}</p>` : ''}</div>` : ''}
       ${ch.board?.length ? `<div class="card"><h3>Work available from here</h3>
         <p class="small faint">These are optional and order-free; let the players pick.</p>
         ${ch.board.map(b => `<p class="small"><a href="javascript:void 0" data-ch="${esc(b.id)}"><b>${esc(b.title)}</b></a> <span class="pill">${esc(b.role)}, level ${b.level}</span><br>${esc(b.entry)}</p>`).join('')}</div>` : ''}
@@ -315,6 +330,12 @@ export default {
         <ul class="small">${ch.link.clues.map(c => `<li>${esc(c.text)} <span class="faint">(${esc(c.placement)}, points to ${esc(c.pointsToTitle)})</span></li>`).join('')}</ul>
         <p class="small faint">Three independent pointers, so one missed roll never strands the party.</p></div>`
         : '<div class="card"><h3>This is the last chapter</h3><p class="small">See Endings for how it can land.</p></div>'}`;
+
+    const progressLine = () => {
+      const chapters = campaign.acts.flatMap(a => a.chapters);
+      const done = chapters.filter(isDone).length;
+      return done ? `<p class="small"><b>Progress</b> ${done} of ${chapters.length} chapters marked complete.</p>` : '';
+    };
 
     const overviewHTML = () => {
       const c = campaign;
@@ -341,10 +362,12 @@ export default {
         <div class="card"><h3>What the campaign is about</h3>
           <p class="small">${c.objective.count} x <b>${esc(c.objective.plural)}</b>. ${esc(c.objective.why)}</p>
           <p class="small"><b>If ${esc(c.villain.name)} succeeds</b> ${esc(c.objective.ifLost)}</p>
-          <ul class="small">${c.objective.items.map(i => `<li><b>${esc(i.name)}</b> - ${esc(i.chapterTitle)}. ${esc(i.note)}</li>`).join('')}</ul></div>
+          <ul class="small">${c.objective.items.map(i => `<li><b>${esc(i.name)}</b> - ${esc(i.chapterTitle)}. ${esc(i.note)}
+            ${i.power ? `<br><span class="faint">While held: ${esc(i.power)} The catch: ${esc(i.cost)}</span>` : ''}</li>`).join('')}</ul></div>
         <div class="card"><h3>By the numbers</h3>
           <p class="small">${c.stats.acts} acts, ${c.stats.chapters} chapters, ${c.stats.elements} elements, ${c.stats.nodes} keyed areas,
-          ${c.stats.encounters} built encounters, ${c.stats.npcs} named NPCs, ${c.stats.xp.toLocaleString()} adjusted XP in total.</p></div>`;
+          ${c.stats.encounters} built encounters, ${c.stats.npcs} named NPCs, ${c.stats.xp.toLocaleString()} adjusted XP in placed fights${c.treasure ? `, ${c.treasure.gp.toLocaleString()} gp in placed treasure` : ''}.</p>
+          ${progressLine()}</div>`;
     };
 
     const villainHTML = () => {
@@ -397,7 +420,9 @@ export default {
         case 'npcs': html = `<h2>NPCs</h2>${c.appendices.npcs.map(npcCardHTML).join('')}`; break;
         case 'creatures': html = `<h2>Creatures used</h2><p class="small muted">Every stat block the generated encounters reference.</p>
           <p>${c.appendices.creatures.map(m => `<a href="javascript:void 0" data-mon="${esc(m.slug)}">${esc(m.name)}</a> <span class="small faint">CR ${esc(m.cr)}</span>`).join(' &middot; ')}</p>`; break;
-        case 'items': html = `<h2>Magic items placed</h2>${c.appendices.magicItems.length
+        case 'items': html = `<h2>Treasure &amp; magic items</h2>
+          ${c.treasure ? `<p class="small muted">${c.treasure.gp.toLocaleString()} gp in placed coin and valuables${Object.keys(c.treasure.rarities || {}).length ? `, plus ${Object.entries(c.treasure.rarities).map(([r, n]) => `${n} ${r}`).join(', ')} magic items` : ''}.</p>` : ''}
+          ${c.appendices.magicItems.length
           ? `<p>${c.appendices.magicItems.map(i => `<a href="javascript:void 0" data-item="${esc(i.slug)}">${esc(i.name)}</a> <span class="pill">${esc(i.rarity)}</span>`).join(' &middot; ')}</p>`
           : '<p class="faint">None rolled into this one.</p>'}`; break;
         case 'endings': html = `<h2>Endings</h2>${c.endings.map(e => `<div class="card"><h3>${esc(e.label)}</h3><p class="small">${esc(e.text)}</p></div>`).join('')}`; break;
@@ -428,9 +453,36 @@ export default {
         const hit = all.find(x => x.e.id === a.dataset.el);
         if (hit) { selection = { kind: 'element', ref: hit.e, chapter: hit.ch }; drawTree(); drawDetail(); }
       }));
+      box.querySelector('[data-done]')?.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.done;
+        record.progress ||= {};
+        record.progress[id] = !record.progress[id];
+        await persistRecord();
+        drawTree(); drawDetail();
+      });
+      box.querySelector('[data-reroll]')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = 'Rerolling...';
+        try {
+          const fresh = await rerollChapter(campaign, btn.dataset.reroll);
+          await persistRecord();
+          selection = { kind: 'chapter', ref: fresh };
+          drawTree(); drawDetail();
+          toast(`Chapter ${fresh.index} is now "${fresh.title}"`);
+        } catch (err) {
+          console.error(err);
+          toast(`Reroll failed: ${err.message}`, 'danger');
+          btn.disabled = false;
+          btn.textContent = 'Reroll this chapter';
+        }
+      });
     };
 
-    const show = (c) => {
+    const show = (rec) => {
+      record = rec;
+      record.progress ||= {};
+      const c = rec.data;
       campaign = c;
       selection = { kind: 'overview' };
       out.innerHTML = `
@@ -452,6 +504,6 @@ export default {
     await drawSaved();
     // reopen the most recent campaign so switching tabs does not lose the place
     const saved = (await dbAll('stories', activeCampaignId())).sort((a, b) => b.updated - a.updated);
-    if (saved.length) show(saved[0].data);
+    if (saved.length) show(saved[0]);
   },
 };

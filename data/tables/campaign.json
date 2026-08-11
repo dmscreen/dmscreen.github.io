@@ -723,6 +723,39 @@
     "the party's names reach {villain} through a survivor or a spy"
   ],
 
+  "objectivePowers": [
+    "While carried openly, it grants advantage on one saving throw per day against {villain}'s works.",
+    "Once per day it points, briefly and unmistakably, toward the nearest of its siblings.",
+    "Whoever holds it cannot be lied to about {villain} without knowing it.",
+    "It is warm in the presence of {villain}'s servants, and cold in the presence of {villain}.",
+    "While it rests in a camp, that camp cannot be found by anything serving {villain}.",
+    "Once, and only once, it will absorb a killing blow meant for its bearer, and crack."
+  ],
+  "objectiveCosts": [
+    "Whoever carries it dreams {villain}'s dreams, and wakes knowing a little more than they should.",
+    "It cannot be hidden by magic; divination finds its bearer as easily as a lit window.",
+    "Animals will not willingly come within ten feet of it.",
+    "It grows heavier every day it is carried by the same hands, until it is shared.",
+    "Wounds taken while carrying it scar in the shape of the old kingdom's script.",
+    "Its bearer cannot speak {villain}'s name aloud, and must talk around it."
+  ],
+  "objectiveReactions": [
+    "The moment it leaves {place}, {villain} feels the loss and sends whoever is closest.",
+    "Taking it advances the campaign clock by one segment; {villain} was counting on it.",
+    "Its keeper's death or defeat is noticed within a day, and the next holder is warned.",
+    "{villain} offers, through an intermediary, to buy it back at any price the party names.",
+    "Word of who took it reaches {faction} first, and they have opinions about where it belongs.",
+    "Nothing, visibly. The watcher assigned to it simply starts following the party."
+  ],
+  "wanderingSigns": [
+    "Sign, not contact: fresh tracks crossing the party's path, made within the hour.",
+    "Sign, not contact: a sound from an adjacent area, something heavy set down, then silence.",
+    "Sign, not contact: a smell of smoke, or blood, or wet fur, gone by the next turning.",
+    "Sign, not contact: light where there should be none, doused before anyone reaches it.",
+    "A patrol passes one area away; the party hears it and can choose to be heard.",
+    "Sign, not contact: something has been dragged through here since the party last looked."
+  ],
+
   "npcConnections": [
     "Owes {npc} money and will not discuss it.",
     "Is the only person in {hub} that {npc} actually trusts.",
