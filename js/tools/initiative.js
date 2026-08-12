@@ -1,6 +1,6 @@
 // Initiative / Combat Tracker.
 import { getState, setState } from '../store.js';
-import { loadMonsters, loadConditions, abilityMod, fmtCR } from '../srd.js';
+import { loadMonsters, loadConditions, abilityMod, fmtCR, sourceTag } from '../srd.js';
 import { el, esc, toast, confirmDialog, modal, promptDialog, showStatBlock, searchInput } from '../components/ui.js';
 import { roll } from '../dice.js';
 import { getParty } from './party.js';
@@ -232,7 +232,7 @@ export default {
           if (!q) return;
           for (const m of monsters.filter(x => x.name.toLowerCase().includes(q)).slice(0, 10)) {
             const row = el(`<div class="row" style="align-items:center;padding:3px 0">
-              <span>${esc(m.name)}</span><span class="pill">AC ${m.ac} HP ${m.hp}</span>${m.source && m.source !== 'SRD 5.1' ? '<span class="pill accent">A5E</span>' : ''}
+              <span>${esc(m.name)}</span><span class="pill">AC ${m.ac} HP ${m.hp}</span>${sourceTag(m.source) ? `<span class="pill accent" title="${esc(m.source)}">${esc(sourceTag(m.source))}</span>` : ''}
               <button class="btn small" style="margin-left:auto">Add</button></div>`);
             row.querySelector('button').addEventListener('click', () => {
               const initMod = abilityMod(m.dex);

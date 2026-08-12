@@ -3,4 +3,5 @@ Trash/
 Thumbs.db
 .claude/
 
-claude.md
+claude.md__pycache__/
+*.pyc

@@ -1,5 +1,5 @@
 // Encounter Builder: XP budget math + saved encounters + send to initiative.
-import { loadMonsters, fmtCR, monsterXP, XP_THRESHOLDS, encounterMultiplier, abilityMod } from '../srd.js';
+import { loadMonsters, fmtCR, monsterXP, XP_THRESHOLDS, encounterMultiplier, abilityMod, sourceTag } from '../srd.js';
 import { dbAll, dbPut, dbDelete, activeCampaignId, setState, getState } from '../store.js';
 import { el, esc, toast, confirmDialog, showStatBlock, searchInput, promptDialog } from '../components/ui.js';
 import { roll, pick } from '../dice.js';
@@ -123,7 +123,7 @@ export default {
       for (const m of found) {
         const row = el(`<div class="row" style="align-items:center;padding:4px 0">
           <a href="javascript:void 0" style="min-width:0">${esc(m.name)}</a>
-          <span class="pill">CR ${fmtCR(m.cr)}</span>${m.source && m.source !== 'SRD 5.1' ? '<span class="pill accent">A5E</span>' : ''}
+          <span class="pill">CR ${fmtCR(m.cr)}</span>${sourceTag(m.source) ? `<span class="pill accent" title="${esc(m.source)}">${esc(sourceTag(m.source))}</span>` : ''}
           <button class="btn small" style="margin-left:auto">+ Add</button>
         </div>`);
         row.querySelector('a').addEventListener('click', () => showStatBlock(m));

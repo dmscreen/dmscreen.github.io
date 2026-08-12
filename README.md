@@ -30,8 +30,8 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 
 ### Reference
 One unified Reference browser with a Type selector:
-- **Bestiary**: 908 monsters (SRD 5.1 + Monstrous Menagerie) with type/size/environment/source filters and full stat blocks.
-- **Spells**: 690 spells (SRD 5.1 + Adventurer's Guide) filterable by level, school, class, source, concentration, and ritual.
+- **Bestiary**: 2,516 monsters with type/size/environment/source filters and full stat blocks. SRD 5.1, Level Up's Monstrous Menagerie, and Kobold Press's *Tome of Beasts* (original and 2023 edition), *Tome of Beasts 2*, *Tome of Beasts 3* and *Creature Codex*.
+- **Spells**: 1,446 spells filterable by level, school, class, source, concentration, and ritual. SRD 5.1, the *Adventurer's Guide*, Kobold Press's *Deep Magic* and *Deep Magic Extended*, and *Spells That Don't Suck*.
 - **Items**: 2,009 items, from backpacks and trail rations to legendary artifacts (SRD 5.1 equipment and magic items, Level Up A5E equipment and magic items, Kobold Press Vault of Magic and Tome of Heroes).
 - **Rules**: searchable cards for actions, cover, light, resting, travel, jumping, falling, suffocation, exhaustion, mounted and underwater combat, concentration, death.
 - **Conditions**: every condition on one screen.
@@ -63,9 +63,20 @@ python -m http.server 8321
 
 Then open `http://localhost:8321`.
 
+### Regenerating the reference data
+
+The bundled `data/*.json` is compiled from the [Open5e](https://open5e.com) API rather than hand-edited. To re-pull or extend the third-party sources:
+
+```bash
+python tools/import-open5e.py --dry-run
+```
+
+Drop `--dry-run` to write the files. The script merges by slug and name, so re-running it never duplicates what is already bundled.
+
 ## Licensing
 
 - Application code: MIT.
 - This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
 - This work also includes material from the Level Up: Advanced 5th Edition (A5E) books by [EN Publishing](https://enpublishingrpg.com): the Adventurer's Guide, Dungeon Delver's Guide, Gate Pass Gazette, and Monstrous Menagerie, used under the terms of the Open Gaming License via the [A5E System Reference Document](https://a5esrd.com). This site is not affiliated with or endorsed by EN Publishing.
+- This work also includes open-content material from [Kobold Press](https://koboldpress.com), used under the terms of the Open Gaming License: monsters from Tome of Beasts (original and 2023 edition), Tome of Beasts 2, Tome of Beasts 3 and Creature Codex; spells from Deep Magic for 5th Edition and Deep Magic Extended; and magic items from Vault of Magic and Tome of Heroes. Spells from Spells That Don't Suck and material from Green Ronin Publishing (Critical Role: Tal'Dorei Campaign Setting) are likewise used under the OGL. None of these publishers endorse this site.
 - All rules data compiled via the [Open5e](https://open5e.com) project and API. DM Screen is unofficial fan content and is not affiliated with or endorsed by Wizards of the Coast.
