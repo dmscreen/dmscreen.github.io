@@ -455,14 +455,14 @@ export default {
     const overviewHTML = () => {
       const c = campaign;
       return `<h2>${esc(c.title)}</h2>
-        <p class="field-label">The pitch &mdash; what the campaign is about in one line</p>
-        <p style="font-size:1.1rem;margin-top:2px">${esc(c.logline)}</p>
-        <div class="row mt" style="flex-wrap:wrap;gap:4px">
+        <div class="row" style="flex-wrap:wrap;gap:4px">
           ${c.tone.map(t => `<span class="pill accent">${esc(t)}</span>`).join('')}
           <span class="pill">levels ${c.levelRange.start}-${c.levelRange.end}</span>
           <span class="pill">${esc(c.sessions)} sessions</span>
           <span class="pill">${esc(c.pattern.label)}</span>
         </div>
+        <p class="field-label mt">The pitch &mdash; what the campaign is about in one line</p>
+        <p class="small muted" style="margin-top:2px">${esc(c.logline)}</p>
         <p class="field-label mt">Shape &mdash; how the chapters are arranged</p>
         <p class="small muted" style="margin-top:2px">${esc(c.pattern.note)}</p>
         ${c.opening ? `<div class="card"><h3>Opening the campaign</h3><p class="small">${esc(c.opening)}</p></div>` : ''}
