@@ -10,7 +10,7 @@ Run your whole session from one tab: a one-button campaign generator, initiative
 
 ### Story
 - **Campaign Generator**: one press builds an entire campaign in the shape of a published module. A premise and logline, an antagonist with goal, method, weakness, lieutenants and a schedule that runs whether the party shows up or not, three factions, a global clock, and acts of chapters assembled to one of eight patterns (funnel to hub, gated sandbox, hub and spoke, branch and reconverge, hexcrawl plus megadungeon, act structure, node investigation, linear). Chapters hold keyed dungeons with room roles, traps, puzzles, treasure and budgeted encounters drawn from the real bestiary; settlements with rosters, services, locations and true/false rumours; travel legs with encounter tables; set pieces, heists, sieges and rituals; and investigation webs. Every chapter plants **three independent clues** pointing at the next one, so a missed roll never strands the party. Browse it as a structure tree and drill into any piece, run any encounter straight in the tracker, or export the whole thing as Markdown.
-- **Travel Calculator**, **Random Encounters** and **Calendar & Time** live here too (see below).
+- **Travel Calculator**, **Random Encounters**, **Calendar & Time**, **Session Notes** and the **Session Timer** live here too (see below), so everything you touch while running a session is on one tab.
 
 ### Combat
 - **Initiative Tracker**: turns and rounds, HP with damage/heal, temp AC display, conditions with round-based expiry, concentration reminders with save DCs, death saves, monster stat blocks one click away. Combat state autosaves, so a refresh loses nothing.
@@ -41,7 +41,7 @@ One unified Reference browser with a Type selector:
 - **Conditions**: every condition on one screen.
 - **Character Options**: 59 feats and 27 backgrounds from the Level Up: Advanced 5th Edition books.
 
-### Session
+### Session (under Story)
 - **Session Notes**: autosaving per-campaign notes with search and a pinnable recap.
 - **Session Timer**: elapsed time plus a break countdown.
 - **Multiple campaigns**: all data is scoped per campaign; switch from the sidebar.

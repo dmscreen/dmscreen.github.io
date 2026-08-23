@@ -486,3 +486,74 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .clock-seg:hover { border-color: var(--accent); }
 .clock-seg.filled { background: var(--accent); border-color: var(--accent); }
+
+/* ---------- Generator control row ---------- */
+/* Selects, steppers, toggle buttons and the submit button are all different
+   native heights; this row pins them to one so they read as a single set. */
+.gen-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.gen-controls .field,
+.gen-controls .toggle-field { margin: 0; }
+/* :first-child matters: the number stepper's wrapper is also a direct-child
+   span, and picking it up here made the number fields 5px taller than the
+   rest of the row. */
+.gen-controls .field > span:first-child,
+.gen-controls .toggle-field > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+  margin-bottom: 5px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.gen-controls select,
+.gen-controls .btn,
+.gen-controls .stepper,
+.gen-controls .toggle-row .btn {
+  height: 38px;
+  box-sizing: border-box;
+}
+.gen-controls select { padding: 0 10px; }
+.gen-controls .stepper input[type="number"] { width: 52px; padding: 0 2px; }
+.gen-controls .toggle-row { gap: 6px; margin: 0; }
+.gen-controls .toggle-row .btn { padding: 0 12px; font-size: 0.85rem; }
+.gen-controls > .btn.primary { padding: 0 20px; font-weight: 600; }
+
+/* Small round "i" that opens a reference popup for a control's options. */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+  flex: none;
+}
+.info-btn:hover { color: var(--accent); border-color: var(--accent); }
+.info-btn svg { width: 11px; height: 11px; }
+
+/* Caption above a value, saying what the value is. */
+.field-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.info-entry { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+.info-entry:first-of-type { border-top: 0; }
+.info-entry h3 { margin: 0 0 3px; font-size: 0.98rem; color: var(--accent); }
+.info-entry p { margin: 0 0 3px; }

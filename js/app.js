@@ -35,18 +35,13 @@ const combat = categoryTool({
 });
 const storyPage = categoryTool({
   id: 'story', title: 'Story', icon: 'book',
-  subtitle: 'The campaign itself, and the travel between its chapters',
-  tabs: [story, travelCalc, randomEnc, calendar],
+  subtitle: 'The campaign, the travel between its chapters, and the table notes you keep while running it',
+  tabs: [story, travelCalc, randomEnc, calendar, notes, timer],
 });
 const generators = categoryTool({
   id: 'generators', title: 'Generators', icon: 'sparkle',
   subtitle: 'NPCs, names, loot, shops, quests, weather, and custom tables',
   tabs: [npcs, names, loot, shops, quests, weather, customTables],
-});
-const session = categoryTool({
-  id: 'session', title: 'Session', icon: 'note',
-  subtitle: 'Notes and the session timer',
-  tabs: [notes, timer],
 });
 const more = categoryTool({
   id: 'more', title: 'More', icon: 'grid',
@@ -63,9 +58,9 @@ const more = categoryTool({
 
 // Settings and About are top-level sidebar entries on desktop/tablet;
 // the mobile tab bar reaches them through More instead.
-const TOOLS = [storyPage, combat, generators, reference, session, more, settings, about];
+const TOOLS = [storyPage, combat, generators, reference, more, settings, about];
 const byId = new Map(TOOLS.map(t => [t.id, t]));
-const DEFAULT_TABS = ['story', 'combat', 'generators', 'reference', 'session', 'more'];
+const DEFAULT_TABS = ['story', 'combat', 'generators', 'reference', 'more'];
 
 // old per-tool routes land on their category page with the right chip active
 const SUB_REDIRECTS = {
@@ -78,7 +73,9 @@ const SUB_REDIRECTS = {
   npcs: ['generators', 'npcs'], names: ['generators', 'names'], loot: ['generators', 'loot'],
   shops: ['generators', 'shops'], quests: ['generators', 'quests'],
   weather: ['generators', 'weather'], tables: ['generators', 'tables'],
-  notes: ['session', 'notes'], timer: ['session', 'timer'],
+  // Session was folded into Story; its routes still resolve
+  session: ['story', 'notes'],
+  notes: ['story', 'notes'], timer: ['story', 'timer'],
   linked: ['more', 'linked'],
 };
 const REF_REDIRECTS = new Set(['monsters', 'spells', 'items', 'rules', 'conditions', 'character-options']);
