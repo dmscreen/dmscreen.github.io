@@ -320,6 +320,13 @@
         { "title": "The Long Middle", "chapters": ["spoke_site", "spoke_event", "spoke_site"] },
         { "title": "The End of It", "chapters": ["climax_dungeon"] }
       ]
+    },
+    "one_shot": {
+      "label": "One shot",
+      "note": "A single sitting: a hook that lands in the first ten minutes, one location worth exploring, and a confrontation that settles it before the night is out.",
+      "acts": [
+        { "title": "One Session", "chapters": ["opening_arrival", "climax_dungeon"] }
+      ]
     }
   },
 

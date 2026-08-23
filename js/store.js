@@ -5,6 +5,9 @@ export const STORES = [
   'campaigns', 'party', 'encounters', 'combats', 'npcs',
   'notes', 'customTables', 'shops', 'calendarEvents', 'misc',
   'stories',
+  // user-added bookmarks; deliberately not campaign-scoped, so they follow
+  // the person rather than the story they happen to be running
+  'links',
 ];
 const SCHEMA_VERSION = 1;
 const PREFS_KEY = 'dmsk:prefs';
