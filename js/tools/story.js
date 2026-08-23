@@ -5,6 +5,7 @@ import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '..
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter } from '../campaign-gen.js';
+import { icon } from '../components/icons.js';
 import { launchCombat } from './encounters.js';
 import { getParty } from './party.js';
 
@@ -45,16 +46,21 @@ export default {
       <div class="card">
         <h2>Generate a campaign</h2>
         <p class="small muted">One press builds the whole book: a premise, an antagonist with a schedule, factions, clocks, acts and chapters, keyed dungeons with encounters and treasure, settlements with rosters and rumours, and three separate clues in every chapter pointing at the next one.</p>
-        <div class="row mt" style="align-items:flex-end">
+        <div class="gen-controls mt">
           <div id="sg-length"></div>
-          <label class="field" title="Defaults from your Party Tracker"><span>Starting level</span><input type="number" id="sg-level" min="1" max="20" value="${partyLevel}" style="width:70px"></label>
-          <label class="field" title="Defaults from your Party Tracker"><span>Party size</span><input type="number" id="sg-size" min="1" max="8" value="${partySize}" style="width:70px"></label>
-          <label class="field"><span>Shape</span><select id="sg-pattern">${PATTERNS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
-          <label class="field"><span>Premise</span><select id="sg-premise"><option value="">Surprise me</option></select></label>
-          <button class="btn primary" id="sg-go" style="font-size:1.05rem;padding:10px 18px">Generate campaign</button>
+          <label class="field" title="Defaults from your Party Tracker"><span>Starting level</span><input type="number" id="sg-level" min="1" max="20" value="${partyLevel}"></label>
+          <label class="field" title="Defaults from your Party Tracker"><span>Party size</span><input type="number" id="sg-size" min="1" max="8" value="${partySize}"></label>
+          <label class="field"><span>Shape <button type="button" class="info-btn" id="sg-info-shape" aria-label="What the shapes mean">${icon('info')}</button></span>
+            <select id="sg-pattern">${PATTERNS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
+          <label class="field"><span>Premise <button type="button" class="info-btn" id="sg-info-premise" aria-label="What the premises are">${icon('info')}</button></span>
+            <select id="sg-premise"><option value="">Surprise me</option></select></label>
+          <button class="btn primary" id="sg-go">Generate campaign</button>
         </div>
-        <p class="small faint" style="margin-top:6px">Level and size default from your Party Tracker; every encounter in the campaign is budgeted against them.</p>
-        <div id="sg-saved" class="mt"></div>
+        <p class="small faint" style="margin-top:10px">Level and size default from your Party Tracker; every encounter in the campaign is budgeted against them.</p>
+      </div>
+      <div class="card" id="sg-saved-card">
+        <h2>Saved campaigns</h2>
+        <div id="sg-saved"></div>
       </div>
       <div id="sg-out"></div>`;
 
@@ -67,11 +73,76 @@ export default {
     ], (await getState('storyLength')) || 'standard', (v) => setState('storyLength', v));
     container.querySelector('#sg-length').append(length.el);
 
-    // premise list comes from the same table the generator uses
+    // The premise list and both info popups read the same table the generator
+    // does, so the explanations can never drift from what actually generates.
+    let lore = null;
     fetch('data/tables/campaign.json').then(r => r.json()).then(t => {
+      lore = t;
       const sel = container.querySelector('#sg-premise');
       for (const p of t.premises) sel.insertAdjacentHTML('beforeend', `<option value="${esc(p.id)}">${esc(p.title)}</option>`);
     }).catch(() => {});
+
+    // Template slots read as noise in a reference list; swap them for the
+    // generic nouns they stand in for.
+    const deslot = (text, objects) => String(text || '')
+      .replace(/\{villain\}/g, 'the antagonist')
+      .replace(/\{villainTitle\}/g, 'the antagonist')
+      .replace(/\{region\}/g, 'the region')
+      .replace(/\{hub\}/g, 'the home base')
+      .replace(/\{faction\}/g, 'a faction')
+      .replace(/\{objects\}/g, objects || 'the objectives')
+      .replace(/\{object\}/g, objects || 'the objective')
+      .replace(/\{place\}/g, 'the site')
+      .replace(/\{next\}/g, 'the next chapter')
+      // a slot that opened a sentence leaves a lowercase word behind it
+      .replace(/(^|[.!?]\s+)([a-z])/g, (m, lead, ch) => lead + ch.toUpperCase());
+
+    const infoModal = (title, intro, rows) => {
+      const body = el(`<div>
+        <p class="small muted">${esc(intro)}</p>
+        ${rows.map(r => `<div class="info-entry">
+          <h3>${esc(r.name)}</h3>
+          <p class="small">${esc(r.desc)}</p>
+          ${r.meta ? `<p class="small faint">${esc(r.meta)}</p>` : ''}
+        </div>`).join('')}
+      </div>`);
+      modal(title, body, { wide: true });
+    };
+
+    container.querySelector('#sg-info-shape').addEventListener('click', () => {
+      if (!lore) return toast('Still loading the campaign tables', 'danger');
+      const rows = PATTERNS.filter(([v]) => v).map(([key, label]) => {
+        const pat = lore.patterns[key] || {};
+        const acts = (pat.acts || []).map(a => `${a.title} (${a.chapters.length})`).join(' -> ');
+        return { name: pat.label || label, desc: pat.note || '', meta: acts ? `Acts: ${acts}` : '' };
+      });
+      rows.unshift({
+        name: 'Shape: let the premise decide',
+        desc: 'The default. Each premise names the shapes that suit it, and one of those is picked at random.',
+        meta: '',
+      });
+      infoModal('Campaign shapes', 'The shape decides the act and chapter skeleton: how many chapters, which are mandatory, and whether the middle is a straight line, a hub with spokes, or an open region.', rows);
+    });
+
+    container.querySelector('#sg-info-premise').addEventListener('click', () => {
+      if (!lore) return toast('Still loading the campaign tables', 'danger');
+      const rows = lore.premises.map(p => ({
+        name: p.title,
+        desc: deslot(p.logline, p.objective?.plural),
+        meta: [
+          p.tone?.length ? `Tone: ${p.tone.join(', ')}` : '',
+          p.themes?.length ? `Themes: ${p.themes.join('; ')}` : '',
+          p.objective ? `Objective: ${p.objective.count} x ${p.objective.plural}` : '',
+          p.patterns?.length ? `Usual shapes: ${p.patterns.map(x => (lore.patterns[x] || {}).label || x).join(', ')}` : '',
+        ].filter(Boolean).join(' · '),
+      }));
+      rows.unshift({
+        name: 'Surprise me',
+        desc: 'The default. One of the premises below is picked at random each time you generate.',
+        meta: '',
+      });
+      infoModal('Campaign premises', 'The premise sets the pitch, the tone, the kind of antagonist, the region, and what the party is ultimately chasing.', rows);
+    });
 
     /* ---------- persistence ---------- */
 
@@ -79,7 +150,7 @@ export default {
       const saved = (await dbAll('stories', activeCampaignId())).sort((a, b) => b.updated - a.updated);
       const box = container.querySelector('#sg-saved');
       if (!saved.length) { box.innerHTML = '<p class="small faint">No campaigns generated yet.</p>'; return; }
-      box.innerHTML = '<div class="small muted mb">Saved campaigns</div>';
+      box.innerHTML = '';
       for (const s of saved) {
         const row = el(`<div class="row" style="align-items:center;padding:3px 0">
           <b>${esc(s.data.title)}</b>
@@ -384,14 +455,16 @@ export default {
     const overviewHTML = () => {
       const c = campaign;
       return `<h2>${esc(c.title)}</h2>
-        <p style="font-size:1.1rem">${esc(c.logline)}</p>
-        <div class="row" style="flex-wrap:wrap;gap:4px">
+        <p class="field-label">The pitch &mdash; what the campaign is about in one line</p>
+        <p style="font-size:1.1rem;margin-top:2px">${esc(c.logline)}</p>
+        <div class="row mt" style="flex-wrap:wrap;gap:4px">
           ${c.tone.map(t => `<span class="pill accent">${esc(t)}</span>`).join('')}
           <span class="pill">levels ${c.levelRange.start}-${c.levelRange.end}</span>
           <span class="pill">${esc(c.sessions)} sessions</span>
           <span class="pill">${esc(c.pattern.label)}</span>
         </div>
-        <p class="small muted mt">${esc(c.pattern.note)}</p>
+        <p class="field-label mt">Shape &mdash; how the chapters are arranged</p>
+        <p class="small muted" style="margin-top:2px">${esc(c.pattern.note)}</p>
         ${c.opening ? `<div class="card"><h3>Opening the campaign</h3><p class="small">${esc(c.opening)}</p></div>` : ''}
         ${c.playerHooks?.length ? `<div class="card"><h3>Character hooks</h3>
           ${playerBox(`<ul class="small" style="margin:0">${c.playerHooks.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`, 'Hand to players')}</div>` : ''}
