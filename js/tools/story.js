@@ -291,9 +291,10 @@ export default {
       const idx = new Map(ns.map((n, i) => [n.id, i]));
       const w = 100 + cols * 100;
       const h = 45 + Math.ceil(ns.length / cols) * 85;
+      // exits are symmetric, so draw each connection once rather than twice
       const lines = ns.flatMap((n, i) => n.exits.map(e => {
         const j = idx.get(e);
-        return j == null ? '' : `<line x1="${pos[i].x}" y1="${pos[i].y}" x2="${pos[j].x}" y2="${pos[j].y}"/>`;
+        return (j == null || j < i) ? '' : `<line x1="${pos[i].x}" y1="${pos[i].y}" x2="${pos[j].x}" y2="${pos[j].y}"/>`;
       })).join('');
       const dots = ns.map((n, i) => `<g class="mn ${esc(n.role)}">
         <circle cx="${pos[i].x}" cy="${pos[i].y}" r="17"/>
@@ -342,13 +343,27 @@ export default {
       return `<div class="beat"><b>${esc(b.title)}</b> <span class="small">${esc(b.text || '')}</span></div>`;
     };
 
+    // Every way out of a room, as a button that opens the room it leads to.
+    // Exits are symmetric in the data, so this is the full list, not just
+    // the ones pointing deeper in.
+    const exitsHTML = (elt, n) => {
+      if (!n.exits.length) return '<p class="small faint">No other way out of this room.</p>';
+      const byId = new Map((elt.nodes || []).map(x => [x.id, x]));
+      return `<p class="small exit-row"><b>Ways out:</b> ${n.exits.map(id => {
+        const dest = byId.get(id);
+        return `<button class="exit-link" data-goto="${esc(id)}" title="${esc(dest ? dest.roleLabel : 'elsewhere')}">${esc(id)}${
+          dest ? ` <span class="faint">${esc(dest.roleLabel)}</span>` : ''}</button>`;
+      }).join('')}</p>`;
+    };
+
     const nodesHTML = (elt) => (elt.nodes || []).map((n, i) => `
-      <details class="story-area" ${i === 0 ? 'open' : ''}>
+      <details class="story-area" id="area-${esc(n.id)}" ${i === 0 ? 'open' : ''}>
         <summary><b>${esc(n.id)}</b> ${esc(n.roleLabel)}
-          <span class="small faint">${esc(n.light)}${n.exits.length ? ` &rarr; ${esc(n.exits.join(', '))}` : ''}</span>
+          <span class="small faint">${esc(n.light)}${n.exits.length ? ` &middot; ${n.exits.length} way${n.exits.length === 1 ? '' : 's'} out: ${esc(n.exits.join(', '))}` : ' &middot; dead end'}</span>
           ${n.beats.map(b => `<span class="pill ${b.kind === 'encounter' ? 'danger' : ''}">${esc(b.kind)}</span>`).join('')}
         </summary>
         ${playerBox(`${esc(n.description)}${n.dressing ? ` ${esc(n.dressing)}` : ''}`)}
+        ${exitsHTML(elt, n)}
         ${n.beats.map(beatHTML).join('')}
       </details>`).join('');
 
@@ -745,6 +760,16 @@ export default {
       }
       box.innerHTML = html;
 
+      // Walking the dungeon: an exit opens its room and brings it into view.
+      box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
+        const dest = box.querySelector(`#area-${CSS.escape(b.dataset.goto)}`);
+        if (!dest) return;
+        dest.open = true;
+        dest.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        dest.classList.remove('just-opened');
+        void dest.offsetWidth;   // restart the highlight if it is still running
+        dest.classList.add('just-opened');
+      }));
       box.querySelectorAll('[data-mon]').forEach(a => a.addEventListener('click', () => {
         const m = bySlug.get(a.dataset.mon);
         m ? showStatBlock(m) : toast('Stat block not found', 'danger');

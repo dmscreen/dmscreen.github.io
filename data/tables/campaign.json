@@ -964,7 +964,7 @@
       "The entrance hall stands open to the sky where the roof fell. {motif} lies over everything in an even layer, and there are fresh tracks through it."
     ],
     "junction": [
-      "Four passages meet under a sagging arch of {material}. Someone has scratched tally marks at eye height on every one.",
+      "{passages} passages meet under a sagging arch of {material}. Someone has scratched tally marks at eye height on every one.",
       "A landing where the stair turns. Drips from above have cut a channel through {motif} on the floor.",
       "A wide corridor of {material} with alcoves down both sides, all of them empty, all of them the right size for a person."
     ],
