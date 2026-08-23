@@ -4,9 +4,13 @@
 
 **Live at [dmscreen.github.io](https://dmscreen.github.io)**
 
-Run your whole session from one tab: initiative, encounter balancing, travel, random encounters, generators, and the SRD reference, with everything saved locally in your browser. No account, no server, no tracking, and it works offline once loaded.
+Run your whole session from one tab: a one-button campaign generator, initiative, encounter balancing, travel, random encounters, generators, and the SRD reference, with everything saved locally in your browser. No account, no server, no tracking, and it works offline once loaded.
 
 ## Features
+
+### Story
+- **Campaign Generator**: one press builds an entire campaign in the shape of a published module. A premise and logline, an antagonist with goal, method, weakness, lieutenants and a schedule that runs whether the party shows up or not, three factions, a global clock, and acts of chapters assembled to one of eight patterns (funnel to hub, gated sandbox, hub and spoke, branch and reconverge, hexcrawl plus megadungeon, act structure, node investigation, linear). Chapters hold keyed dungeons with room roles, traps, puzzles, treasure and budgeted encounters drawn from the real bestiary; settlements with rosters, services, locations and true/false rumours; travel legs with encounter tables; set pieces, heists, sieges and rituals; and investigation webs. Every chapter plants **three independent clues** pointing at the next one, so a missed roll never strands the party. Browse it as a structure tree and drill into any piece, run any encounter straight in the tracker, or export the whole thing as Markdown.
+- **Travel Calculator**, **Random Encounters** and **Calendar & Time** live here too (see below).
 
 ### Combat
 - **Initiative Tracker**: turns and rounds, HP with damage/heal, temp AC display, conditions with round-based expiry, concentration reminders with save DCs, death saves, monster stat blocks one click away. Combat state autosaves, so a refresh loses nothing.
@@ -14,7 +18,7 @@ Run your whole session from one tab: initiative, encounter balancing, travel, ra
 - **Dice Roller**: full expression parser (`3d6+2`, `4d6kh3`, `2d20kl1` for disadvantage), quick buttons, and a tap-to-reroll history.
 - **Party Tracker**: the PC stats a DM actually needs: AC, HP, initiative, passive Perception/Investigation/Insight, plus one-click group checks. Powers the encounter builder and tracker.
 
-### Travel & Exploration
+### Travel & Exploration (under Story)
 - **Travel Calculator**: pace, terrain, mounts and ships, forced-march DCs, answers "how long does the journey take?"
 - **Random Encounters**: encounter checks on your terms, then terrain-filtered, level-appropriate encounters rolled from the full bestiary. One tap to re-roll, one tap to run it in the tracker.
 - **Weather Generator**: climate + season in, temperature/wind/precipitation out, with the SRD's mechanical effects attached.

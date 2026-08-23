@@ -335,3 +335,154 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .hp-bar > div { height: 100%; background: var(--success); }
 .hp-bar.low > div { background: var(--danger); }
 .cond-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ---------- Story: campaign browser ---------- */
+/* Left column is the whole campaign at a glance, right column is the drill-down. */
+.story-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .story-layout { grid-template-columns: 1fr; }
+}
+.story-tree {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel-75);
+  padding: 6px;
+  max-height: 78vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 8px;
+}
+/* Stacked on mobile the outline sits above the detail, so cap it and let it
+   scroll rather than pushing the content the DM just tapped off the screen. */
+@media (max-width: 900px) {
+  .story-tree { max-height: 40vh; position: static; }
+}
+.story-node {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+.story-node:hover { background: var(--bg-raised); }
+.story-node.active { background: var(--bg-raised); border-left-color: var(--accent); }
+.story-node.d1 { padding-left: 18px; }
+.story-node.d2 { padding-left: 30px; }
+.story-node .sn-label { display: block; font-weight: 600; font-size: 0.92rem; }
+.story-node.d2 .sn-label { font-weight: 400; }
+.story-node .sn-sub { display: block; font-size: 0.76rem; color: var(--text-faint); }
+.story-node.done .sn-label::after { content: ' \2713'; color: var(--success); }
+.story-node.done .sn-label { text-decoration: line-through; text-decoration-color: var(--text-faint); }
+.story-detail { min-height: 300px; }
+.story-detail h3 { margin: 12px 0 4px; font-size: 0.95rem; }
+.story-detail .card { margin: 10px 0; }
+.story-area {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--bg-panel-75);
+}
+.story-area > summary { cursor: pointer; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.story-area > summary .pill { font-size: 0.7rem; }
+.beat {
+  border-left: 2px solid var(--border);
+  padding: 4px 0 4px 10px;
+  margin: 8px 0 8px 4px;
+}
+.beat.encounter { border-left-color: var(--danger); }
+.beat.trap { border-left-color: var(--accent); }
+.beat.puzzle { border-left-color: var(--info); }
+.beat.treasure { border-left-color: var(--success); }
+.beat.clue, .beat.objective { border-left-color: var(--accent); }
+.beat p { margin: 3px 0; }
+.beat-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Solid background and strong strokes: in light theme, panel-tinted fills
+   and faint 1.5px strokes washed the whole plan out to near-white. */
+.story-map {
+  width: 100%;
+  max-height: 340px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  margin-top: 8px;
+}
+.story-map line { stroke: var(--text-faint); stroke-width: 2.5; }
+.story-map circle { fill: var(--bg-hover); stroke: var(--text-dim); stroke-width: 2; }
+.story-map text { fill: var(--text); font-size: 12px; font-weight: 600; text-anchor: middle; font-family: var(--font-mono); pointer-events: none; }
+.story-map .threshold circle { stroke: var(--text); stroke-width: 3; stroke-dasharray: 4 3; }
+.story-map .encounter circle { stroke: var(--danger); stroke-width: 3; }
+.story-map .boss circle { stroke: var(--accent); stroke-width: 3.5; }
+.story-map .treasure circle { stroke: var(--success); stroke-width: 3; }
+.story-map .trap circle, .story-map .puzzle circle { stroke: var(--info); stroke-width: 3; }
+/* The player/DM boundary. Blue boxes hold text safe to say or show to the
+   players; amber-fenced blocks hold spoilers; unmarked text is DM material. */
+.player-text {
+  border: 1px solid var(--info);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--info) 7%, transparent);
+  padding: 6px 10px 8px;
+  margin: 6px 0;
+  font-size: 0.88rem;
+}
+.player-inline {
+  border-bottom: 1px dotted var(--info);
+  padding-bottom: 1px;
+}
+.dm-note {
+  border-top: 1px dashed var(--accent);
+  margin-top: 8px;
+  padding-top: 4px;
+}
+.dm-note > p { margin-top: 2px; }
+.facing {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0 7px;
+  border-radius: 99px;
+  border: 1px solid;
+  margin: 2px 0 4px;
+  vertical-align: middle;
+}
+.facing.player { color: var(--info); border-color: var(--info); }
+.facing.dm { color: var(--accent); border-color: var(--accent); }
+
+.npc-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--bg-panel-75);
+}
+.npc-card p { margin: 4px 0 0; }
+.link-card { border-color: var(--accent); }
+
+/* Clickable clock segments: fill up to the one you click, click the last
+   filled one to clear it back. */
+.clock-row { display: inline-flex; gap: 3px; vertical-align: middle; margin: 0 4px; }
+.clock-seg {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.clock-seg:hover { border-color: var(--accent); }
+.clock-seg.filled { background: var(--accent); border-color: var(--accent); }

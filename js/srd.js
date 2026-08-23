@@ -40,7 +40,7 @@ export function preloadAll() {
     () => load('magic-items'), () => load('conditions'), () => load('rules'),
     () => load('feats'), () => load('backgrounds'),
     () => load('tables/names'), () => load('tables/npc'), () => load('tables/quests'),
-    () => load('tables/shops'), () => load('tables/rumors'),
+    () => load('tables/shops'), () => load('tables/rumors'), () => load('tables/campaign'),
   ];
   const runNext = () => {
     const job = jobs.shift();
