@@ -610,3 +610,13 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 /* Storage tally on the About page. */
 .stat-group table.data td { padding: 4px 8px; }
 .stat-group .stat-num { text-align: right; font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
+
+/* A dilemma's two horns, shown side by side so neither reads as the answer. */
+.dilemma-card { border-left: 3px solid var(--accent); }
+.dilemma-horn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--bg-panel-75);
+}
+.dilemma-horn p { margin: 4px 0 0; color: var(--text-dim); }

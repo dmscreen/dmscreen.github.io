@@ -619,6 +619,127 @@
     { "label": "The Winter Stores", "segments": 8, "onFill": "Famine conditions; every settlement becomes hostile to outsiders." }
   ],
 
+  "dilemmas": [
+    {
+      "id": "two_to_save",
+      "situation": "Two groups are about to be lost at the same moment, in different places, and the party can reach one.",
+      "optionA": {
+        "label": "Save the many",
+        "cost": "The one you leave is somebody with a name the party already knows."
+      },
+      "optionB": {
+        "label": "Save the one",
+        "cost": "A settlement loses a dozen people and knows exactly who chose not to come."
+      },
+      "noGoodAnswer": "There is no third option that saves both, and any plan to try costs the party the rest of the night.",
+      "later": "Whoever survives turns up again later, either grateful and useful or bitter and talking."
+    },
+    {
+      "id": "use_the_thing",
+      "situation": "The quickest way through costs something the party swore not to spend: using {object} the way {villain} would use it.",
+      "optionA": {
+        "label": "Use it",
+        "cost": "It works, and {villain}'s methods are now demonstrably the party's methods too."
+      },
+      "optionB": {
+        "label": "Refuse",
+        "cost": "The long way costs a week, and the clock does not pause for principle."
+      },
+      "noGoodAnswer": "Nobody who matters will ever know except the party, which is the whole point.",
+      "later": "If they used it, an NPC who trusted them notices the change and says so in front of others."
+    },
+    {
+      "id": "spare_the_lieutenant",
+      "situation": "A lieutenant is beaten and asking for terms, and they know things no interrogation would get out of a corpse.",
+      "optionA": {
+        "label": "Take the deal",
+        "cost": "They walk, they warn people, and someone the party protects pays for it."
+      },
+      "optionB": {
+        "label": "Finish it",
+        "cost": "The information dies with them, and the next chapter is walked into blind."
+      },
+      "noGoodAnswer": "Holding them prisoner requires somebody to guard them, and the party has nobody to spare.",
+      "later": "A spared lieutenant reappears at the climax, on one side or the other depending on how the terms were honoured."
+    },
+    {
+      "id": "burn_the_evidence",
+      "situation": "The proof that would convict {villain} would also ruin people who only signed because they were desperate.",
+      "optionA": {
+        "label": "Use all of it",
+        "cost": "The case is airtight and a dozen ordinary families are destroyed with it."
+      },
+      "optionB": {
+        "label": "Use only the clean part",
+        "cost": "The case has a hole, and {villain}'s people will find it."
+      },
+      "noGoodAnswer": "There is no way to separate the two halves that a hostile reader will accept.",
+      "later": "{faction} takes a position on what the party chose, and acts on it."
+    },
+    {
+      "id": "pay_the_toll",
+      "situation": "Someone with no love for {villain} will open the way, for a price the party would rather not pay in public.",
+      "optionA": {
+        "label": "Pay",
+        "cost": "The road opens and the party is now publicly in business with them."
+      },
+      "optionB": {
+        "label": "Refuse and force it",
+        "cost": "It can be taken by force, loudly, and everything downstream is now alert."
+      },
+      "noGoodAnswer": "There is no quiet third road, and waiting is its own choice.",
+      "later": "Whoever was paid, or fought, remembers it when the party needs them at the end."
+    },
+    {
+      "id": "the_witness",
+      "situation": "The only witness will testify, but only if the party gives up the thing they came here for.",
+      "optionA": {
+        "label": "Trade it away",
+        "cost": "The objective stays in enemy hands one chapter longer than it had to."
+      },
+      "optionB": {
+        "label": "Keep it",
+        "cost": "The witness recants, and the truth becomes a rumour again."
+      },
+      "noGoodAnswer": "The witness is not bluffing and cannot be talked past; they have already lost too much.",
+      "later": "The choice decides whether the finale can be won in public or only in private."
+    },
+    {
+      "id": "evacuate_or_hold",
+      "situation": "A settlement in the way can be emptied or defended, and there is time for exactly one.",
+      "optionA": {
+        "label": "Evacuate",
+        "cost": "Everyone lives and the place is lost, along with the supplies the party needed from it."
+      },
+      "optionB": {
+        "label": "Hold",
+        "cost": "The place stands if the party is lucky, and the butcher's bill is read out either way."
+      },
+      "noGoodAnswer": "The people themselves are split, loudly, and will hold the party to whichever they chose.",
+      "later": "A held town becomes a base; an evacuated one becomes a column of refugees the party keeps meeting."
+    },
+    {
+      "id": "old_debt",
+      "situation": "Someone the party owes asks them to look away from something the party came here to stop.",
+      "optionA": {
+        "label": "Honour the debt",
+        "cost": "The thing happens, and the party watched it happen."
+      },
+      "optionB": {
+        "label": "Break it",
+        "cost": "The debt-holder becomes an enemy who knows the party well."
+      },
+      "noGoodAnswer": "The ask is small, reasonable, and exactly the kind of thing that adds up.",
+      "later": "The debt-holder either opens a door at the worst moment or closes one."
+    }
+  ],
+  "dilemmaFraming": [
+    "Put it in front of the party while something else is still burning, so the clock is part of the choice.",
+    "Let both sides be argued by people the party likes. Nobody in this scene is a villain.",
+    "Do not offer a compromise. If the players invent a clever third path, make it cost a resource they will miss later.",
+    "Ask each player where their character stands before the group settles it; the split matters more than the answer."
+  ],
+
   "rivalKinds": [
     {
       "id": "free_company",

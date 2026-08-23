@@ -765,6 +765,7 @@ export async function generateCampaign(opts = {}) {
 
   const usedNames = new Set();
   const usedPlaces = new Set();
+  const usedDilemmas = new Set();
   const regionName = `${pick(names.settlement.prefixes)}${pick(['march', 'reach', 'vale', 'hollow', 'moor', 'downs', 'weald'])}`;
   usedPlaces.add(regionName);
   const hubName = settlementName(names, usedPlaces);
@@ -891,6 +892,33 @@ export async function generateCampaign(opts = {}) {
       move: fill(pick(C.villainMoves), { ...slots, place: ch.title }),
     })),
   };
+
+  // Dilemmas: one per act, in a chapter that is not the hub. The taxonomy
+  // calls these out as an encounter type and nothing was generating them,
+  // yet a choice with no right answer is what a table still argues about
+  // months later. They are placed on the chapter rather than in a room,
+  // because the DM should be able to spring one whenever the moment fits.
+  const dilemmaSlots = { ...slots };
+  for (const act of acts) {
+    const candidates = act.chapters.filter(ch => ch.role !== 'hub_town');
+    if (!candidates.length) continue;
+    const host = pick(candidates);
+    if (host.dilemma) continue;
+    const def = pick(C.dilemmas.filter(d => !usedDilemmas.has(d.id)) || C.dilemmas);
+    if (!def) continue;
+    usedDilemmas.add(def.id);
+    host.dilemma = {
+      id: uid('dil'),
+      situation: fill(def.situation, dilemmaSlots),
+      options: [
+        { label: def.optionA.label, cost: fill(def.optionA.cost, dilemmaSlots) },
+        { label: def.optionB.label, cost: fill(def.optionB.cost, dilemmaSlots) },
+      ],
+      noGoodAnswer: fill(def.noGoodAnswer, dilemmaSlots),
+      later: fill(def.later, dilemmaSlots),
+      framing: pick(C.dilemmaFraming),
+    };
+  }
 
   // The second axis. One antagonist gives a campaign one shape: go there,
   // kill that. A rival with their own goal that crosses the villain's gives
@@ -1093,6 +1121,7 @@ export async function rerollChapter(campaign, chapterId) {
   const item = campaign.objective.items.find(it => it.chapterId === old.id);
   if (item) placeObjectiveItem(ctx, item, fresh);
 
+  if (old.dilemma) fresh.dilemma = old.dilemma;
   // the rival was scheduled to show up here; a new site does not excuse them
   if (old.rival) {
     fresh.rival = old.rival;
@@ -1341,6 +1370,12 @@ export function campaignMarkdown(c) {
       if (ch.playerGoal) L.push(`> **The goal, as the party understands it:** "${ch.playerGoal}"`, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
       if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
+      if (ch.dilemma) {
+        const d = ch.dilemma;
+        L.push(`**The choice:** ${d.situation}`, '');
+        d.options.forEach(o => L.push(`- **${o.label}** - ${o.cost}`));
+        L.push('', `*No clean way out:* ${d.noGoodAnswer}`, '', `*It comes back:* ${d.later}`, '', `*Running it:* ${d.framing}`, '');
+      }
       if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');

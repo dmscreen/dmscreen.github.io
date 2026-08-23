@@ -432,6 +432,14 @@ export default {
       ${ch.scene ? playerBox(esc(ch.scene), 'Read aloud, setting the scene') : ''}
       ${ch.playerGoal ? playerBox(`<b>The goal, as the party understands it:</b> ${esc(ch.playerGoal)}`, 'Players know') : ''}
       ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
+      ${ch.dilemma ? `<div class="card dilemma-card"><h3>The choice</h3>
+        ${playerBox(esc(ch.dilemma.situation), 'Put to the players')}
+        <div class="grid-2">
+          ${ch.dilemma.options.map(o => `<div class="dilemma-horn"><b>${esc(o.label)}</b><p class="small">${esc(o.cost)}</p></div>`).join('')}
+        </div>
+        ${dmBox(`<p class="small"><b>No clean way out</b> ${esc(ch.dilemma.noGoodAnswer)}<br>
+          <b>It comes back</b> ${esc(ch.dilemma.later)}<br>
+          <b>Running it</b> ${esc(ch.dilemma.framing)}</p>`)}</div>` : ''}
       ${ch.rival ? `<div class="card"><h3>${esc(ch.rival.org)} is here${ch.rival.first ? ', for the first time' : ''}</h3>
         <p class="small">${esc(ch.rival.move)}</p>
         <p class="small faint">They are <b>${esc((campaign.rival.stances.find(x => x.id === rivalStance()) || {}).label || 'wary')}</b> toward the party; see the Rival page for what that means here.</p></div>` : ''}
