@@ -1035,6 +1035,25 @@ export async function generateCampaign(opts = {}) {
       return { chapterId: ch.id, chapterTitle: ch.title, move, first: i === 0 };
     });
 
+  // Choices that bind. The campaign carries a short list of things the party
+  // might do, and every chapter after the first holds one prepared sentence
+  // per flag. Nothing fires automatically: the DM sets a flag when the table
+  // earns it, and the chapters that follow start saying so.
+  const flagSlots = { ...slots, rival: rivalOrg };
+  const flags = C.campaignFlags.map(f => ({
+    id: f.id,
+    label: fill(f.label, flagSlots),
+    prompt: fill(f.prompt, flagSlots),
+  }));
+  allChapters.forEach((ch, i) => {
+    if (i === 0) return; // the opening has nothing behind it to react to
+    ch.reactions = C.campaignFlags.map(f => ({
+      flag: f.id,
+      label: fill(f.label, flagSlots),
+      text: fill(pick(f.reactions), flagSlots),
+    }));
+  });
+
   // Put the antagonist layer on the map instead of leaving it in an appendix:
   // the villain personally leads the climax boss fight, and each lieutenant
   // commands the toughest encounter of a mid-campaign chapter.
@@ -1101,6 +1120,7 @@ export async function generateCampaign(opts = {}) {
     objective,
     villain,
     rival,
+    flags,
     factions: factionDefs,
     clocks,
     acts,
@@ -1189,6 +1209,7 @@ export async function rerollChapter(campaign, chapterId) {
   if (item) placeObjectiveItem(ctx, item, fresh);
 
   if (old.dilemma) fresh.dilemma = old.dilemma;
+  if (old.reactions) fresh.reactions = old.reactions;
   // the rival was scheduled to show up here; a new site does not excuse them
   if (old.rival) {
     fresh.rival = old.rival;
@@ -1421,6 +1442,11 @@ export function campaignMarkdown(c) {
       L.push('');
     }
   }
+  if (c.flags?.length) {
+    L.push('', '## Choices that bind', '',
+           'Set these as the party earns them; every chapter after carries a line for each.', '');
+    c.flags.forEach(f => L.push(`- **${f.label}** - ${f.prompt}`));
+  }
   L.push('', '## Factions', '');
   c.factions.forEach(f => L.push(`- **${f.name}** (${f.attitude}) - wants to ${f.goal}. Offers ${f.offers}. Demands ${f.demands}.`));
   L.push('', '## Clocks', '');
@@ -1437,6 +1463,11 @@ export function campaignMarkdown(c) {
       if (ch.playerGoal) L.push(`> **The goal, as the party understands it:** "${ch.playerGoal}"`, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
       if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
+      if (ch.reactions?.length) {
+        L.push('**If the party has already...** *(read only the lines that apply)*', '');
+        ch.reactions.forEach(r => L.push(`- *${r.label}:* ${r.text}`));
+        L.push('');
+      }
       if (ch.dilemma) {
         const d = ch.dilemma;
         L.push(`**The choice:** ${d.situation}`, '');

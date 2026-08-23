@@ -464,6 +464,11 @@ export default {
       ${ch.scene ? playerBox(esc(ch.scene), 'Read aloud, setting the scene') : ''}
       ${ch.playerGoal ? playerBox(`<b>The goal, as the party understands it:</b> ${esc(ch.playerGoal)}`, 'Players know') : ''}
       ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
+      ${(() => {
+        const live = (ch.reactions || []).filter(r => flagOn(r.flag));
+        return live.length ? `<div class="card"><h3>Because of what the party already did</h3>
+          ${live.map(r => `<p class="small"><span class="pill">${esc(r.label)}</span><br>${esc(r.text)}</p>`).join('')}</div>` : '';
+      })()}
       ${ch.dilemma ? `<div class="card dilemma-card"><h3>The choice</h3>
         ${playerBox(esc(ch.dilemma.situation), 'Put to the players')}
         <div class="grid-2">
@@ -526,6 +531,7 @@ export default {
             <a href="javascript:void 0" data-ch="${esc(ch.id)}"><b>${esc(ch.title)}</b></a>
             ${ch.mandatory ? '' : '<span class="pill">optional</span>'}${isDone(ch) ? ' <span class="pill success">done</span>' : ''}<br>
             <span class="muted">${esc(ch.playerGoal || ch.summary)}</span></li>`).join('')}</ol></div>
+        ${flagsCardHTML()}
         <div class="card"><h3>Running it</h3>
           <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters are budgeted for a party of ${c.gen?.partySize || 4} at each chapter's level, so nudge counts up or down if the table changes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
           <p class="small"><span class="facing player">Read aloud</span> boxed blue text is safe to say or show to the players verbatim. <span class="facing dm">DM only</span> fenced blocks are spoilers: secrets, solutions, and the true/false of things. Everything unmarked is ordinary working material, worded for you rather than for them.</p></div>
@@ -565,6 +571,22 @@ export default {
     // Standing runs -3..+3 relative to the faction's written attitude.
     const standingOf = (f) => record?.factionStanding?.[f.id] || 0;
     const fmtStanding = (n) => n === 0 ? 'as written' : (n > 0 ? `+${n}` : String(n));
+
+    // Flags are the campaign's memory of what the party has already done.
+    // The DM sets them; every later chapter then shows only the lines that
+    // apply, so the book reacts instead of repeating itself.
+    const flagOn = (id) => !!record?.flags?.[id];
+
+    const flagsCardHTML = () => {
+      if (!campaign.flags?.length) return '';
+      const set = campaign.flags.filter(f => flagOn(f.id)).length;
+      return `<div class="card"><h3>Choices that bind${set ? ` <span class="pill accent">${set} set</span>` : ''}</h3>
+        <p class="small faint">Tick these as the party earns them. Every chapter after the first carries a prepared line for each, and shows the ones that apply.</p>
+        ${campaign.flags.map(f => `<label class="check flag-row">
+          <input type="checkbox" data-flag="${esc(f.id)}" ${flagOn(f.id) ? 'checked' : ''}>
+          <span><b>${esc(f.label)}</b><br><span class="small faint">${esc(f.prompt)}</span></span>
+        </label>`).join('')}</div>`;
+    };
 
     // Stance is the DM's dial: it changes what the rival does at every site
     // and which ending the campaign is drifting toward.
@@ -692,6 +714,13 @@ export default {
         const all = campaign.acts.flatMap(x => x.chapters).flatMap(ch => ch.elements.map(e => ({ e, ch })));
         const hit = all.find(x => x.e.id === a.dataset.el);
         if (hit) { selection = { kind: 'element', ref: hit.e, chapter: hit.ch }; drawTree(); drawDetail(); }
+      }));
+      box.querySelectorAll('[data-flag]').forEach(cb => cb.addEventListener('change', async () => {
+        record.flags ||= {};
+        record.flags[cb.dataset.flag] = cb.checked;
+        await persistRecord();
+        drawDetail();
+        toast(cb.checked ? 'Set; later chapters will react' : 'Cleared');
       }));
       box.querySelectorAll('[data-stance]').forEach(b => b.addEventListener('click', async () => {
         record.rivalStance = b.dataset.stance;

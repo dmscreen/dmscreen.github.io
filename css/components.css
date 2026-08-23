@@ -620,3 +620,14 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   background: var(--bg-panel-75);
 }
 .dilemma-horn p { margin: 4px 0 0; color: var(--text-dim); }
+
+/* Campaign flags: a checklist of what the party has already done. */
+.flag-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+.flag-row:first-of-type { border-top: 0; }
+.flag-row input { margin-top: 3px; flex: none; }

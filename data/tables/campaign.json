@@ -772,6 +772,69 @@
     { "label": "The Winter Stores", "segments": 8, "onFill": "Famine conditions; every settlement becomes hostile to outsiders." }
   ],
 
+  "campaignFlags": [
+    {
+      "id": "rival_backed",
+      "label": "The party threw in with {rival}",
+      "prompt": "Set this once the party has taken {rival}'s side in a way the region noticed.",
+      "reactions": [
+        "{rival}'s people are already here and have saved the party a job, which they will mention.",
+        "A door opens that should not have: {rival} sent word ahead.",
+        "Somebody refuses to deal with the party at all, because of the company they keep."
+      ]
+    },
+    {
+      "id": "rival_crossed",
+      "label": "The party crossed {rival}",
+      "prompt": "Set this once the party has cost {rival} something they cannot write off.",
+      "reactions": [
+        "What the party needed here was bought an hour ago, and the buyer left a note.",
+        "{rival} has told {villain}'s people where the party will be, and they were believed.",
+        "A price the party had agreed is suddenly withdrawn, with no explanation offered."
+      ]
+    },
+    {
+      "id": "named_dead",
+      "label": "Someone the party was protecting died",
+      "prompt": "Set this the first time a named NPC dies on the party's watch.",
+      "reactions": [
+        "Their name is on somebody's lips here, and not kindly.",
+        "A relative of theirs is in this chapter and will not help without being asked properly.",
+        "The party is offered the job nobody else wants, because nobody else trusts them with anything better."
+      ]
+    },
+    {
+      "id": "kept_the_object",
+      "label": "The party used or kept a {object} rather than securing it",
+      "prompt": "Set this if the party has held on to one of the {objects} for its power instead of putting it beyond reach.",
+      "reactions": [
+        "Something here reacts to what the party is carrying before anyone says a word.",
+        "{villain} knows exactly where the party is, and has for a while.",
+        "An ally asks, directly, whether the party still has it, and watches the answer."
+      ]
+    },
+    {
+      "id": "public_win",
+      "label": "The party won something in public",
+      "prompt": "Set this after a victory that crowds witnessed and repeated.",
+      "reactions": [
+        "The party is recognised on arrival, which cuts both ways.",
+        "Someone volunteers information that they would have sold to strangers.",
+        "{villain}'s people treat the party as a priority rather than an obstacle."
+      ]
+    },
+    {
+      "id": "faction_burned",
+      "label": "The party burned {faction}",
+      "prompt": "Set this if {faction} has decided the party is a liability.",
+      "reactions": [
+        "{faction} has been here first and left nothing useful behind.",
+        "The party's usual route is closed to them and the reason is not given.",
+        "A rumour arrives ahead of the party, and it is not true, and it does not have to be."
+      ]
+    }
+  ],
+
   "downtime": {
     "titles": [
       "Winter Quarters at {hub}",
