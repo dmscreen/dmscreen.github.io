@@ -144,7 +144,9 @@ function treasureFor(items, level, ctx, { major = false } = {}) {
   }
   const coin = major ? roll(`${level * 2}d10`).total * 10 : roll(`${Math.max(2, level)}d10`).total;
   out.push({ kind: 'coin', gp: coin, name: `${coin.toLocaleString()} gp in coin and portable valuables` });
-  if (chance(0.4)) out.push({ kind: 'goods', name: fill(pick(ctx.C.treasureGoods), ctx) });
+  // ctx.slots, not ctx: passing the whole context made this a no-op and
+  // shipped literal "{villain}" strings into treasure descriptions
+  if (chance(0.4)) out.push({ kind: 'goods', name: fill(pick(ctx.C.treasureGoods), ctx.slots || {}) });
   return out;
 }
 
@@ -434,6 +436,10 @@ const CHAPTER_ROLES = {
   reconverge_event: { label: 'Reconvergence', build: 'event' },
   region_leg: { label: 'Journey', build: 'region' },
   investigation_web: { label: 'Investigation', build: 'investigation' },
+  downtime_interlude: { label: 'Downtime', build: 'downtime' },
+  faction_board: { label: 'Mission board', build: 'board' },
+  settlement_siege: { label: 'Siege', build: 'siege' },
+  heist_job: { label: 'Heist', build: 'heist' },
   climax_dungeon: { label: 'Climax', build: 'climax' },
 };
 
@@ -506,6 +512,67 @@ function makeChapter(ctx, { roleId, level, index }) {
       chapter.summary = 'Procedural travel: routes, days, checks, and a table that keeps the country dangerous.';
       chapter.elements.push(makeRegion(ctx, { title: legTitle, level, pool: pools.wild }));
       chapter.elements.push(makeDungeon(ctx, { kindId: pick(['lair', 'wreck', 'ruin']), level, title: siteName(C, false, ctx.usedPlaces), pool: pools.wild, sizeScale: 0.7 }));
+      break;
+    }
+    case 'downtime': {
+      const d = C.downtime;
+      chapter.title = fill(pick(d.titles), ctx.slots);
+      chapter.summary = d.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'downtime', title: chapter.title, subtitle: 'Downtime interlude',
+        summary: fill(d.summary, ctx.slots),
+        activities: d.activities.map(a => fill(a, ctx.slots)),
+        complications: some(d.complications, 3).map(a => fill(a, ctx.slots)),
+        worldMoves: fill(d.worldMoves, ctx.slots),
+        nodes: [],
+      });
+      break;
+    }
+    case 'board': {
+      const b = C.missionBoard;
+      chapter.title = fill(pick(b.titles), ctx.slots);
+      chapter.summary = b.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'board', title: chapter.title, subtitle: 'Mission board',
+        summary: fill(b.summary, ctx.slots),
+        jobs: some(b.jobs, 4).map(j => ({ ...j, twist: fill(j.twist, ctx.slots) })),
+        note: fill(b.note, ctx.slots),
+        nodes: [],
+      });
+      break;
+    }
+    case 'siege': {
+      const g = C.siege;
+      const place = chance(0.5) ? ctx.slots.hub : settlementName(ctx.names, ctx.usedPlaces);
+      chapter.title = fill(pick(g.titles), { ...ctx.slots, place });
+      chapter.summary = g.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'siege', title: chapter.title, subtitle: 'Siege',
+        summary: fill(g.summary, { ...ctx.slots, place }),
+        phases: g.phases.map((t, i) => ({ n: i + 1, text: fill(t, { ...ctx.slots, place }) })),
+        assignments: g.assignments.map(a => fill(a, ctx.slots)),
+        note: g.note,
+        climaxEncounter: (() => {
+          const enc = buildEncounter(pools.faction, level, 3, ctx.partySize);
+          return enc ? { id: uid('beat'), kind: 'encounter', ...enc } : null;
+        })(),
+        nodes: [],
+      });
+      break;
+    }
+    case 'heist': {
+      const h = C.heist;
+      const place = siteName(C, false, ctx.usedPlaces);
+      chapter.title = fill(pick(h.titles), { ...ctx.slots, place });
+      chapter.summary = h.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'heist', title: chapter.title, subtitle: 'Heist',
+        summary: fill(h.summary, { ...ctx.slots, place }),
+        phases: h.phases.map((t, i) => ({ n: i + 1, text: fill(t, { ...ctx.slots, place }) })),
+        waysIn: some(h.waysIn, 3),
+        complications: some(h.complications, 2).map(c => fill(c, ctx.slots)),
+        nodes: [],
+      });
       break;
     }
     case 'investigation': {
@@ -765,6 +832,7 @@ export async function generateCampaign(opts = {}) {
 
   const usedNames = new Set();
   const usedPlaces = new Set();
+  const usedDilemmas = new Set();
   const regionName = `${pick(names.settlement.prefixes)}${pick(['march', 'reach', 'vale', 'hollow', 'moor', 'downs', 'weald'])}`;
   usedPlaces.add(regionName);
   const hubName = settlementName(names, usedPlaces);
@@ -892,6 +960,100 @@ export async function generateCampaign(opts = {}) {
     })),
   };
 
+  // Dilemmas: one per act, in a chapter that is not the hub. The taxonomy
+  // calls these out as an encounter type and nothing was generating them,
+  // yet a choice with no right answer is what a table still argues about
+  // months later. They are placed on the chapter rather than in a room,
+  // because the DM should be able to spring one whenever the moment fits.
+  const dilemmaSlots = { ...slots };
+  for (const act of acts) {
+    const candidates = act.chapters.filter(ch => ch.role !== 'hub_town');
+    if (!candidates.length) continue;
+    const host = pick(candidates);
+    if (host.dilemma) continue;
+    const def = pick(C.dilemmas.filter(d => !usedDilemmas.has(d.id)) || C.dilemmas);
+    if (!def) continue;
+    usedDilemmas.add(def.id);
+    host.dilemma = {
+      id: uid('dil'),
+      situation: fill(def.situation, dilemmaSlots),
+      options: [
+        { label: def.optionA.label, cost: fill(def.optionA.cost, dilemmaSlots) },
+        { label: def.optionB.label, cost: fill(def.optionB.cost, dilemmaSlots) },
+      ],
+      noGoodAnswer: fill(def.noGoodAnswer, dilemmaSlots),
+      later: fill(def.later, dilemmaSlots),
+      framing: pick(C.dilemmaFraming),
+    };
+  }
+
+  // The second axis. One antagonist gives a campaign one shape: go there,
+  // kill that. A rival with their own goal that crosses the villain's gives
+  // the party a choice at every site, and an ending that depends on who they
+  // decided to back. The rival is not evil, just inconvenient.
+  const rivalKind = pick(C.rivalKinds);
+  const rivalPerson = personName(names, null, usedNames);
+  const rivalOrg = pick(rivalKind.orgForms)
+    .replace('{adj}', pick(C.rivalAdjectives))
+    .replace('{name}', rivalPerson.name.split(' ')[1] || rivalPerson.name.split(' ')[0]);
+  const rivalSlots = { ...slots, rival: rivalOrg, name: rivalPerson.name };
+  const rivalStatName = pick(rivalKind.stat);
+  const rivalStat = monsters.find(m => m.name === rivalStatName);
+
+  const rival = {
+    id: uid('riv'),
+    org: rivalOrg,
+    leader: rivalPerson.name,
+    ancestry: rivalPerson.ancestry,
+    title: pick(rivalKind.titles),
+    kind: rivalKind.label,
+    wants: fill(rivalKind.wants, rivalSlots),
+    method: fill(rivalKind.method, rivalSlots),
+    crosses: fill(rivalKind.crosses, rivalSlots),
+    offers: fill(rivalKind.offers, rivalSlots),
+    demands: fill(rivalKind.demands, rivalSlots),
+    ifAllied: fill(rivalKind.ifAllied, rivalSlots),
+    ifCrossed: fill(rivalKind.ifCrossed, rivalSlots),
+    leverage: fill(rivalKind.leverage, rivalSlots),
+    firstMeeting: fill(pick(C.rivalFirstMeetings), rivalSlots),
+    stances: C.rivalStances,
+    defaultStance: 'wary',
+    statSuggestion: rivalStat ? { slug: rivalStat.slug, name: rivalStat.name, cr: fmtCR(rivalStat.cr) } : null,
+  };
+
+  // They turn up in person across the middle of the campaign: first contact
+  // early, then at roughly every other chapter, never in the hub (where the
+  // party would simply corner them) and never before the party has met them.
+  const rivalStops = allChapters.filter(ch => ch.role !== 'hub_town' && ch.index > 1);
+  const cadence = Math.max(1, Math.round(rivalStops.length / 3));
+  rival.appearances = rivalStops
+    .filter((_, i) => i % cadence === 0)
+    .slice(0, 3)
+    .map((ch, i) => {
+      const move = i === 0 ? rival.firstMeeting : fill(pick(C.rivalMoves), rivalSlots);
+      ch.rival = { org: rivalOrg, move, first: i === 0 };
+      return { chapterId: ch.id, chapterTitle: ch.title, move, first: i === 0 };
+    });
+
+  // Choices that bind. The campaign carries a short list of things the party
+  // might do, and every chapter after the first holds one prepared sentence
+  // per flag. Nothing fires automatically: the DM sets a flag when the table
+  // earns it, and the chapters that follow start saying so.
+  const flagSlots = { ...slots, rival: rivalOrg };
+  const flags = C.campaignFlags.map(f => ({
+    id: f.id,
+    label: fill(f.label, flagSlots),
+    prompt: fill(f.prompt, flagSlots),
+  }));
+  allChapters.forEach((ch, i) => {
+    if (i === 0) return; // the opening has nothing behind it to react to
+    ch.reactions = C.campaignFlags.map(f => ({
+      flag: f.id,
+      label: fill(f.label, flagSlots),
+      text: fill(pick(f.reactions), flagSlots),
+    }));
+  });
+
   // Put the antagonist layer on the map instead of leaving it in an appendix:
   // the villain personally leads the climax boss fight, and each lieutenant
   // commands the toughest encounter of a mid-campaign chapter.
@@ -957,6 +1119,8 @@ export async function generateCampaign(opts = {}) {
     hub: hubName,
     objective,
     villain,
+    rival,
+    flags,
     factions: factionDefs,
     clocks,
     acts,
@@ -1043,6 +1207,15 @@ export async function rerollChapter(campaign, chapterId) {
 
   const item = campaign.objective.items.find(it => it.chapterId === old.id);
   if (item) placeObjectiveItem(ctx, item, fresh);
+
+  if (old.dilemma) fresh.dilemma = old.dilemma;
+  if (old.reactions) fresh.reactions = old.reactions;
+  // the rival was scheduled to show up here; a new site does not excuse them
+  if (old.rival) {
+    fresh.rival = old.rival;
+    const appearance = campaign.rival?.appearances?.find(a => a.chapterId === old.id);
+    if (appearance) appearance.chapterTitle = fresh.title;
+  }
 
   if (isClimax) {
     const spot = leadBeatOf(fresh);
@@ -1254,6 +1427,26 @@ export function campaignMarkdown(c) {
   c.villain.lieutenants.forEach(l => L.push(`- **${l.name}** - ${l.note}${l.statSuggestion ? ` (use ${l.statSuggestion.name}, CR ${l.statSuggestion.cr})` : ''}${l.where ? `. Found at ${l.where}` : ''}`));
   L.push('', '### Villain schedule', '');
   c.villain.timeline.forEach(t => L.push(`- ${t.when}: ${t.move}`));
+  if (c.rival) {
+    const r = c.rival;
+    L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
+    L.push(`- Wants: ${r.wants}`, `- Method: ${r.method}`, `- Why they cross ${c.villain.name}: ${r.crosses}`);
+    L.push(`- Offers the party: ${r.offers}`, `- Demands in return: ${r.demands}`, `- Leverage over them: ${r.leverage}`);
+    if (r.statSuggestion) L.push(`- Stat block: ${r.statSuggestion.name} (CR ${r.statSuggestion.cr})`);
+    L.push('', `**First meeting:** ${r.firstMeeting}`, '');
+    L.push(`**If the party allies with them:** ${r.ifAllied}`, '');
+    L.push(`**If the party crosses them:** ${r.ifCrossed}`, '');
+    if (r.appearances?.length) {
+      L.push('**Where they turn up:**', '');
+      r.appearances.forEach(a => L.push(`- ${a.chapterTitle}: ${a.move}`));
+      L.push('');
+    }
+  }
+  if (c.flags?.length) {
+    L.push('', '## Choices that bind', '',
+           'Set these as the party earns them; every chapter after carries a line for each.', '');
+    c.flags.forEach(f => L.push(`- **${f.label}** - ${f.prompt}`));
+  }
   L.push('', '## Factions', '');
   c.factions.forEach(f => L.push(`- **${f.name}** (${f.attitude}) - wants to ${f.goal}. Offers ${f.offers}. Demands ${f.demands}.`));
   L.push('', '## Clocks', '');
@@ -1270,6 +1463,18 @@ export function campaignMarkdown(c) {
       if (ch.playerGoal) L.push(`> **The goal, as the party understands it:** "${ch.playerGoal}"`, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
       if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
+      if (ch.reactions?.length) {
+        L.push('**If the party has already...** *(read only the lines that apply)*', '');
+        ch.reactions.forEach(r => L.push(`- *${r.label}:* ${r.text}`));
+        L.push('');
+      }
+      if (ch.dilemma) {
+        const d = ch.dilemma;
+        L.push(`**The choice:** ${d.situation}`, '');
+        d.options.forEach(o => L.push(`- **${o.label}** - ${o.cost}`));
+        L.push('', `*No clean way out:* ${d.noGoodAnswer}`, '', `*It comes back:* ${d.later}`, '', `*Running it:* ${d.framing}`, '');
+      }
+      if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');
       if (ch.objective) L.push(`**Holds:** ${ch.objective.name}. ${ch.objective.note}`, '');
@@ -1304,6 +1509,24 @@ export function campaignMarkdown(c) {
         }
         if (el.type === 'event') {
           L.push(...el.phases.map(p => `${p.n}. ${p.text}`), '', `Failure: ${el.failure}`, '');
+        }
+        if (el.type === 'downtime') {
+          L.push('Activities:', ...el.activities.map(a => `- ${a}`), '', 'Complications:', ...el.complications.map(a => `- ${a}`), '',
+                 `*Meanwhile (DM only):* ${el.worldMoves}`, '');
+        }
+        if (el.type === 'board') {
+          for (const j of el.jobs) {
+            L.push(`**${j.name}** - "${j.ask}" Pay: ${j.pay}`, `  - *What it really is (DM only):* ${j.twist}`);
+          }
+          L.push('', el.note, '');
+        }
+        if (el.type === 'siege') {
+          L.push(...el.phases.map(x => `${x.n}. ${x.text}`), '', 'Assignments:', ...el.assignments.map(a => `- ${a}`), '', el.note, '');
+        }
+        if (el.type === 'heist') {
+          L.push(...el.phases.map(x => `${x.n}. ${x.text}`), '', 'Ways in:',
+                 ...el.waysIn.map(w => `- ${w.route} (costs: ${w.cost})`), '',
+                 'What goes wrong *(DM only)*:', ...el.complications.map(c => `- ${c}`), '');
         }
         if (el.type === 'investigation') {
           for (const c2 of el.conclusions) L.push(`Conclusion: ${c2.text}`, ...c2.clues.map(x => `- ${x}`), '');

@@ -216,6 +216,7 @@ export default {
       const rows = [
         { kind: 'overview', label: campaign.title, sub: 'Overview', depth: 0 },
         { kind: 'villain', label: campaign.villain.name, sub: 'Antagonist', depth: 0 },
+        ...(campaign.rival ? [{ kind: 'rival', label: campaign.rival.org, sub: 'Rival', depth: 0 }] : []),
         { kind: 'world', label: 'Factions, clocks & region', depth: 0 },
       ];
       campaign.acts.forEach((act, ai) => {
@@ -392,6 +393,38 @@ export default {
         <p><b>If it goes wrong</b> ${esc(elt.failure)}</p>
         ${elt.climaxEncounter ? `<h3>The fight, if it comes to one</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'Climax encounter', objective: elt.objective, tactics: 'The event drives the tactics; terrain and the clock matter more than the numbers.', morale: 'Withdraws the moment the objective is out of reach.', ifAvoided: 'The event resolves without a fight, which is a legitimate outcome.' })}` : ''}`;
 
+      if (elt.type === 'downtime') return `${head}
+        <div class="card"><h3>What the party can do with the weeks</h3>
+          <ul class="small">${elt.activities.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>
+        <div class="card"><h3>Something to interrupt the quiet</h3>
+          <ul class="small">${elt.complications.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>
+        ${dmBox(`<p class="small"><b>Meanwhile</b> ${esc(elt.worldMoves)}</p>`)}`;
+
+      if (elt.type === 'board') return `${head}
+        ${elt.jobs.map(j => `<div class="card"><h3>${esc(j.name)}</h3>
+          ${playerBox(`<b>The ask:</b> ${esc(j.ask)}<br><b>Pay:</b> ${esc(j.pay)}`, 'On the board')}
+          ${dmBox(`<p class="small"><b>What it really is</b> ${esc(j.twist)}</p>`)}</div>`).join('')}
+        <p class="small faint">${esc(elt.note)}</p>`;
+
+      if (elt.type === 'siege') return `${head}
+        <h3 class="mt">How the days go</h3>
+        <ol>${elt.phases.map(x => `<li>${esc(x.text)}</li>`).join('')}</ol>
+        <div class="card"><h3>Where they can be needed</h3>
+          <ul class="small">${elt.assignments.map(a => `<li>${esc(a)}</li>`).join('')}</ul>
+          <p class="small faint">${esc(elt.note)}</p></div>
+        ${elt.climaxEncounter ? `<h3>The breach</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'The breach',
+          objective: 'Hold the gap, or buy the time somebody else needs.',
+          tactics: 'They come in waves and do not care about casualties; the terrain and the clock matter more than the numbers.',
+          morale: 'They withdraw at dawn whatever happens, and count this as reconnaissance.',
+          ifAvoided: 'The wall falls and the fight moves into the streets, which is worse for everyone but the attackers.' })}` : ''}`;
+
+      if (elt.type === 'heist') return `${head}
+        <h3 class="mt">How it runs</h3>
+        <ol>${elt.phases.map(x => `<li>${esc(x.text)}</li>`).join('')}</ol>
+        <div class="card"><h3>Ways in</h3>
+          ${elt.waysIn.map(w => `<p class="small"><b>${esc(w.route)}</b><br><span class="muted">Costs: ${esc(w.cost)}</span></p>`).join('')}</div>
+        ${dmBox(`<h3>What goes wrong</h3><ul class="small">${elt.complications.map(c => `<li>${esc(c)}</li>`).join('')}</ul>`)}`;
+
       if (elt.type === 'investigation') return `${head}
         ${elt.conclusions.map(c => `<div class="mt"><b>Conclusion</b> <span class="faint small">(DM only until earned)</span><br>${esc(c.text)}
           <ul class="small">${c.clues.map(x => `<li><span class="player-inline">${esc(x)}</span></li>`).join('')}</ul></div>`).join('')}`;
@@ -431,6 +464,22 @@ export default {
       ${ch.scene ? playerBox(esc(ch.scene), 'Read aloud, setting the scene') : ''}
       ${ch.playerGoal ? playerBox(`<b>The goal, as the party understands it:</b> ${esc(ch.playerGoal)}`, 'Players know') : ''}
       ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
+      ${(() => {
+        const live = (ch.reactions || []).filter(r => flagOn(r.flag));
+        return live.length ? `<div class="card"><h3>Because of what the party already did</h3>
+          ${live.map(r => `<p class="small"><span class="pill">${esc(r.label)}</span><br>${esc(r.text)}</p>`).join('')}</div>` : '';
+      })()}
+      ${ch.dilemma ? `<div class="card dilemma-card"><h3>The choice</h3>
+        ${playerBox(esc(ch.dilemma.situation), 'Put to the players')}
+        <div class="grid-2">
+          ${ch.dilemma.options.map(o => `<div class="dilemma-horn"><b>${esc(o.label)}</b><p class="small">${esc(o.cost)}</p></div>`).join('')}
+        </div>
+        ${dmBox(`<p class="small"><b>No clean way out</b> ${esc(ch.dilemma.noGoodAnswer)}<br>
+          <b>It comes back</b> ${esc(ch.dilemma.later)}<br>
+          <b>Running it</b> ${esc(ch.dilemma.framing)}</p>`)}</div>` : ''}
+      ${ch.rival ? `<div class="card"><h3>${esc(ch.rival.org)} is here${ch.rival.first ? ', for the first time' : ''}</h3>
+        <p class="small">${esc(ch.rival.move)}</p>
+        <p class="small faint">They are <b>${esc((campaign.rival.stances.find(x => x.id === rivalStance()) || {}).label || 'wary')}</b> toward the party; see the Rival page for what that means here.</p></div>` : ''}
       ${ch.lieutenant ? `<p class="small"><span class="pill danger">lieutenant</span> ${esc(ch.lieutenant)} commands here; see the boss encounter below.</p>` : ''}
       <div class="grid-2 mt">
         <div class="card"><h3>Getting them here</h3><p class="small">${esc(ch.entry)}</p></div>
@@ -482,6 +531,7 @@ export default {
             <a href="javascript:void 0" data-ch="${esc(ch.id)}"><b>${esc(ch.title)}</b></a>
             ${ch.mandatory ? '' : '<span class="pill">optional</span>'}${isDone(ch) ? ' <span class="pill success">done</span>' : ''}<br>
             <span class="muted">${esc(ch.playerGoal || ch.summary)}</span></li>`).join('')}</ol></div>
+        ${flagsCardHTML()}
         <div class="card"><h3>Running it</h3>
           <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters are budgeted for a party of ${c.gen?.partySize || 4} at each chapter's level, so nudge counts up or down if the table changes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
           <p class="small"><span class="facing player">Read aloud</span> boxed blue text is safe to say or show to the players verbatim. <span class="facing dm">DM only</span> fenced blocks are spoilers: secrets, solutions, and the true/false of things. Everything unmarked is ordinary working material, worded for you rather than for them.</p></div>
@@ -521,6 +571,60 @@ export default {
     // Standing runs -3..+3 relative to the faction's written attitude.
     const standingOf = (f) => record?.factionStanding?.[f.id] || 0;
     const fmtStanding = (n) => n === 0 ? 'as written' : (n > 0 ? `+${n}` : String(n));
+
+    // Flags are the campaign's memory of what the party has already done.
+    // The DM sets them; every later chapter then shows only the lines that
+    // apply, so the book reacts instead of repeating itself.
+    const flagOn = (id) => !!record?.flags?.[id];
+
+    const flagsCardHTML = () => {
+      if (!campaign.flags?.length) return '';
+      const set = campaign.flags.filter(f => flagOn(f.id)).length;
+      return `<div class="card"><h3>Choices that bind${set ? ` <span class="pill accent">${set} set</span>` : ''}</h3>
+        <p class="small faint">Tick these as the party earns them. Every chapter after the first carries a prepared line for each, and shows the ones that apply.</p>
+        ${campaign.flags.map(f => `<label class="check flag-row">
+          <input type="checkbox" data-flag="${esc(f.id)}" ${flagOn(f.id) ? 'checked' : ''}>
+          <span><b>${esc(f.label)}</b><br><span class="small faint">${esc(f.prompt)}</span></span>
+        </label>`).join('')}</div>`;
+    };
+
+    // Stance is the DM's dial: it changes what the rival does at every site
+    // and which ending the campaign is drifting toward.
+    const rivalStance = () => record?.rivalStance || campaign.rival?.defaultStance || 'wary';
+
+    const rivalHTML = () => {
+      const r = campaign.rival;
+      const stance = rivalStance();
+      const active = r.stances.find(x => x.id === stance) || r.stances[1];
+      return `<h2>${esc(r.org)}</h2>
+        <p class="muted">${esc(r.leader)}, ${esc(r.title)} &mdash; ${esc(r.kind)}${r.statSuggestion
+          ? `. Run them with <a href="javascript:void 0" data-mon="${esc(r.statSuggestion.slug)}">${esc(r.statSuggestion.name)}</a> (CR ${esc(r.statSuggestion.cr)})` : ''}.</p>
+        <div class="card"><h3>Where they stand with the party</h3>
+          <div class="row" id="rival-stance">
+            ${r.stances.map(x => `<button class="btn small ${x.id === stance ? 'primary' : ''}" data-stance="${esc(x.id)}">${esc(x.label)}</button>`).join('')}
+          </div>
+          <p class="small mt">${esc(active.note)}</p>
+          <p class="small faint">Saved with the campaign. Set it as the party earns it.</p></div>
+        <div class="grid-2">
+          <div class="card"><h3>What they want</h3><p class="small">${esc(r.wants)}</p>
+            <h3>How they go about it</h3><p class="small">${esc(r.method)}</p></div>
+          <div class="card"><h3>Why they cross ${esc(campaign.villain.name)}</h3><p class="small">${esc(r.crosses)}</p>
+            <h3>Your leverage over them</h3><p class="small">${esc(r.leverage)}</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>They offer</h3><p class="small">${esc(r.offers)}</p></div>
+          <div class="card"><h3>They demand</h3><p class="small">${esc(r.demands)}</p></div>
+        </div>
+        <div class="card"><h3>First meeting</h3>${playerBox(esc(r.firstMeeting), 'How it plays')}</div>
+        <div class="grid-2">
+          <div class="card ${stance === 'allied' ? 'link-card' : ''}"><h3>If the party allies with them</h3>
+            <p class="small">${esc(r.ifAllied)}</p></div>
+          <div class="card ${stance === 'hostile' ? 'link-card' : ''}"><h3>If the party crosses them</h3>
+            <p class="small">${esc(r.ifCrossed)}</p></div>
+        </div>
+        ${r.appearances?.length ? `<div class="card"><h3>Where they turn up</h3>
+          ${r.appearances.map(a => `<p class="small"><a href="javascript:void 0" data-ch="${esc(a.chapterId)}"><b>${esc(a.chapterTitle)}</b></a>${a.first ? ' <span class="pill accent">first meeting</span>' : ''}<br>${esc(a.move)}</p>`).join('')}</div>` : ''}`;
+    };
 
     const worldHTML = () => `
       <h2>Factions, clocks &amp; region</h2>
@@ -563,6 +667,7 @@ export default {
       switch (selection.kind) {
         case 'overview': html = overviewHTML(); break;
         case 'villain': html = villainHTML(); break;
+        case 'rival': html = rivalHTML(); break;
         case 'world': html = worldHTML(); break;
         case 'act': html = actHTML(selection.ref); break;
         case 'chapter': html = chapterHTML(selection.ref); break;
@@ -609,6 +714,19 @@ export default {
         const all = campaign.acts.flatMap(x => x.chapters).flatMap(ch => ch.elements.map(e => ({ e, ch })));
         const hit = all.find(x => x.e.id === a.dataset.el);
         if (hit) { selection = { kind: 'element', ref: hit.e, chapter: hit.ch }; drawTree(); drawDetail(); }
+      }));
+      box.querySelectorAll('[data-flag]').forEach(cb => cb.addEventListener('change', async () => {
+        record.flags ||= {};
+        record.flags[cb.dataset.flag] = cb.checked;
+        await persistRecord();
+        drawDetail();
+        toast(cb.checked ? 'Set; later chapters will react' : 'Cleared');
+      }));
+      box.querySelectorAll('[data-stance]').forEach(b => b.addEventListener('click', async () => {
+        record.rivalStance = b.dataset.stance;
+        await persistRecord();
+        drawDetail();
+        toast(`${campaign.rival.org}: ${b.textContent}`);
       }));
       box.querySelectorAll('[data-clock]').forEach(b => b.addEventListener('click', async () => {
         const { clock, seg } = b.dataset;
