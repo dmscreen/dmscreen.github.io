@@ -892,6 +892,54 @@ export async function generateCampaign(opts = {}) {
     })),
   };
 
+  // The second axis. One antagonist gives a campaign one shape: go there,
+  // kill that. A rival with their own goal that crosses the villain's gives
+  // the party a choice at every site, and an ending that depends on who they
+  // decided to back. The rival is not evil, just inconvenient.
+  const rivalKind = pick(C.rivalKinds);
+  const rivalPerson = personName(names, null, usedNames);
+  const rivalOrg = pick(rivalKind.orgForms)
+    .replace('{adj}', pick(C.rivalAdjectives))
+    .replace('{name}', rivalPerson.name.split(' ')[1] || rivalPerson.name.split(' ')[0]);
+  const rivalSlots = { ...slots, rival: rivalOrg, name: rivalPerson.name };
+  const rivalStatName = pick(rivalKind.stat);
+  const rivalStat = monsters.find(m => m.name === rivalStatName);
+
+  const rival = {
+    id: uid('riv'),
+    org: rivalOrg,
+    leader: rivalPerson.name,
+    ancestry: rivalPerson.ancestry,
+    title: pick(rivalKind.titles),
+    kind: rivalKind.label,
+    wants: fill(rivalKind.wants, rivalSlots),
+    method: fill(rivalKind.method, rivalSlots),
+    crosses: fill(rivalKind.crosses, rivalSlots),
+    offers: fill(rivalKind.offers, rivalSlots),
+    demands: fill(rivalKind.demands, rivalSlots),
+    ifAllied: fill(rivalKind.ifAllied, rivalSlots),
+    ifCrossed: fill(rivalKind.ifCrossed, rivalSlots),
+    leverage: fill(rivalKind.leverage, rivalSlots),
+    firstMeeting: fill(pick(C.rivalFirstMeetings), rivalSlots),
+    stances: C.rivalStances,
+    defaultStance: 'wary',
+    statSuggestion: rivalStat ? { slug: rivalStat.slug, name: rivalStat.name, cr: fmtCR(rivalStat.cr) } : null,
+  };
+
+  // They turn up in person across the middle of the campaign: first contact
+  // early, then at roughly every other chapter, never in the hub (where the
+  // party would simply corner them) and never before the party has met them.
+  const rivalStops = allChapters.filter(ch => ch.role !== 'hub_town' && ch.index > 1);
+  const cadence = Math.max(1, Math.round(rivalStops.length / 3));
+  rival.appearances = rivalStops
+    .filter((_, i) => i % cadence === 0)
+    .slice(0, 3)
+    .map((ch, i) => {
+      const move = i === 0 ? rival.firstMeeting : fill(pick(C.rivalMoves), rivalSlots);
+      ch.rival = { org: rivalOrg, move, first: i === 0 };
+      return { chapterId: ch.id, chapterTitle: ch.title, move, first: i === 0 };
+    });
+
   // Put the antagonist layer on the map instead of leaving it in an appendix:
   // the villain personally leads the climax boss fight, and each lieutenant
   // commands the toughest encounter of a mid-campaign chapter.
@@ -957,6 +1005,7 @@ export async function generateCampaign(opts = {}) {
     hub: hubName,
     objective,
     villain,
+    rival,
     factions: factionDefs,
     clocks,
     acts,
@@ -1043,6 +1092,13 @@ export async function rerollChapter(campaign, chapterId) {
 
   const item = campaign.objective.items.find(it => it.chapterId === old.id);
   if (item) placeObjectiveItem(ctx, item, fresh);
+
+  // the rival was scheduled to show up here; a new site does not excuse them
+  if (old.rival) {
+    fresh.rival = old.rival;
+    const appearance = campaign.rival?.appearances?.find(a => a.chapterId === old.id);
+    if (appearance) appearance.chapterTitle = fresh.title;
+  }
 
   if (isClimax) {
     const spot = leadBeatOf(fresh);
@@ -1254,6 +1310,21 @@ export function campaignMarkdown(c) {
   c.villain.lieutenants.forEach(l => L.push(`- **${l.name}** - ${l.note}${l.statSuggestion ? ` (use ${l.statSuggestion.name}, CR ${l.statSuggestion.cr})` : ''}${l.where ? `. Found at ${l.where}` : ''}`));
   L.push('', '### Villain schedule', '');
   c.villain.timeline.forEach(t => L.push(`- ${t.when}: ${t.move}`));
+  if (c.rival) {
+    const r = c.rival;
+    L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
+    L.push(`- Wants: ${r.wants}`, `- Method: ${r.method}`, `- Why they cross ${c.villain.name}: ${r.crosses}`);
+    L.push(`- Offers the party: ${r.offers}`, `- Demands in return: ${r.demands}`, `- Leverage over them: ${r.leverage}`);
+    if (r.statSuggestion) L.push(`- Stat block: ${r.statSuggestion.name} (CR ${r.statSuggestion.cr})`);
+    L.push('', `**First meeting:** ${r.firstMeeting}`, '');
+    L.push(`**If the party allies with them:** ${r.ifAllied}`, '');
+    L.push(`**If the party crosses them:** ${r.ifCrossed}`, '');
+    if (r.appearances?.length) {
+      L.push('**Where they turn up:**', '');
+      r.appearances.forEach(a => L.push(`- ${a.chapterTitle}: ${a.move}`));
+      L.push('');
+    }
+  }
   L.push('', '## Factions', '');
   c.factions.forEach(f => L.push(`- **${f.name}** (${f.attitude}) - wants to ${f.goal}. Offers ${f.offers}. Demands ${f.demands}.`));
   L.push('', '## Clocks', '');
@@ -1270,6 +1341,7 @@ export function campaignMarkdown(c) {
       if (ch.playerGoal) L.push(`> **The goal, as the party understands it:** "${ch.playerGoal}"`, '');
       L.push(`**Getting them here:** ${ch.entry}`, '', `**If they walk away:** ${ch.stakes}`, '');
       if (ch.travel) L.push(`**Getting there:** ${ch.travel}`, '');
+      if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');
       if (ch.objective) L.push(`**Holds:** ${ch.objective.name}. ${ch.objective.note}`, '');

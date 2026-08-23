@@ -216,6 +216,7 @@ export default {
       const rows = [
         { kind: 'overview', label: campaign.title, sub: 'Overview', depth: 0 },
         { kind: 'villain', label: campaign.villain.name, sub: 'Antagonist', depth: 0 },
+        ...(campaign.rival ? [{ kind: 'rival', label: campaign.rival.org, sub: 'Rival', depth: 0 }] : []),
         { kind: 'world', label: 'Factions, clocks & region', depth: 0 },
       ];
       campaign.acts.forEach((act, ai) => {
@@ -431,6 +432,9 @@ export default {
       ${ch.scene ? playerBox(esc(ch.scene), 'Read aloud, setting the scene') : ''}
       ${ch.playerGoal ? playerBox(`<b>The goal, as the party understands it:</b> ${esc(ch.playerGoal)}`, 'Players know') : ''}
       ${ch.travel ? `<p class="small"><b>Getting there</b> ${esc(ch.travel)}</p>` : ''}
+      ${ch.rival ? `<div class="card"><h3>${esc(ch.rival.org)} is here${ch.rival.first ? ', for the first time' : ''}</h3>
+        <p class="small">${esc(ch.rival.move)}</p>
+        <p class="small faint">They are <b>${esc((campaign.rival.stances.find(x => x.id === rivalStance()) || {}).label || 'wary')}</b> toward the party; see the Rival page for what that means here.</p></div>` : ''}
       ${ch.lieutenant ? `<p class="small"><span class="pill danger">lieutenant</span> ${esc(ch.lieutenant)} commands here; see the boss encounter below.</p>` : ''}
       <div class="grid-2 mt">
         <div class="card"><h3>Getting them here</h3><p class="small">${esc(ch.entry)}</p></div>
@@ -522,6 +526,44 @@ export default {
     const standingOf = (f) => record?.factionStanding?.[f.id] || 0;
     const fmtStanding = (n) => n === 0 ? 'as written' : (n > 0 ? `+${n}` : String(n));
 
+    // Stance is the DM's dial: it changes what the rival does at every site
+    // and which ending the campaign is drifting toward.
+    const rivalStance = () => record?.rivalStance || campaign.rival?.defaultStance || 'wary';
+
+    const rivalHTML = () => {
+      const r = campaign.rival;
+      const stance = rivalStance();
+      const active = r.stances.find(x => x.id === stance) || r.stances[1];
+      return `<h2>${esc(r.org)}</h2>
+        <p class="muted">${esc(r.leader)}, ${esc(r.title)} &mdash; ${esc(r.kind)}${r.statSuggestion
+          ? `. Run them with <a href="javascript:void 0" data-mon="${esc(r.statSuggestion.slug)}">${esc(r.statSuggestion.name)}</a> (CR ${esc(r.statSuggestion.cr)})` : ''}.</p>
+        <div class="card"><h3>Where they stand with the party</h3>
+          <div class="row" id="rival-stance">
+            ${r.stances.map(x => `<button class="btn small ${x.id === stance ? 'primary' : ''}" data-stance="${esc(x.id)}">${esc(x.label)}</button>`).join('')}
+          </div>
+          <p class="small mt">${esc(active.note)}</p>
+          <p class="small faint">Saved with the campaign. Set it as the party earns it.</p></div>
+        <div class="grid-2">
+          <div class="card"><h3>What they want</h3><p class="small">${esc(r.wants)}</p>
+            <h3>How they go about it</h3><p class="small">${esc(r.method)}</p></div>
+          <div class="card"><h3>Why they cross ${esc(campaign.villain.name)}</h3><p class="small">${esc(r.crosses)}</p>
+            <h3>Your leverage over them</h3><p class="small">${esc(r.leverage)}</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>They offer</h3><p class="small">${esc(r.offers)}</p></div>
+          <div class="card"><h3>They demand</h3><p class="small">${esc(r.demands)}</p></div>
+        </div>
+        <div class="card"><h3>First meeting</h3>${playerBox(esc(r.firstMeeting), 'How it plays')}</div>
+        <div class="grid-2">
+          <div class="card ${stance === 'allied' ? 'link-card' : ''}"><h3>If the party allies with them</h3>
+            <p class="small">${esc(r.ifAllied)}</p></div>
+          <div class="card ${stance === 'hostile' ? 'link-card' : ''}"><h3>If the party crosses them</h3>
+            <p class="small">${esc(r.ifCrossed)}</p></div>
+        </div>
+        ${r.appearances?.length ? `<div class="card"><h3>Where they turn up</h3>
+          ${r.appearances.map(a => `<p class="small"><a href="javascript:void 0" data-ch="${esc(a.chapterId)}"><b>${esc(a.chapterTitle)}</b></a>${a.first ? ' <span class="pill accent">first meeting</span>' : ''}<br>${esc(a.move)}</p>`).join('')}</div>` : ''}`;
+    };
+
     const worldHTML = () => `
       <h2>Factions, clocks &amp; region</h2>
       <div class="card"><h3>Factions</h3>
@@ -563,6 +605,7 @@ export default {
       switch (selection.kind) {
         case 'overview': html = overviewHTML(); break;
         case 'villain': html = villainHTML(); break;
+        case 'rival': html = rivalHTML(); break;
         case 'world': html = worldHTML(); break;
         case 'act': html = actHTML(selection.ref); break;
         case 'chapter': html = chapterHTML(selection.ref); break;
@@ -609,6 +652,12 @@ export default {
         const all = campaign.acts.flatMap(x => x.chapters).flatMap(ch => ch.elements.map(e => ({ e, ch })));
         const hit = all.find(x => x.e.id === a.dataset.el);
         if (hit) { selection = { kind: 'element', ref: hit.e, chapter: hit.ch }; drawTree(); drawDetail(); }
+      }));
+      box.querySelectorAll('[data-stance]').forEach(b => b.addEventListener('click', async () => {
+        record.rivalStance = b.dataset.stance;
+        await persistRecord();
+        drawDetail();
+        toast(`${campaign.rival.org}: ${b.textContent}`);
       }));
       box.querySelectorAll('[data-clock]').forEach(b => b.addEventListener('click', async () => {
         const { clock, seg } = b.dataset;

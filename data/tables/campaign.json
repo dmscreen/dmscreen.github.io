@@ -619,6 +619,271 @@
     { "label": "The Winter Stores", "segments": 8, "onFill": "Famine conditions; every settlement becomes hostile to outsiders." }
   ],
 
+  "rivalKinds": [
+    {
+      "id": "free_company",
+      "label": "a rival free company",
+      "orgForms": [
+        "the {adj} Company",
+        "{name}'s Free Company",
+        "the {adj} Hands"
+      ],
+      "titles": [
+        "captain",
+        "company sergeant",
+        "contract-holder"
+      ],
+      "wants": "the same {objects} the party is chasing, to sell to the highest bidder",
+      "method": "moving fast, paying for information, and arriving first",
+      "crosses": "{villain} wants the {objects} used; the company wants them sold, and a sold {object} is one {villain} has to buy back",
+      "offers": "muscle, a second front, and everything they have already scouted",
+      "demands": "a cut, and first claim on the next {object} found",
+      "ifAllied": "Two crews can cover twice the ground: one optional chapter can be handled offscreen by the company, at the cost of whatever they keep from it.",
+      "ifCrossed": "They sell the party's route and timing to {villain}, who is waiting at the next site.",
+      "leverage": "They work for money, and {villain} has more of it. Outbid them once and they stay bought.",
+      "stat": [
+        "Veteran",
+        "Bandit Captain",
+        "Knight"
+      ]
+    },
+    {
+      "id": "crown_agent",
+      "label": "a crown investigator",
+      "orgForms": [
+        "the Warrant Office",
+        "the {adj} Commission",
+        "the Queen's Question"
+      ],
+      "titles": [
+        "investigator",
+        "commissioner",
+        "warrant officer"
+      ],
+      "wants": "{villain} taken alive and tried, with the {objects} entered as evidence",
+      "method": "warrants, subpoenas, and the patient accumulation of testimony",
+      "crosses": "{villain} can survive a trial. A trial takes months, and the clock does not stop for procedure",
+      "offers": "legal cover, access to sealed records, and the authority to open doors",
+      "demands": "that nothing be destroyed and nobody be killed who could testify",
+      "ifAllied": "Charges stick. The ending shifts toward a public, permanent resolution rather than a body in a hole.",
+      "ifCrossed": "The party are the ones with warrants out, and every settlement becomes harder to work in.",
+      "leverage": "They must follow their own rules. Hand them a procedural excuse and they will act on it.",
+      "stat": [
+        "Spy",
+        "Veteran",
+        "Knight"
+      ]
+    },
+    {
+      "id": "zealot_order",
+      "label": "a militant order",
+      "orgForms": [
+        "the Order of the {adj} Watch",
+        "the {adj} Brand",
+        "the Cauterists"
+      ],
+      "titles": [
+        "lord-abbot",
+        "brand-captain",
+        "first blade"
+      ],
+      "wants": "the same thing the party wants, and is willing to burn {region} down to get it",
+      "method": "purges, cordons, and the removal of anything that might be tainted",
+      "crosses": "{villain}'s plan dies with the region, and the order is entirely willing to trade one for the other",
+      "offers": "zealots who do not break, and the only people who will walk into the worst places",
+      "demands": "that the party stand aside from what comes after the victory",
+      "ifAllied": "The villain falls faster and harder, and the epilogue is uglier: the order keeps what it takes.",
+      "ifCrossed": "They add the party to the list of things to be cleansed, and they are thorough.",
+      "leverage": "Their doctrine is written down. Show them a reading of it that binds their hands.",
+      "stat": [
+        "Priest",
+        "Knight",
+        "Veteran"
+      ]
+    },
+    {
+      "id": "betrayed_lieutenant",
+      "label": "the antagonist's former partner",
+      "orgForms": [
+        "{name}'s people",
+        "the ones who walked away",
+        "the second circle"
+      ],
+      "titles": [
+        "former partner",
+        "the one who left",
+        "first apprentice"
+      ],
+      "wants": "{villain} to suffer, personally, and does not much care what it costs {region}",
+      "method": "knowing exactly where {villain} is weak and spending other people to prove it",
+      "crosses": "they know the plan from the inside, which makes them the most useful and most dangerous person in the story",
+      "offers": "the truth about {villain}: the weakness, the schedule, the names",
+      "demands": "to be there at the end, and to be the one who does it",
+      "ifAllied": "The party skips a whole layer of investigation, and inherits a partner who will not stop when they should.",
+      "ifCrossed": "They go it alone, force the confrontation early, and lose, handing {villain} a warning.",
+      "leverage": "They want witnesses more than they want to win. Offer an audience.",
+      "stat": [
+        "Mage",
+        "Assassin",
+        "Veteran"
+      ]
+    },
+    {
+      "id": "merchant_house",
+      "label": "a profiteering house",
+      "orgForms": [
+        "the House of {adj} Accounts",
+        "{name} & Kin",
+        "the {adj} Consortium"
+      ],
+      "titles": [
+        "factor",
+        "house agent",
+        "senior partner"
+      ],
+      "wants": "the crisis to continue exactly long enough to corner the market it created",
+      "method": "buying scarcity, financing both sides, and owning the roads",
+      "crosses": "{villain} winning ends the crisis, and an ended crisis is an ended profit",
+      "offers": "money, supply, transport, and doors into rooms the party cannot afford",
+      "demands": "that certain routes stay closed and certain rivals stay ruined",
+      "ifAllied": "The party is never short of resources, and every settlement they save ends up owing the house.",
+      "ifCrossed": "Prices double, doors close, and a bounty appears that nobody will admit to funding.",
+      "leverage": "Show them a ledger where the villain's victory costs more than the party's does.",
+      "stat": [
+        "Noble",
+        "Spy",
+        "Veteran"
+      ]
+    },
+    {
+      "id": "rival_claimant",
+      "label": "a rival claimant",
+      "orgForms": [
+        "the {adj} Claim",
+        "{name}'s faction",
+        "the other house"
+      ],
+      "titles": [
+        "claimant",
+        "pretender",
+        "heir-in-exile"
+      ],
+      "wants": "what {villain} wants, and by the same right, only sooner",
+      "method": "assembling a legitimate-looking case and an illegitimate army behind it",
+      "crosses": "there is one prize and two claims on it; both cannot be satisfied",
+      "offers": "troops, a banner to fight under, and a legitimate face for whatever the party does",
+      "demands": "that the party's victory install them at the end of it",
+      "ifAllied": "The finale has an army in it, and the region wakes up under a new power the party chose.",
+      "ifCrossed": "They cut a deal with {villain} instead, and the last chapter has two enemies in it.",
+      "leverage": "Their claim depends on being seen as the better option. Make that publicly untrue.",
+      "stat": [
+        "Noble",
+        "Knight",
+        "Veteran"
+      ]
+    },
+    {
+      "id": "collector",
+      "label": "an obsessive collector",
+      "orgForms": [
+        "the {adj} Reliquary",
+        "{name}'s collection",
+        "the Quiet Archive"
+      ],
+      "titles": [
+        "archivist",
+        "curator",
+        "the collector"
+      ],
+      "wants": "the {objects} preserved and locked away, unused, forever",
+      "method": "buying, stealing, and occasionally entombing the people who used them",
+      "crosses": "{villain} intends to use the {objects}, which to the collector is a kind of murder",
+      "offers": "identification, history, and the one fact about the {objects} nobody else knows",
+      "demands": "every {object}, afterwards, with no exceptions and no copies",
+      "ifAllied": "The party learns what the {objects} really are, and hands away the only thing that could stop a sequel.",
+      "ifCrossed": "The collector reaches the next {object} first and it is simply gone, vault-sealed, unreachable.",
+      "leverage": "Offer them something rarer. There is always something rarer.",
+      "stat": [
+        "Mage",
+        "Noble",
+        "Spy"
+      ]
+    },
+    {
+      "id": "opportunist_warlord",
+      "label": "an opportunist warlord",
+      "orgForms": [
+        "the {adj} Host",
+        "{name}'s riders",
+        "the Third Banner"
+      ],
+      "titles": [
+        "war-leader",
+        "banner-lord",
+        "the marshal"
+      ],
+      "wants": "the territory everyone else is too distracted to hold",
+      "method": "taking undefended ground and daring anyone to come and get it",
+      "crosses": "{villain} needs {region} intact to use it; the warlord is busy eating it",
+      "offers": "an army, a border nobody can cross, and a very simple kind of help",
+      "demands": "the land they have taken, permanently, and no questions about how",
+      "ifAllied": "The map is safer and smaller: the party gains a wall at their back and loses the people behind it.",
+      "ifCrossed": "A second war opens across the party's supply line at the worst possible moment.",
+      "leverage": "They fear being caught between two forces. Show them the other jaw closing.",
+      "stat": [
+        "Knight",
+        "Veteran",
+        "Berserker"
+      ]
+    }
+  ],
+  "rivalAdjectives": [
+    "Iron",
+    "Grey",
+    "Salt",
+    "Broken",
+    "Gilded",
+    "Quiet",
+    "Long",
+    "Red",
+    "Cold",
+    "Sundered"
+  ],
+  "rivalMoves": [
+    "They are already here. Fresh tracks, cut ropes, and a door opened by someone who knew the trick to it.",
+    "They arrive midway through, from another direction, and the party has a few rounds to decide whether that is good news.",
+    "They have taken a prisoner the party wanted, and will trade for something the party cannot spare.",
+    "They left a message scratched where the party would find it: a warning, an offer, or a boast, depending on how the last meeting went.",
+    "They have cleared the first third of the site and stopped, because what they found convinced them to wait for someone else to go first.",
+    "One of theirs is here alone, hurt, and separated from the rest. What the party does about it is remembered.",
+    "They got what they came for an hour ago and are on their way out. The party can let them pass, follow, or stop them.",
+    "They are negotiating with the occupants when the party walks in, and both sides turn around."
+  ],
+  "rivalFirstMeetings": [
+    "Not in a fight: the party and {rival} reach for the same door, the same witness, or the same body at the same moment, and both stop.",
+    "Over a table in {hub}, arranged by someone who thought the two of them should talk before they cost each other anything.",
+    "Badly. Somebody drew, nobody died, and now there is a debt on one side of it.",
+    "As rescuers. {rival}'s people pull the party out of something, and make sure the party knows the price is not settled.",
+    "Through their reputation first: three chapters of the party finding {rival} was there yesterday, before ever seeing their face."
+  ],
+  "rivalStances": [
+    {
+      "id": "hostile",
+      "label": "Hostile",
+      "note": "They act against the party directly. Expect them at sites, in the way, and eventually in the climax on the wrong side."
+    },
+    {
+      "id": "wary",
+      "label": "Wary",
+      "note": "The default. Neither side will spend blood on the other yet, and both are counting."
+    },
+    {
+      "id": "allied",
+      "label": "Allied",
+      "note": "They fight alongside the party, and they will collect on what they are owed at the end."
+    }
+  ],
+
   "villainMoves": [
     "sends a competent lieutenant to negotiate, honestly, once",
     "takes something from {hub} that the party will notice",
