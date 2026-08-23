@@ -22,10 +22,14 @@ export default {
         <a href="https://a5esrd.com" target="_blank" rel="noopener">A5E System Reference Document</a>,
         including equipment and enchanted items taken from the published A5E SRD documents.
         Level Up: Advanced 5th Edition and the book titles are trademarks of EN Publishing; this site is not affiliated with or endorsed by EN Publishing.</p>
-        <p class="small muted">The Item Reference additionally includes open-content magic items from
-        <a href="https://koboldpress.com" target="_blank" rel="noopener">Kobold Press</a> (<i>Vault of Magic</i>, <i>Tome of Heroes</i>) and
-        Green Ronin Publishing (<i>Critical Role: Tal'Dorei Campaign Setting</i>), used under the terms of the Open Gaming License.
-        Those publishers do not endorse this site.</p>
+        <p class="small muted">The reference also includes open-content material from
+        <a href="https://koboldpress.com" target="_blank" rel="noopener">Kobold Press</a>, used under the terms of the Open Gaming License:
+        monsters from <i>Tome of Beasts</i> (both the original and the 2023 edition), <i>Tome of Beasts 2</i>, <i>Tome of Beasts 3</i>, and <i>Creature Codex</i>;
+        spells from <i>Deep Magic for 5th Edition</i> and <i>Deep Magic Extended</i>;
+        and magic items from <i>Vault of Magic</i> and <i>Tome of Heroes</i>.</p>
+        <p class="small muted">Spells from <i>Spells That Don't Suck</i> and material from
+        Green Ronin Publishing (<i>Critical Role: Tal'Dorei Campaign Setting</i>) are likewise used under the terms of the Open Gaming License.
+        None of these publishers endorse this site.</p>
         <p class="small muted">The rumor generator and the importable table catalog come from the companion project
         <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>.</p>
         <p class="small muted">All rules data was compiled via the excellent <a href="https://open5e.com" target="_blank" rel="noopener">Open5e</a> project and API.

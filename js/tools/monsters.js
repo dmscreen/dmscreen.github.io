@@ -1,5 +1,5 @@
 // Monster Reference: SRD bestiary browser.
-import { loadMonsters, fmtCR, monsterXP } from '../srd.js';
+import { loadMonsters, fmtCR, monsterXP, sourceTag } from '../srd.js';
 import { el, esc, showStatBlock, searchInput, cap } from '../components/ui.js';
 
 const TYPES = ['aberration', 'beast', 'celestial', 'construct', 'dragon', 'elemental', 'fey', 'fiend', 'giant', 'humanoid', 'monstrosity', 'ooze', 'plant', 'undead'];
@@ -7,7 +7,7 @@ const SIZES = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
 
 export default {
   id: 'monsters', title: 'Monster Reference', shortTitle: 'Monsters', group: 'Reference', icon: 'eye',
-  subtitle: 'SRD 5.1 plus the Monstrous Menagerie; click any monster for its stat block',
+  subtitle: 'SRD 5.1, Monstrous Menagerie, the Tomes of Beasts and Creature Codex; click any monster for its stat block',
 
   async render(container) {
     const monsters = await loadMonsters();
@@ -38,20 +38,27 @@ export default {
       const source = container.querySelector('#f-source').value;
       const filtered = monsters.filter(m =>
         (!query || m.name.toLowerCase().includes(query)) &&
-        (!type || m.type === type) &&
+        // sources disagree on capitalisation ("Beast" vs "beast"), so compare
+        // case-insensitively rather than losing most of the bestiary
+        (!type || String(m.type).toLowerCase() === type) &&
         (!size || m.size === size) &&
         (!env || m.environments.includes(env)) &&
         (!source || m.source === source)
       ).sort((a, b) => a.name.localeCompare(b.name));
 
-      container.querySelector('#m-count').textContent = `${filtered.length} monsters`;
+      const CAP = 400;
+      container.querySelector('#m-count').textContent = filtered.length > CAP
+        ? `Showing the first ${CAP} of ${filtered.length} monsters; narrow the filters or search to see the rest`
+        : `${filtered.length} monsters`;
       const tbody = container.querySelector('#m-rows');
-      tbody.innerHTML = filtered.slice(0, 400).map((m, i) =>
-        `<tr class="clickable" data-i="${i}">
-          <td><b>${esc(m.name)}</b>${m.source && m.source !== 'SRD 5.1' ? ' <span class="pill">A5E</span>' : ''}</td>
+      tbody.innerHTML = filtered.slice(0, CAP).map((m, i) => {
+        const tag = sourceTag(m.source);
+        return `<tr class="clickable" data-i="${i}">
+          <td><b>${esc(m.name)}</b>${tag ? ` <span class="pill" title="${esc(m.source)}">${esc(tag)}</span>` : ''}</td>
           <td>${fmtCR(m.cr)}</td><td class="muted">${monsterXP(m).toLocaleString()}</td>
           <td class="muted">${esc(m.type)}</td><td class="muted">${esc(m.size)}</td><td>${m.ac}</td><td>${m.hp}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
       tbody.querySelectorAll('tr').forEach(tr =>
         tr.addEventListener('click', () => showStatBlock(filtered[Number(tr.dataset.i)])));
     };

@@ -15,14 +15,14 @@ export function spellDetail(s) {
     <b>Duration:</b> ${s.concentration ? 'Concentration, ' : ''}${esc(s.duration)}</p>
     <div>${md(s.desc)}</div>
     ${s.higherLevel ? `<p><b>At higher levels.</b> ${esc(s.higherLevel)}</p>` : ''}
-    <p class="small faint">${s.classes.map(esc).join(', ')}</p>
+    <p class="small faint">${s.classes.length ? s.classes.map(esc).join(', ') : 'No class list published for this spell in its source.'}</p>
   </div>`);
   modal(s.name, body, { wide: true });
 }
 
 export default {
   id: 'spells', title: 'Spell Reference', shortTitle: 'Spells', group: 'Reference', icon: 'sparkle',
-  subtitle: "SRD 5.1 plus the Adventurer's Guide, filterable and searchable",
+  subtitle: "SRD 5.1, the Adventurer's Guide, Deep Magic and more, filterable and searchable",
 
   async render(container) {
     const spells = await loadSpells();
@@ -64,7 +64,11 @@ export default {
         (!source || s.source === source)
       ).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 
-      container.querySelector('#s-count').textContent = `${filtered.length} spells`;
+      // Several third-party books publish no class list at all, so a class
+      // filter necessarily hides them. Say so rather than losing them quietly.
+      const unlisted = cls ? spells.filter(s => !s.classes.length).length : 0;
+      container.querySelector('#s-count').textContent =
+        `${filtered.length} spells${unlisted ? ` (${unlisted} more have no class list published and cannot be filtered by class)` : ''}`;
       const tbody = container.querySelector('#s-rows');
       tbody.innerHTML = filtered.map((s, i) =>
         `<tr class="clickable" data-i="${i}">
