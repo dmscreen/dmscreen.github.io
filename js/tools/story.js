@@ -393,6 +393,38 @@ export default {
         <p><b>If it goes wrong</b> ${esc(elt.failure)}</p>
         ${elt.climaxEncounter ? `<h3>The fight, if it comes to one</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'Climax encounter', objective: elt.objective, tactics: 'The event drives the tactics; terrain and the clock matter more than the numbers.', morale: 'Withdraws the moment the objective is out of reach.', ifAvoided: 'The event resolves without a fight, which is a legitimate outcome.' })}` : ''}`;
 
+      if (elt.type === 'downtime') return `${head}
+        <div class="card"><h3>What the party can do with the weeks</h3>
+          <ul class="small">${elt.activities.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>
+        <div class="card"><h3>Something to interrupt the quiet</h3>
+          <ul class="small">${elt.complications.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>
+        ${dmBox(`<p class="small"><b>Meanwhile</b> ${esc(elt.worldMoves)}</p>`)}`;
+
+      if (elt.type === 'board') return `${head}
+        ${elt.jobs.map(j => `<div class="card"><h3>${esc(j.name)}</h3>
+          ${playerBox(`<b>The ask:</b> ${esc(j.ask)}<br><b>Pay:</b> ${esc(j.pay)}`, 'On the board')}
+          ${dmBox(`<p class="small"><b>What it really is</b> ${esc(j.twist)}</p>`)}</div>`).join('')}
+        <p class="small faint">${esc(elt.note)}</p>`;
+
+      if (elt.type === 'siege') return `${head}
+        <h3 class="mt">How the days go</h3>
+        <ol>${elt.phases.map(x => `<li>${esc(x.text)}</li>`).join('')}</ol>
+        <div class="card"><h3>Where they can be needed</h3>
+          <ul class="small">${elt.assignments.map(a => `<li>${esc(a)}</li>`).join('')}</ul>
+          <p class="small faint">${esc(elt.note)}</p></div>
+        ${elt.climaxEncounter ? `<h3>The breach</h3>${encounterHTML({ ...elt.climaxEncounter, title: 'The breach',
+          objective: 'Hold the gap, or buy the time somebody else needs.',
+          tactics: 'They come in waves and do not care about casualties; the terrain and the clock matter more than the numbers.',
+          morale: 'They withdraw at dawn whatever happens, and count this as reconnaissance.',
+          ifAvoided: 'The wall falls and the fight moves into the streets, which is worse for everyone but the attackers.' })}` : ''}`;
+
+      if (elt.type === 'heist') return `${head}
+        <h3 class="mt">How it runs</h3>
+        <ol>${elt.phases.map(x => `<li>${esc(x.text)}</li>`).join('')}</ol>
+        <div class="card"><h3>Ways in</h3>
+          ${elt.waysIn.map(w => `<p class="small"><b>${esc(w.route)}</b><br><span class="muted">Costs: ${esc(w.cost)}</span></p>`).join('')}</div>
+        ${dmBox(`<h3>What goes wrong</h3><ul class="small">${elt.complications.map(c => `<li>${esc(c)}</li>`).join('')}</ul>`)}`;
+
       if (elt.type === 'investigation') return `${head}
         ${elt.conclusions.map(c => `<div class="mt"><b>Conclusion</b> <span class="faint small">(DM only until earned)</span><br>${esc(c.text)}
           <ul class="small">${c.clues.map(x => `<li><span class="player-inline">${esc(x)}</span></li>`).join('')}</ul></div>`).join('')}`;

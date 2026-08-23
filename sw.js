@@ -1,6 +1,6 @@
 // Cache-first service worker so the screen works offline.
 // Bump VERSION on every deploy to refresh caches.
-const VERSION = 'v54';
+const VERSION = 'v55';
 const CACHE = `dmsk-${VERSION}`;
 
 const PRECACHE = [

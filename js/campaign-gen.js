@@ -144,7 +144,9 @@ function treasureFor(items, level, ctx, { major = false } = {}) {
   }
   const coin = major ? roll(`${level * 2}d10`).total * 10 : roll(`${Math.max(2, level)}d10`).total;
   out.push({ kind: 'coin', gp: coin, name: `${coin.toLocaleString()} gp in coin and portable valuables` });
-  if (chance(0.4)) out.push({ kind: 'goods', name: fill(pick(ctx.C.treasureGoods), ctx) });
+  // ctx.slots, not ctx: passing the whole context made this a no-op and
+  // shipped literal "{villain}" strings into treasure descriptions
+  if (chance(0.4)) out.push({ kind: 'goods', name: fill(pick(ctx.C.treasureGoods), ctx.slots || {}) });
   return out;
 }
 
@@ -434,6 +436,10 @@ const CHAPTER_ROLES = {
   reconverge_event: { label: 'Reconvergence', build: 'event' },
   region_leg: { label: 'Journey', build: 'region' },
   investigation_web: { label: 'Investigation', build: 'investigation' },
+  downtime_interlude: { label: 'Downtime', build: 'downtime' },
+  faction_board: { label: 'Mission board', build: 'board' },
+  settlement_siege: { label: 'Siege', build: 'siege' },
+  heist_job: { label: 'Heist', build: 'heist' },
   climax_dungeon: { label: 'Climax', build: 'climax' },
 };
 
@@ -506,6 +512,67 @@ function makeChapter(ctx, { roleId, level, index }) {
       chapter.summary = 'Procedural travel: routes, days, checks, and a table that keeps the country dangerous.';
       chapter.elements.push(makeRegion(ctx, { title: legTitle, level, pool: pools.wild }));
       chapter.elements.push(makeDungeon(ctx, { kindId: pick(['lair', 'wreck', 'ruin']), level, title: siteName(C, false, ctx.usedPlaces), pool: pools.wild, sizeScale: 0.7 }));
+      break;
+    }
+    case 'downtime': {
+      const d = C.downtime;
+      chapter.title = fill(pick(d.titles), ctx.slots);
+      chapter.summary = d.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'downtime', title: chapter.title, subtitle: 'Downtime interlude',
+        summary: fill(d.summary, ctx.slots),
+        activities: d.activities.map(a => fill(a, ctx.slots)),
+        complications: some(d.complications, 3).map(a => fill(a, ctx.slots)),
+        worldMoves: fill(d.worldMoves, ctx.slots),
+        nodes: [],
+      });
+      break;
+    }
+    case 'board': {
+      const b = C.missionBoard;
+      chapter.title = fill(pick(b.titles), ctx.slots);
+      chapter.summary = b.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'board', title: chapter.title, subtitle: 'Mission board',
+        summary: fill(b.summary, ctx.slots),
+        jobs: some(b.jobs, 4).map(j => ({ ...j, twist: fill(j.twist, ctx.slots) })),
+        note: fill(b.note, ctx.slots),
+        nodes: [],
+      });
+      break;
+    }
+    case 'siege': {
+      const g = C.siege;
+      const place = chance(0.5) ? ctx.slots.hub : settlementName(ctx.names, ctx.usedPlaces);
+      chapter.title = fill(pick(g.titles), { ...ctx.slots, place });
+      chapter.summary = g.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'siege', title: chapter.title, subtitle: 'Siege',
+        summary: fill(g.summary, { ...ctx.slots, place }),
+        phases: g.phases.map((t, i) => ({ n: i + 1, text: fill(t, { ...ctx.slots, place }) })),
+        assignments: g.assignments.map(a => fill(a, ctx.slots)),
+        note: g.note,
+        climaxEncounter: (() => {
+          const enc = buildEncounter(pools.faction, level, 3, ctx.partySize);
+          return enc ? { id: uid('beat'), kind: 'encounter', ...enc } : null;
+        })(),
+        nodes: [],
+      });
+      break;
+    }
+    case 'heist': {
+      const h = C.heist;
+      const place = siteName(C, false, ctx.usedPlaces);
+      chapter.title = fill(pick(h.titles), { ...ctx.slots, place });
+      chapter.summary = h.summary;
+      chapter.elements.push({
+        id: uid('el'), type: 'heist', title: chapter.title, subtitle: 'Heist',
+        summary: fill(h.summary, { ...ctx.slots, place }),
+        phases: h.phases.map((t, i) => ({ n: i + 1, text: fill(t, { ...ctx.slots, place }) })),
+        waysIn: some(h.waysIn, 3),
+        complications: some(h.complications, 2).map(c => fill(c, ctx.slots)),
+        nodes: [],
+      });
       break;
     }
     case 'investigation': {
@@ -1411,6 +1478,24 @@ export function campaignMarkdown(c) {
         }
         if (el.type === 'event') {
           L.push(...el.phases.map(p => `${p.n}. ${p.text}`), '', `Failure: ${el.failure}`, '');
+        }
+        if (el.type === 'downtime') {
+          L.push('Activities:', ...el.activities.map(a => `- ${a}`), '', 'Complications:', ...el.complications.map(a => `- ${a}`), '',
+                 `*Meanwhile (DM only):* ${el.worldMoves}`, '');
+        }
+        if (el.type === 'board') {
+          for (const j of el.jobs) {
+            L.push(`**${j.name}** - "${j.ask}" Pay: ${j.pay}`, `  - *What it really is (DM only):* ${j.twist}`);
+          }
+          L.push('', el.note, '');
+        }
+        if (el.type === 'siege') {
+          L.push(...el.phases.map(x => `${x.n}. ${x.text}`), '', 'Assignments:', ...el.assignments.map(a => `- ${a}`), '', el.note, '');
+        }
+        if (el.type === 'heist') {
+          L.push(...el.phases.map(x => `${x.n}. ${x.text}`), '', 'Ways in:',
+                 ...el.waysIn.map(w => `- ${w.route} (costs: ${w.cost})`), '',
+                 'What goes wrong *(DM only)*:', ...el.complications.map(c => `- ${c}`), '');
         }
         if (el.type === 'investigation') {
           for (const c2 of el.conclusions) L.push(`Conclusion: ${c2.text}`, ...c2.clues.map(x => `- ${x}`), '');

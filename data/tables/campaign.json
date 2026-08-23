@@ -253,83 +253,236 @@
       "label": "Funnel to hub",
       "note": "A tight scripted opening, a settlement to breathe in, independent spokes, then the climax.",
       "acts": [
-        { "title": "The Road In", "chapters": ["opening_ambush", "hub_town"] },
-        { "title": "What the Country Holds", "chapters": ["spoke_site", "spoke_site", "spoke_event"] },
-        { "title": "The Weight of It", "chapters": ["climax_dungeon"] }
+        {
+          "title": "The Road In",
+          "chapters": [
+            "opening_ambush",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "What the Country Holds",
+          "chapters": [
+            "spoke_site",
+            "downtime_interlude",
+            "spoke_event"
+          ]
+        },
+        {
+          "title": "The Weight of It",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "gated_sandbox": {
       "label": "Gated sandbox",
       "note": "One region, no exit. The locations are fixed, the objectives float across them.",
       "acts": [
-        { "title": "No Way Back", "chapters": ["opening_arrival", "hub_town"] },
-        { "title": "The Closed Country", "chapters": ["region_leg", "spoke_site", "spoke_site", "spoke_site"] },
-        { "title": "The Heart of It", "chapters": ["climax_dungeon"] }
+        {
+          "title": "No Way Back",
+          "chapters": [
+            "opening_arrival",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "The Closed Country",
+          "chapters": [
+            "region_leg",
+            "spoke_site",
+            "settlement_siege",
+            "spoke_site"
+          ]
+        },
+        {
+          "title": "The Heart of It",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "hub_and_spoke": {
       "label": "Hub and spoke",
       "note": "A settlement at the centre and independent missions radiating out. Forgiving of absent players.",
       "acts": [
-        { "title": "Setting Up Shop", "chapters": ["opening_ambush", "hub_town"] },
-        { "title": "Work Available", "chapters": ["spoke_site", "spoke_event", "spoke_site", "spoke_site"] },
-        { "title": "Collecting the Bill", "chapters": ["climax_dungeon"] }
+        {
+          "title": "Setting Up Shop",
+          "chapters": [
+            "opening_ambush",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "Work Available",
+          "chapters": [
+            "faction_board",
+            "spoke_event",
+            "spoke_site",
+            "spoke_site"
+          ]
+        },
+        {
+          "title": "Collecting the Bill",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "branch_reconverge": {
       "label": "Branch and reconverge",
       "note": "Three routes to the same climax. Real agency without three times the prep.",
       "acts": [
-        { "title": "First Blood", "chapters": ["opening_ambush", "hub_town"] },
-        { "title": "Three Roads", "chapters": ["branch_site", "branch_site", "branch_site"] },
-        { "title": "Where They Meet", "chapters": ["reconverge_event", "climax_dungeon"] }
+        {
+          "title": "First Blood",
+          "chapters": [
+            "opening_ambush",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "Three Roads",
+          "chapters": [
+            "branch_site",
+            "heist_job",
+            "branch_site"
+          ]
+        },
+        {
+          "title": "Where They Meet",
+          "chapters": [
+            "reconverge_event",
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "hexcrawl_mega": {
       "label": "Hexcrawl plus megadungeon",
       "note": "Procedural travel and attrition feeding one very large site.",
       "acts": [
-        { "title": "Outfitting", "chapters": ["hub_town"] },
-        { "title": "The Open Country", "chapters": ["region_leg", "spoke_site", "region_leg", "spoke_site"] },
-        { "title": "Down", "chapters": ["climax_dungeon"] }
+        {
+          "title": "Outfitting",
+          "chapters": [
+            "hub_town"
+          ]
+        },
+        {
+          "title": "The Open Country",
+          "chapters": [
+            "region_leg",
+            "spoke_site",
+            "region_leg",
+            "settlement_siege"
+          ]
+        },
+        {
+          "title": "Down",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "act_structure": {
       "label": "Act structure",
       "note": "Chronological acts rather than places. Urban, factional, intrigue-driven.",
       "acts": [
-        { "title": "Arrival", "chapters": ["hub_town", "spoke_event"] },
-        { "title": "Complication", "chapters": ["investigation_web", "spoke_site", "spoke_event"] },
-        { "title": "Resolution", "chapters": ["reconverge_event", "climax_dungeon"] }
+        {
+          "title": "Arrival",
+          "chapters": [
+            "hub_town",
+            "spoke_event"
+          ]
+        },
+        {
+          "title": "Complication",
+          "chapters": [
+            "investigation_web",
+            "heist_job",
+            "spoke_event"
+          ]
+        },
+        {
+          "title": "Resolution",
+          "chapters": [
+            "reconverge_event",
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "node_investigation": {
       "label": "Node investigation",
       "note": "A clue graph. The order emerges from play; every conclusion has three ways in.",
       "acts": [
-        { "title": "The First Body", "chapters": ["opening_arrival", "hub_town"] },
-        { "title": "Following It Back", "chapters": ["investigation_web", "spoke_site", "spoke_event"] },
-        { "title": "The Name at the End", "chapters": ["climax_dungeon"] }
+        {
+          "title": "The First Body",
+          "chapters": [
+            "opening_arrival",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "Following It Back",
+          "chapters": [
+            "investigation_web",
+            "spoke_site",
+            "faction_board"
+          ]
+        },
+        {
+          "title": "The Name at the End",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "linear": {
       "label": "Linear",
       "note": "Chapter one to the end, no branching. Short, tightly plotted, easy to run.",
       "acts": [
-        { "title": "Setting Out", "chapters": ["opening_ambush", "hub_town"] },
-        { "title": "The Long Middle", "chapters": ["spoke_site", "spoke_event", "spoke_site"] },
-        { "title": "The End of It", "chapters": ["climax_dungeon"] }
+        {
+          "title": "Setting Out",
+          "chapters": [
+            "opening_ambush",
+            "hub_town"
+          ]
+        },
+        {
+          "title": "The Long Middle",
+          "chapters": [
+            "spoke_site",
+            "downtime_interlude",
+            "spoke_site"
+          ]
+        },
+        {
+          "title": "The End of It",
+          "chapters": [
+            "climax_dungeon"
+          ]
+        }
       ]
     },
     "one_shot": {
       "label": "One shot",
       "note": "A single sitting: a hook that lands in the first ten minutes, one location worth exploring, and a confrontation that settles it before the night is out.",
       "acts": [
-        { "title": "One Session", "chapters": ["opening_arrival", "climax_dungeon"] }
+        {
+          "title": "One Session",
+          "chapters": [
+            "opening_arrival",
+            "climax_dungeon"
+          ]
+        }
       ]
     }
   },
-
   "dungeonKinds": [
     { "id": "tomb", "label": "Vault / Tomb", "size": [9, 14], "motifs": ["grave dust", "funerary ash", "dried petals a century old", "powdered bone"], "materials": ["black basalt", "chalk-pale limestone", "unmortared granite"], "origins": ["raised over the barrow of a king whose name was struck out", "cut as a prison and re-consecrated as a grave", "built by a guild that buried its own secrets with its masters"], "trapHeavy": true },
     { "id": "lair", "label": "Lair", "size": [5, 8], "motifs": ["shed chitin", "matted fur and bone splinters", "sour nesting straw"], "materials": ["raw stone", "packed earth and root"], "origins": ["a natural cave enlarged by something with claws", "an old cellar the country grew over", "a hollow under a fallen god-statue"], "trapHeavy": false },
@@ -618,6 +771,153 @@
     { "label": "{hub} Holds", "segments": 6, "onFill": "{hub} is evacuated and the party loses their base." },
     { "label": "The Winter Stores", "segments": 8, "onFill": "Famine conditions; every settlement becomes hostile to outsiders." }
   ],
+
+  "downtime": {
+    "titles": [
+      "Winter Quarters at {hub}",
+      "The Weeks Between",
+      "Breathing Room"
+    ],
+    "summary": "Weeks pass. The party heals, spends, trains and repairs, and the world does not wait for them.",
+    "scene": "For the first time since this began, there is nothing that has to be done today. The wounded stop being wounded, the coin gets spent, and {hub} goes about its business around you as though the country were not coming apart forty miles away.",
+    "goal": "Spend the season well: heal, train, build what you will need, and shore up whoever is going to matter later.",
+    "activities": [
+      "Recuperate: a full week of rest ends one long-term condition or a level of exhaustion.",
+      "Train: a month and 250 gp buys a language, a tool proficiency, or a hard-won knack the DM approves.",
+      "Craft: half the market cost in materials, 5 gp of progress per day, more with helpers.",
+      "Research: a week in the right archive answers one specific question about {villain} or the {objects}.",
+      "Work a trade: a week of honest labour covers modest lifestyle and earns a contact.",
+      "Carouse: a week of it makes one friend and one enemy, both of whom turn up later.",
+      "Repair standing: a week spent on {faction} moves their attitude one step."
+    ],
+    "complications": [
+      "A letter arrives that nobody will admit to sending.",
+      "Somebody the party rescued turns up needing a place to stay, and knows something.",
+      "A price the party thought was settled is quietly raised.",
+      "Two of the party's allies fall out, publicly, and both want backing.",
+      "A rumour spreads that the party has already failed, and {hub} starts acting on it."
+    ],
+    "worldMoves": "While the party rests, advance every clock one segment and let {villain} take one item off their schedule. Say what changed out loud at the end of the interlude."
+  },
+  "missionBoard": {
+    "titles": [
+      "The Board at {hub}",
+      "Work Wanted",
+      "The {hub} Contracts"
+    ],
+    "summary": "A pool of small jobs the party can take in any order, or skip entirely. Each pays, each teaches something, and one of them is not what it looks like.",
+    "scene": "The notice board outside the hall is three layers deep in paper, and the tavern keeper is taking messages for people who cannot write. None of it is the war you came for. All of it is somebody's whole world.",
+    "goal": "Pick up work, get paid, get known, and find out which of these jobs is connected to the thing you are actually chasing.",
+    "jobs": [
+      {
+        "name": "The missing survey team",
+        "ask": "find four surveyors who did not come back from the ridge",
+        "pay": "150 gp and the maps they were making",
+        "twist": "they found something and one of them is hiding from the others"
+      },
+      {
+        "name": "Bad water",
+        "ask": "work out why three wells in a row have turned",
+        "pay": "80 gp and the goodwill of everyone downstream",
+        "twist": "the cause is upstream on land nobody is allowed onto"
+      },
+      {
+        "name": "The debt collector",
+        "ask": "escort a collector on their rounds without anybody getting hurt",
+        "pay": "120 gp, half up front",
+        "twist": "one of the debts is owed to {villain}'s people"
+      },
+      {
+        "name": "Empty stalls",
+        "ask": "find out why the caravans stopped coming",
+        "pay": "200 gp from the merchants who are losing money",
+        "twist": "the road is fine; the drivers are being paid more to stay away"
+      },
+      {
+        "name": "The night bell",
+        "ask": "stand a watch and find out who has been ringing the alarm bell at three in the morning",
+        "pay": "60 gp and a favour from the watch",
+        "twist": "the ringer is warning about something real that nobody wants named"
+      },
+      {
+        "name": "A body with no name",
+        "ask": "identify a corpse the river brought down",
+        "pay": "100 gp from a family that hopes it is not theirs",
+        "twist": "the dead one was carrying a token from {villain}'s organisation"
+      }
+    ],
+    "note": "Three or four of these fill an evening. The one with a connection to the main plot is the DM's pick; the rest can stay ordinary."
+  },
+  "siege": {
+    "titles": [
+      "The Siege of {place}",
+      "Four Days at {place}",
+      "Hold the Gate"
+    ],
+    "summary": "A settlement the party cares about is attacked while they are inside it. There is no dungeon to leave for; the map is the walls.",
+    "scene": "The bell starts before dawn and does not stop. By the time you reach the wall there is enough light to count them, and counting them does not help. Whatever else happens today, the road out is closed.",
+    "goal": "Hold {place}, or get everyone out alive. Decide which of those you are doing before the second assault, because you cannot do both.",
+    "phases": [
+      "Preparation: a few hours, and fewer resources than the plan needs. Every task assigned is a task not done elsewhere.",
+      "The probe: a small attack that tests the weakest point and withdraws, having learned it.",
+      "The night assault: aimed at morale, not walls. Fires, noise, and one real breach somewhere quiet.",
+      "The breach: the wall comes down where the party is not, and the fight is in the streets.",
+      "The morning: whoever is left counts the cost, and the survivors decide what they think of the party."
+    ],
+    "assignments": [
+      "The gate: the obvious place, held by people who know they are the obvious place.",
+      "The weak wall: everyone knows which stretch it is; nobody has had the money to fix it.",
+      "The granary: lose it and the siege ends by starvation instead of assault.",
+      "The infirmary: undefended, full, and one street from the breach.",
+      "The evacuation route: only usable if somebody holds the far end of it."
+    ],
+    "note": "Split the party across assignments and cut between them. Whoever they did not go with is where the story happens."
+  },
+  "heist": {
+    "titles": [
+      "The {place} Job",
+      "Taking It Back",
+      "Three Ways In"
+    ],
+    "summary": "Something the party needs is behind other people's walls. Casing, planning, execution, and the part of the plan that was always going to fail.",
+    "scene": "You can see it from the street: the place is not a fortress, which is somehow worse. Fortresses have one way in and a hundred guards. This has forty ways in and every single one of them is watched by somebody who is bored, well paid, and very awake.",
+    "goal": "Get in, take it, and get out without your faces becoming the story.",
+    "phases": [
+      "Casing: three ways in, each with a different cost. Every hour spent looking is an hour the target has to move.",
+      "The plan: what they know, what they cannot know, and who has to be somewhere they should not be.",
+      "Execution: the one thing that is not where the plan says it is.",
+      "The exit: which is the actual problem, and where the plan has to be abandoned."
+    ],
+    "waysIn": [
+      {
+        "route": "The front, with paper",
+        "cost": "a forged writ, and somebody has to stand there while it is read"
+      },
+      {
+        "route": "The roof",
+        "cost": "climbing gear, a distraction, and no way to carry anything heavy out"
+      },
+      {
+        "route": "The drains",
+        "cost": "slow, filthy, and shared with something that lives there"
+      },
+      {
+        "route": "The staff door",
+        "cost": "somebody on the inside, which means somebody who can inform"
+      },
+      {
+        "route": "During the delivery",
+        "cost": "a narrow window and no control over when it opens"
+      }
+    ],
+    "complications": [
+      "The thing has already been moved once and the party's information is a day old.",
+      "Somebody else is robbing the same place tonight.",
+      "A guard recognises one of the party from an earlier chapter.",
+      "What they came for is not alone in the vault, and the other thing is watching.",
+      "Getting it out means leaving somebody behind for an hour."
+    ]
+  },
 
   "dilemmas": [
     {
@@ -1189,6 +1489,18 @@
       "Every road you have taken, every clue carried out of the dark, every name traded and favour spent, has pointed here: {place}. It stands ahead of you exactly as terrible as the stories said, and somewhere inside it, this ends, one way or the other.",
       "There is no ceremony to arriving at {place}. The land simply runs out of other things to be, and there it is: the last place, the one under all the others. You have what you have, you know what you know, and the door is not locked. It was left open for you.",
       "{place} has known you were coming for longer than you have. That is the plain truth of it, and you can feel it in the stillness as you approach: not the quiet of emptiness, but the quiet of something that has finished its preparations."
+    ],
+    "downtime": [
+      "For the first time since this began, there is nothing that has to be done today. The wounded stop being wounded, the coin gets spent, and {hub} goes about its business around you as though the country were not coming apart forty miles away."
+    ],
+    "board": [
+      "The notice board outside the hall is three layers deep in paper, and the tavern keeper is taking messages for people who cannot write. None of it is the war you came for. All of it is somebody's whole world."
+    ],
+    "siege": [
+      "The bell starts before dawn and does not stop. By the time you reach the wall there is enough light to count them, and counting them does not help. Whatever else happens today, the road out is closed."
+    ],
+    "heist": [
+      "You can see it from the street: the place is not a fortress, which is somehow worse. Fortresses have one way in and a hundred guards. This has forty ways in and every single one of them is watched by somebody who is bored, well paid, and very awake."
     ]
   },
   "chapterGoals": {
@@ -1231,6 +1543,18 @@
       "End it: face {villainTitle} in {place}, and finish what the whole road has been leading to.",
       "Get to the heart of {place}, stop {villainTitle} before the last piece falls into place, and get out alive.",
       "Bring everything you have learned to bear, break {villainTitle}'s design, and decide what {region} becomes after."
+    ],
+    "downtime": [
+      "Spend the season well: heal, train, build what you will need, and shore up whoever is going to matter later."
+    ],
+    "board": [
+      "Pick up work, get paid, get known, and find out which of these jobs is connected to the thing you are actually chasing."
+    ],
+    "siege": [
+      "Hold {place}, or get everyone out alive. Decide which of those you are doing before the second assault, because you cannot do both."
+    ],
+    "heist": [
+      "Get in, take it, and get out without your faces becoming the story."
     ]
   },
   "goalObjectiveHints": [
