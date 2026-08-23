@@ -5,6 +5,7 @@
 // pieces refer to each other by name and the chapters chain logically.
 import { loadMonsters, loadItems, loadTables, XP_THRESHOLDS, encounterMultiplier, monsterXP, fmtCR } from './srd.js';
 import { pick, roll } from './dice.js';
+import { generateDungeonMap } from './dungeon-map.js';
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 8)}`;
 const int = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
@@ -226,32 +227,24 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     nodes.push(node);
   }
 
-  // Mostly a spine with loops hung off it: readable to run, not a corridor.
-  // Edges are symmetric, because a passage the party walked down is still
-  // there when they turn around; listing it in only one room made half of
-  // every room's connections invisible.
-  const link = (a, b) => {
-    if (a === b || a < 0 || b < 0 || a >= nodes.length || b >= nodes.length) return;
-    if (!nodes[a].exits.includes(nodes[b].id)) nodes[a].exits.push(nodes[b].id);
-    if (!nodes[b].exits.includes(nodes[a].id)) nodes[b].exits.push(nodes[a].id);
-  };
-  nodes.forEach((n, i) => {
-    if (i < nodes.length - 1) link(i, i + 1);
-    if (i > 1 && chance(0.3)) link(i, int(0, i - 2));
-    if (n.role === 'shortcut') link(i, 0);
-  });
+  // Real geometry: the engine places every room on a 5-ft grid and routes
+  // corridors between them, and adjacency is read off what it drew, so the
+  // map and the room tiles can never disagree about what connects to what.
+  const map = generateDungeonMap(nodes, kind.id);
 
-  // A junction with two ways out is a corridor. Give the rooms whose whole
-  // purpose is routing enough connections to deserve the name, since their
-  // read-aloud text counts them out loud.
-  nodes.forEach((n, i) => {
-    if (n.role !== 'junction') return;
-    for (let guard = 0; n.exits.length < 3 && guard < 8; guard++) link(i, int(0, nodes.length - 1));
-  });
+  // A junction the geometry could not give three ways out is not a junction;
+  // demote it to an empty room rather than let the read-aloud text lie.
+  for (const id of map.thinJunctions) {
+    const n = nodes.find(x => x.id === id);
+    const mr = map.rooms.find(r => r.id === id);
+    if (n) { n.role = 'empty'; n.roleLabel = C.nodeRoles.find(r => r.id === 'empty').label; }
+    if (mr) mr.role = 'empty';
+  }
 
-  // Read in the order the DM will walk them.
   const order = new Map(nodes.map((n, i) => [n.id, i]));
-  for (const n of nodes) n.exits.sort((a, b) => order.get(a) - order.get(b));
+  for (const n of nodes) {
+    n.exits = (map.adjacency[n.id] || []).slice().sort((a, b) => order.get(a) - order.get(b));
+  }
 
   // Now the descriptions, which can finally tell the truth about the exits.
   const COUNT_WORDS = ['No', 'A single', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
@@ -299,6 +292,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     hazard: chance(0.5) ? pick(C.hazards) : null,
     alerts: kind.alerts ? 'Once the site is alerted, surviving occupants regroup at the deepest defensible room and post watches on the approach.' : null,
     wandering,
+    map,
     nodes,
   };
 }
