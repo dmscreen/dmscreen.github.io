@@ -586,11 +586,26 @@ function makeChapter(ctx, { roleId, level, index }) {
       // maps could foreshadow the finale by its real name.
       const place = ctx.climaxName || siteName(C, false, ctx.usedPlaces);
       chapter.title = place;
-      chapter.summary = `The last site. ${ctx.slots.villain} is here, and so is everything they have left.`;
-      chapter.elements.push(makeDungeon(ctx, {
-        kindId: pick(['megadungeon', 'stronghold', 'temple']), level, title: place,
-        pool: pools.faction, boss: true, sizeScale: 1,
-      }));
+      // The finale follows the campaign's verb. Only "recover the scattered"
+      // ends in a hole in the ground; proving a case ends in a hearing,
+      // breaking a plan ends mid-rite, holding a thing ends under assault.
+      const climaxDef = (ctx.C.climaxKinds || {})[ctx.climaxKind] || { elementKinds: ['megadungeon', 'stronghold', 'temple'] };
+      if (climaxDef.event) {
+        chapter.summary = `The last confrontation. ${ctx.slots.villain} is here, and so is everything they have left.`;
+        chapter.elements.push(makeEvent(ctx, { title: place, level, pool: pools.faction, kindId: climaxDef.event }));
+        if (climaxDef.site) {
+          chapter.elements.push(makeDungeon(ctx, {
+            kindId: climaxDef.site, level, title: `Inside ${place}`,
+            pool: pools.faction, boss: true, sizeScale: 0.7,
+          }));
+        }
+      } else {
+        chapter.summary = `The last site. ${ctx.slots.villain} is here, and so is everything they have left.`;
+        chapter.elements.push(makeDungeon(ctx, {
+          kindId: pick(climaxDef.elementKinds), level, title: place,
+          pool: pools.faction, boss: true, sizeScale: 1,
+        }));
+      }
       break;
     }
   }
@@ -814,6 +829,14 @@ export async function generateCampaign(opts = {}) {
   const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
   // A one-shot is a length, but it dictates the skeleton too: no six-chapter
   // shape fits in one sitting, so it overrides whatever shape was chosen.
+  // The verb decides the shape of the campaign: recovering scattered things,
+  // breaking the props under a plan, proving a case in public, holding one
+  // thing against pressure, and so on. Each premise names the verbs its own
+  // logline can carry; ten premises times three verbs is thirty shapes.
+  const objKind = opts.objectiveKind && C.objectiveKinds.find(k => k.id === opts.objectiveKind)
+    ? C.objectiveKinds.find(k => k.id === opts.objectiveKind)
+    : C.objectiveKinds.find(k => k.id === pick(premise.objectiveKinds || ['collect'])) || C.objectiveKinds[0];
+
   const oneShot = opts.length === 'oneshot';
   const patternId = oneShot ? 'one_shot'
     : (opts.pattern && C.patterns[opts.pattern] ? opts.pattern : pick(premise.patterns));
@@ -866,7 +889,7 @@ export async function generateCampaign(opts = {}) {
     next: climaxName,
   };
 
-  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName, partySize };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName, partySize, climaxKind: objKind.climax };
 
   // The patron exists before anything else so that every {npc} slot resolves
   // to a person who is actually in the campaign, seated in the hub roster,
@@ -875,11 +898,23 @@ export async function generateCampaign(opts = {}) {
   ctx.recurringPatron = patron;
   slots.npc = patron.name;
 
-  // Objective items: real named things the chapters can hold.
+  // Objective items: real named things the chapters can hold. The premise
+  // supplies the noun and the stakes; the verb supplies the count, what the
+  // party does with each one, and how the whole thing ends.
+  const objCount = Math.max(1, objKind.count || premise.objective.count || 3);
+  const objSlots = { ...slots, count: objCount };
   const objective = {
     ...premise.objective,
-    why: fill(premise.objective.why, slots),
-    ifLost: fill(premise.objective.ifLost, slots),
+    count: objCount,
+    kind: objKind.id,
+    kindLabel: objKind.label,
+    verb: objKind.tokenVerb,
+    placement: objKind.placement,
+    frame: fill(objKind.frame, objSlots),
+    why: fill(premise.objective.why, objSlots),
+    ifLost: fill(premise.objective.ifLost, objSlots),
+    failure: fill(objKind.failure, objSlots),
+    playerGoal: fill(objKind.playerGoal, objSlots),
     items: [],
   };
 
@@ -910,22 +945,39 @@ export async function generateCampaign(opts = {}) {
   // table: a use, a burden, and a villain reaction when it is claimed.
   const candidates = allChapters.filter(c => c.role !== 'hub_town');
   const climaxChapter = candidates[candidates.length - 1];
-  const holders = [
-    ...some(candidates.slice(0, -1), Math.max(0, objective.count - 1)).sort((a, b) => a.index - b.index),
-    climaxChapter,
-  ].filter(Boolean);
-  holders.forEach((ch, i) => {
-    const item = {
-      id: uid('obj'),
-      name: `The ${['First', 'Second', 'Third', 'Fourth', 'Fifth'][i] || `${i + 1}th`} ${objective.noun}`,
-      note: fill(pick(C.objectiveNotes), { ...slots, place: ch.title }),
-      power: fill(pick(C.objectivePowers), slots),
-      cost: fill(pick(C.objectiveCosts), slots),
-      reaction: fill(pick(C.objectiveReactions), { ...slots, place: ch.title }),
-    };
-    objective.items.push(item);
-    placeObjectiveItem(ctx, item, ch);
+
+  const makeItem = (i, place) => ({
+    id: uid('obj'),
+    name: objective.count === 1
+      ? `The ${objective.noun}`
+      : `The ${['First', 'Second', 'Third', 'Fourth', 'Fifth'][i] || `${i + 1}th`} ${objective.noun}`,
+    note: fill(pick(objKind.tokenNotes || C.objectiveNotes), { ...slots, place }),
+    power: fill(pick(C.objectivePowers), slots),
+    cost: fill(pick(C.objectiveCosts), slots),
+    reaction: fill(pick(C.objectiveReactions), { ...slots, place }),
   });
+
+  if (objective.placement === 'carried') {
+    // Nothing to go and find: the party already has it, or is standing in
+    // front of it, and every chapter is somebody trying to take it.
+    const item = makeItem(0, hubName);
+    item.chapterTitle = 'With the party';
+    objective.items.push(item);
+    allChapters.forEach((ch, i) => {
+      if (i === 0) return;
+      ch.wardThreat = fill(pick(C.wardThreats), { ...slots, place: ch.title });
+    });
+  } else {
+    const holders = [
+      ...some(candidates.slice(0, -1), Math.max(0, objective.count - 1)).sort((a, b) => a.index - b.index),
+      climaxChapter,
+    ].filter(Boolean);
+    holders.forEach((ch, i) => {
+      const item = makeItem(i, ch.title);
+      objective.items.push(item);
+      placeObjectiveItem(ctx, item, ch);
+    });
+  }
 
   // Villain, lieutenants, and a schedule that runs whether the party shows up.
   const villainBand = pools.faction.filter(m => m.cr >= endLevel - 3 && m.cr <= endLevel + 4);
@@ -1096,6 +1148,75 @@ export async function generateCampaign(opts = {}) {
     ...some(C.clocks, 2).map(c => ({ id: uid('clk'), label: fill(c.label, slots), segments: c.segments, onFill: fill(c.onFill, slots), global: false, advances: some(C.clockTriggers, 2).map(t => fill(t, slots)) })),
   ];
 
+  // The turn. Published campaigns are remembered for the moment the ground
+  // moves, and the generator already had the raw material sitting unused in
+  // the appendix: a betrayer with a secret, a rival, a patron everyone
+  // trusts. Placed around the campaign's midpoint, with foreshadowing put in
+  // two earlier chapters so it lands as a reveal rather than a jump-scare.
+  const reversalDef = pick(C.reversals);
+  const reversalNpc = reversalDef.usesNpc
+    ? npcs.find(n => n.roleId === reversalDef.usesNpc) || pick(npcs)
+    : null;
+  const revSlots = {
+    ...slots,
+    npc: reversalNpc ? reversalNpc.name : slots.npc,
+    rival: rival.org,
+    place: hubName,
+  };
+
+  const midIndex = Math.max(1, Math.min(allChapters.length - 2, Math.round(allChapters.length * 0.6) - 1));
+  const turnChapter = allChapters[midIndex];
+  const reversal = {
+    id: uid('rev'),
+    label: reversalDef.label,
+    chapterId: turnChapter.id,
+    chapterTitle: turnChapter.title,
+    who: reversalNpc ? reversalNpc.name : (reversalDef.usesRival ? rival.org : null),
+    setup: fill(reversalDef.setup, revSlots),
+    turn: fill(reversalDef.turn, revSlots),
+    fallout: fill(reversalDef.fallout, revSlots),
+    ifMissed: fill(reversalDef.ifMissed, revSlots),
+    foreshadow: [],
+  };
+  turnChapter.reversal = reversal;
+
+  // two earlier chapters carry a line each, so the reveal has a past
+  const before = allChapters.slice(0, midIndex);
+  const seeds = some(reversalDef.foreshadow, Math.min(2, before.length));
+  before.slice(-2).forEach((ch, i) => {
+    if (!seeds[i]) return;
+    const text = fill(seeds[i], revSlots);
+    ch.foreshadow = text;
+    reversal.foreshadow.push({ chapterId: ch.id, chapterTitle: ch.title, text });
+  });
+
+  // What the villain actually takes when the campaign clock runs on. The
+  // schedule was advice; these are named losses, tied to segments of the
+  // global clock, so "Too Late" is something the DM watches approaching.
+  const globalClock = clocks.find(k => k.global) || clocks[0];
+  const gainSlots = {
+    ...slots,
+    npc: pick(npcs).name,
+    faction: pick(factionDefs).name,
+    place: pick(allChapters.filter(ch => ch.role !== 'hub_town')).title,
+    object: objective.noun,
+  };
+  villain.gains = some(C.villainGains, 3).map((text, i) => ({
+    id: uid('gain'),
+    at: Math.max(1, Math.round(globalClock.segments * (i + 1) / 4)),
+    clockId: globalClock.id,
+    clockLabel: globalClock.label,
+    text: fill(text, gainSlots),
+  })).sort((a, b) => a.at - b.at);
+  villain.gains.push({
+    id: uid('gain'),
+    at: globalClock.segments,
+    clockId: globalClock.id,
+    clockLabel: globalClock.label,
+    text: fill(objective.ifLost, slots),
+    final: true,
+  });
+
   const totals = computeTotals(allChapters);
 
   const title = chance(0.5)
@@ -1118,8 +1239,10 @@ export async function generateCampaign(opts = {}) {
     region: { name: regionName, kind: premise.regionKind, label: region.label, features: some(region.features, 3), terrain: region.terrain },
     hub: hubName,
     objective,
+    objectiveKind: { id: objKind.id, label: objKind.label, verb: objKind.tokenVerb, climax: objKind.climax },
     villain,
     rival,
+    reversal,
     flags,
     factions: factionDefs,
     clocks,
@@ -1209,6 +1332,12 @@ export async function rerollChapter(campaign, chapterId) {
   if (item) placeObjectiveItem(ctx, item, fresh);
 
   if (old.dilemma) fresh.dilemma = old.dilemma;
+  if (old.reversal) {
+    fresh.reversal = old.reversal;
+    fresh.reversal.chapterTitle = fresh.title;
+    if (campaign.reversal) campaign.reversal.chapterTitle = fresh.title;
+  }
+  if (old.foreshadow) fresh.foreshadow = old.foreshadow;
   if (old.reactions) fresh.reactions = old.reactions;
   // the rival was scheduled to show up here; a new site does not excuse them
   if (old.rival) {
@@ -1258,6 +1387,66 @@ export async function rerollChapter(campaign, chapterId) {
     xp: totals.xpTotal,
   });
   return fresh;
+}
+
+/* ---------- which ending the campaign is heading for ---------- */
+
+// The five endings were a list the DM read once. They are a scoreboard:
+// given what the table has actually done, one of them is where this is
+// pointing right now. Everything here reads state the DM already maintains
+// (clock segments, flags, chapter ticks, rival stance), so nothing new has
+// to be tracked to make it work.
+export function endingOutlook(campaign, state = {}) {
+  const { clockFill = {}, flags = {}, progress = {}, rivalStance = 'wary' } = state;
+  const chapters = campaign.acts.flatMap(a => a.chapters);
+  const done = chapters.filter(ch => progress[ch.id]).length;
+  const mandatory = chapters.filter(ch => ch.mandatory);
+  const mandatoryDone = mandatory.filter(ch => progress[ch.id]).length;
+  const finished = mandatory.length > 0 && mandatoryDone === mandatory.length;
+
+  const global = campaign.clocks.find(k => k.global) || campaign.clocks[0];
+  const globalFilled = global ? (clockFill[global.id] || 0) >= global.segments : false;
+  const globalPressure = global ? (clockFill[global.id] || 0) / global.segments : 0;
+  const anyClockFull = campaign.clocks.some(k => (clockFill[k.id] || 0) >= k.segments);
+
+  const why = [];
+  let pick = 'Clean';
+
+  if (globalFilled) {
+    pick = 'Too Late';
+    why.push(`${global.label} is full.`);
+  } else if (rivalStance === 'allied' && finished) {
+    pick = 'Inherited';
+    why.push(`${campaign.rival.org} is allied and stands to collect once ${campaign.villain.name} is gone.`);
+  } else if (rivalStance === 'allied') {
+    pick = 'Bargained';
+    why.push(`${campaign.rival.org} is allied, and their price is part of the settlement.`);
+  } else if (flags.named_dead || flags.faction_burned || globalPressure >= 0.5 || anyClockFull) {
+    pick = 'Costly';
+    if (flags.named_dead) why.push('Someone under the party\'s protection is dead.');
+    if (flags.faction_burned) why.push('A faction has written the party off.');
+    if (globalPressure >= 0.5) why.push(`${global.label} is over half full.`);
+    if (anyClockFull && !globalFilled) why.push('A regional clock has already filled.');
+  } else {
+    why.push('No clock is close, nobody the party was protecting has died, and no bridge is burned.');
+  }
+
+  // Things that colour the ending without changing which one it is.
+  const notes = [];
+  if (flags.kept_the_object) notes.push(`The party is still holding a ${campaign.objective.noun} rather than securing it, which the epilogue has to answer for.`);
+  if (flags.public_win) notes.push('The party won in public, so whatever happens is credited to them by name.');
+  if (flags.rival_crossed) notes.push(`${campaign.rival.org} was crossed and will be somewhere in the last act.`);
+  if (finished && !globalFilled) notes.push('Every mandatory chapter is resolved; this is playable as an epilogue whenever the table is ready.');
+
+  const ending = campaign.endings.find(e => e.label === pick) || campaign.endings[0];
+  return {
+    label: pick,
+    text: ending.text,
+    why,
+    notes,
+    progress: { done, total: chapters.length, mandatoryDone, mandatoryTotal: mandatory.length },
+    pressure: Math.round(globalPressure * 100),
+  };
 }
 
 /* ---------- targeted rerolls ---------- */
@@ -1411,7 +1600,11 @@ export function campaignMarkdown(c) {
     c.playerHooks.forEach(h => L.push(`- "${h}"`));
     L.push('');
   }
-  L.push(`## The objective`, '', `${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '', `If ${c.villain.name} succeeds: ${c.objective.ifLost}`, '');
+  L.push(`## The objective`, '', `**${c.objective.kindLabel || 'Recover the scattered'}.** ${c.objective.frame || ''}`, '');
+  L.push(`${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '');
+  if (c.objective.playerGoal) L.push(`> **What the party is trying to do:** "${c.objective.playerGoal}"`, '');
+  if (c.objective.failure) L.push(`**If they fail:** ${c.objective.failure}`, '');
+  L.push(`**If ${c.villain.name} succeeds:** ${c.objective.ifLost}`, '');
   c.objective.items.forEach(i => {
     L.push(`- **${i.name}** - ${i.chapterTitle}. ${i.note}`);
     if (i.power) L.push(`  - While held (players learn on identify): "${i.power}"`);
@@ -1425,11 +1618,26 @@ export function campaignMarkdown(c) {
   if (c.villain.where) L.push(`- Found at: ${c.villain.where}`);
   L.push('', '### Lieutenants', '');
   c.villain.lieutenants.forEach(l => L.push(`- **${l.name}** - ${l.note}${l.statSuggestion ? ` (use ${l.statSuggestion.name}, CR ${l.statSuggestion.cr})` : ''}${l.where ? `. Found at ${l.where}` : ''}`));
+  if (c.villain.gains?.length) {
+    L.push('', '### What the villain takes if the clock runs', '');
+    c.villain.gains.forEach(g => L.push(`- **${g.clockLabel} at ${g.at}${g.final ? ' (full)' : ''}:** ${g.text}`));
+  }
   L.push('', '### Villain schedule', '');
   c.villain.timeline.forEach(t => L.push(`- ${t.when}: ${t.move}`));
   if (c.rival) {
     const r = c.rival;
-    L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
+    if (c.reversal) {
+    const r = c.reversal;
+    L.push('', '## The turn', '', `**${r.label}** - planned for ${r.chapterTitle}`, '');
+    L.push(`*What everyone believes:* ${r.setup}`, '', `*What is actually true (DM only):* ${r.turn}`, '');
+    if (r.foreshadow.length) {
+      L.push('Plant these first:', '');
+      r.foreshadow.forEach(f => L.push(`- ${f.chapterTitle}: ${f.text}`));
+      L.push('');
+    }
+    L.push(`*Afterwards:* ${r.fallout}`, '', `*If they never work it out:* ${r.ifMissed}`, '');
+  }
+  L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
     L.push(`- Wants: ${r.wants}`, `- Method: ${r.method}`, `- Why they cross ${c.villain.name}: ${r.crosses}`);
     L.push(`- Offers the party: ${r.offers}`, `- Demands in return: ${r.demands}`, `- Leverage over them: ${r.leverage}`);
     if (r.statSuggestion) L.push(`- Stat block: ${r.statSuggestion.name} (CR ${r.statSuggestion.cr})`);
@@ -1474,6 +1682,9 @@ export function campaignMarkdown(c) {
         d.options.forEach(o => L.push(`- **${o.label}** - ${o.cost}`));
         L.push('', `*No clean way out:* ${d.noGoodAnswer}`, '', `*It comes back:* ${d.later}`, '', `*Running it:* ${d.framing}`, '');
       }
+      if (ch.foreshadow) L.push(`**Plant this (DM only):** ${ch.foreshadow}`, '');
+      if (ch.reversal) L.push(`**THE TURN - ${ch.reversal.label}:** ${ch.reversal.turn}`, '', `*Afterwards:* ${ch.reversal.fallout}`, '');
+      if (ch.wardThreat) L.push(`**They come for it here:** ${ch.wardThreat}`, '');
       if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');

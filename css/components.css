@@ -631,3 +631,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .flag-row:first-of-type { border-top: 0; }
 .flag-row input { margin-top: 3px; flex: none; }
+
+/* The ending the campaign is currently pointing at. */
+.outlook-card { border-color: var(--accent); border-left-width: 3px; }
+.outlook-card h3 { color: var(--accent); }
