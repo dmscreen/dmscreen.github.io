@@ -477,6 +477,7 @@ export default {
         ${dmBox(`<p class="small"><b>No clean way out</b> ${esc(ch.dilemma.noGoodAnswer)}<br>
           <b>It comes back</b> ${esc(ch.dilemma.later)}<br>
           <b>Running it</b> ${esc(ch.dilemma.framing)}</p>`)}</div>` : ''}
+      ${ch.wardThreat ? `<div class="card"><h3>They come for it here</h3><p class="small">${esc(ch.wardThreat)}</p></div>` : ''}
       ${ch.rival ? `<div class="card"><h3>${esc(ch.rival.org)} is here${ch.rival.first ? ', for the first time' : ''}</h3>
         <p class="small">${esc(ch.rival.move)}</p>
         <p class="small faint">They are <b>${esc((campaign.rival.stances.find(x => x.id === rivalStance()) || {}).label || 'wary')}</b> toward the party; see the Rival page for what that means here.</p></div>` : ''}
@@ -542,7 +543,11 @@ export default {
           <div class="card"><h3>Themes</h3><ul class="small">${c.themes.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
         </div>
         <div class="card"><h3>What the campaign is about</h3>
+          <p class="small"><span class="pill accent">${esc(c.objective.kindLabel || 'Recover the scattered')}</span></p>
+          ${c.objective.frame ? `<p class="small">${esc(c.objective.frame)}</p>` : ''}
+          ${c.objective.playerGoal ? playerBox(esc(c.objective.playerGoal), 'The party's aim') : ''}
           <p class="small">${c.objective.count} x <b>${esc(c.objective.plural)}</b>. ${esc(c.objective.why)}</p>
+          ${c.objective.failure ? `<p class="small"><b>If they fail</b> ${esc(c.objective.failure)}</p>` : ''}
           <p class="small"><b>If ${esc(c.villain.name)} succeeds</b> ${esc(c.objective.ifLost)}</p>
           <ul class="small">${c.objective.items.map(i => `<li><b>${esc(i.name)}</b> - ${esc(i.chapterTitle)}. ${esc(i.note)}
             ${i.power ? `<br><span class="faint">While held: ${esc(i.power)} The catch: ${esc(i.cost)}</span>` : ''}</li>`).join('')}</ul></div>

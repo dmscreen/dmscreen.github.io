@@ -586,11 +586,26 @@ function makeChapter(ctx, { roleId, level, index }) {
       // maps could foreshadow the finale by its real name.
       const place = ctx.climaxName || siteName(C, false, ctx.usedPlaces);
       chapter.title = place;
-      chapter.summary = `The last site. ${ctx.slots.villain} is here, and so is everything they have left.`;
-      chapter.elements.push(makeDungeon(ctx, {
-        kindId: pick(['megadungeon', 'stronghold', 'temple']), level, title: place,
-        pool: pools.faction, boss: true, sizeScale: 1,
-      }));
+      // The finale follows the campaign's verb. Only "recover the scattered"
+      // ends in a hole in the ground; proving a case ends in a hearing,
+      // breaking a plan ends mid-rite, holding a thing ends under assault.
+      const climaxDef = (ctx.C.climaxKinds || {})[ctx.climaxKind] || { elementKinds: ['megadungeon', 'stronghold', 'temple'] };
+      if (climaxDef.event) {
+        chapter.summary = `The last confrontation. ${ctx.slots.villain} is here, and so is everything they have left.`;
+        chapter.elements.push(makeEvent(ctx, { title: place, level, pool: pools.faction, kindId: climaxDef.event }));
+        if (climaxDef.site) {
+          chapter.elements.push(makeDungeon(ctx, {
+            kindId: climaxDef.site, level, title: `Inside ${place}`,
+            pool: pools.faction, boss: true, sizeScale: 0.7,
+          }));
+        }
+      } else {
+        chapter.summary = `The last site. ${ctx.slots.villain} is here, and so is everything they have left.`;
+        chapter.elements.push(makeDungeon(ctx, {
+          kindId: pick(climaxDef.elementKinds), level, title: place,
+          pool: pools.faction, boss: true, sizeScale: 1,
+        }));
+      }
       break;
     }
   }
@@ -814,6 +829,14 @@ export async function generateCampaign(opts = {}) {
   const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
   // A one-shot is a length, but it dictates the skeleton too: no six-chapter
   // shape fits in one sitting, so it overrides whatever shape was chosen.
+  // The verb decides the shape of the campaign: recovering scattered things,
+  // breaking the props under a plan, proving a case in public, holding one
+  // thing against pressure, and so on. Each premise names the verbs its own
+  // logline can carry; ten premises times three verbs is thirty shapes.
+  const objKind = opts.objectiveKind && C.objectiveKinds.find(k => k.id === opts.objectiveKind)
+    ? C.objectiveKinds.find(k => k.id === opts.objectiveKind)
+    : C.objectiveKinds.find(k => k.id === pick(premise.objectiveKinds || ['collect'])) || C.objectiveKinds[0];
+
   const oneShot = opts.length === 'oneshot';
   const patternId = oneShot ? 'one_shot'
     : (opts.pattern && C.patterns[opts.pattern] ? opts.pattern : pick(premise.patterns));
@@ -866,7 +889,7 @@ export async function generateCampaign(opts = {}) {
     next: climaxName,
   };
 
-  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName, partySize };
+  const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, climaxName, partySize, climaxKind: objKind.climax };
 
   // The patron exists before anything else so that every {npc} slot resolves
   // to a person who is actually in the campaign, seated in the hub roster,
@@ -875,11 +898,23 @@ export async function generateCampaign(opts = {}) {
   ctx.recurringPatron = patron;
   slots.npc = patron.name;
 
-  // Objective items: real named things the chapters can hold.
+  // Objective items: real named things the chapters can hold. The premise
+  // supplies the noun and the stakes; the verb supplies the count, what the
+  // party does with each one, and how the whole thing ends.
+  const objCount = Math.max(1, objKind.count || premise.objective.count || 3);
+  const objSlots = { ...slots, count: objCount };
   const objective = {
     ...premise.objective,
-    why: fill(premise.objective.why, slots),
-    ifLost: fill(premise.objective.ifLost, slots),
+    count: objCount,
+    kind: objKind.id,
+    kindLabel: objKind.label,
+    verb: objKind.tokenVerb,
+    placement: objKind.placement,
+    frame: fill(objKind.frame, objSlots),
+    why: fill(premise.objective.why, objSlots),
+    ifLost: fill(premise.objective.ifLost, objSlots),
+    failure: fill(objKind.failure, objSlots),
+    playerGoal: fill(objKind.playerGoal, objSlots),
     items: [],
   };
 
@@ -910,22 +945,39 @@ export async function generateCampaign(opts = {}) {
   // table: a use, a burden, and a villain reaction when it is claimed.
   const candidates = allChapters.filter(c => c.role !== 'hub_town');
   const climaxChapter = candidates[candidates.length - 1];
-  const holders = [
-    ...some(candidates.slice(0, -1), Math.max(0, objective.count - 1)).sort((a, b) => a.index - b.index),
-    climaxChapter,
-  ].filter(Boolean);
-  holders.forEach((ch, i) => {
-    const item = {
-      id: uid('obj'),
-      name: `The ${['First', 'Second', 'Third', 'Fourth', 'Fifth'][i] || `${i + 1}th`} ${objective.noun}`,
-      note: fill(pick(C.objectiveNotes), { ...slots, place: ch.title }),
-      power: fill(pick(C.objectivePowers), slots),
-      cost: fill(pick(C.objectiveCosts), slots),
-      reaction: fill(pick(C.objectiveReactions), { ...slots, place: ch.title }),
-    };
-    objective.items.push(item);
-    placeObjectiveItem(ctx, item, ch);
+
+  const makeItem = (i, place) => ({
+    id: uid('obj'),
+    name: objective.count === 1
+      ? `The ${objective.noun}`
+      : `The ${['First', 'Second', 'Third', 'Fourth', 'Fifth'][i] || `${i + 1}th`} ${objective.noun}`,
+    note: fill(pick(objKind.tokenNotes || C.objectiveNotes), { ...slots, place }),
+    power: fill(pick(C.objectivePowers), slots),
+    cost: fill(pick(C.objectiveCosts), slots),
+    reaction: fill(pick(C.objectiveReactions), { ...slots, place }),
   });
+
+  if (objective.placement === 'carried') {
+    // Nothing to go and find: the party already has it, or is standing in
+    // front of it, and every chapter is somebody trying to take it.
+    const item = makeItem(0, hubName);
+    item.chapterTitle = 'With the party';
+    objective.items.push(item);
+    allChapters.forEach((ch, i) => {
+      if (i === 0) return;
+      ch.wardThreat = fill(pick(C.wardThreats), { ...slots, place: ch.title });
+    });
+  } else {
+    const holders = [
+      ...some(candidates.slice(0, -1), Math.max(0, objective.count - 1)).sort((a, b) => a.index - b.index),
+      climaxChapter,
+    ].filter(Boolean);
+    holders.forEach((ch, i) => {
+      const item = makeItem(i, ch.title);
+      objective.items.push(item);
+      placeObjectiveItem(ctx, item, ch);
+    });
+  }
 
   // Villain, lieutenants, and a schedule that runs whether the party shows up.
   const villainBand = pools.faction.filter(m => m.cr >= endLevel - 3 && m.cr <= endLevel + 4);
@@ -1118,6 +1170,7 @@ export async function generateCampaign(opts = {}) {
     region: { name: regionName, kind: premise.regionKind, label: region.label, features: some(region.features, 3), terrain: region.terrain },
     hub: hubName,
     objective,
+    objectiveKind: { id: objKind.id, label: objKind.label, verb: objKind.tokenVerb, climax: objKind.climax },
     villain,
     rival,
     flags,
@@ -1411,7 +1464,11 @@ export function campaignMarkdown(c) {
     c.playerHooks.forEach(h => L.push(`- "${h}"`));
     L.push('');
   }
-  L.push(`## The objective`, '', `${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '', `If ${c.villain.name} succeeds: ${c.objective.ifLost}`, '');
+  L.push(`## The objective`, '', `**${c.objective.kindLabel || 'Recover the scattered'}.** ${c.objective.frame || ''}`, '');
+  L.push(`${c.objective.count} x ${c.objective.plural}. ${c.objective.why}`, '');
+  if (c.objective.playerGoal) L.push(`> **What the party is trying to do:** "${c.objective.playerGoal}"`, '');
+  if (c.objective.failure) L.push(`**If they fail:** ${c.objective.failure}`, '');
+  L.push(`**If ${c.villain.name} succeeds:** ${c.objective.ifLost}`, '');
   c.objective.items.forEach(i => {
     L.push(`- **${i.name}** - ${i.chapterTitle}. ${i.note}`);
     if (i.power) L.push(`  - While held (players learn on identify): "${i.power}"`);
@@ -1474,6 +1531,7 @@ export function campaignMarkdown(c) {
         d.options.forEach(o => L.push(`- **${o.label}** - ${o.cost}`));
         L.push('', `*No clean way out:* ${d.noGoodAnswer}`, '', `*It comes back:* ${d.later}`, '', `*Running it:* ${d.framing}`, '');
       }
+      if (ch.wardThreat) L.push(`**They come for it here:** ${ch.wardThreat}`, '');
       if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');
       if (ch.lieutenant) L.push(`**Lieutenant present:** ${ch.lieutenant}`, '');

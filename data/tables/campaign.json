@@ -6,123 +6,571 @@
       "id": "sundered-crown",
       "title": "The Sundered Crown",
       "logline": "The old king's crown was broken into three and buried apart for good reason. {villain} has found the first piece.",
-      "tone": ["heroic", "mythic"],
-      "themes": ["the cost of legacy", "what the dead are owed"],
-      "villainKinds": ["necromancer", "warlord", "cult_leader"],
-      "objective": { "noun": "Crown Shard", "plural": "Crown Shards", "count": 3, "why": "Reforged, the crown commands every soul buried under the border forts.", "ifLost": "{villain} wears a crown of bone, and four centuries of dead soldiers stand up at once." },
-      "clock": { "label": "The Crown Reforged", "segments": 8, "onFill": "The third shard is set. The barrow-line wakes." },
+      "tone": [
+        "heroic",
+        "mythic"
+      ],
+      "themes": [
+        "the cost of legacy",
+        "what the dead are owed"
+      ],
+      "villainKinds": [
+        "necromancer",
+        "warlord",
+        "cult_leader"
+      ],
+      "objective": {
+        "noun": "Crown Shard",
+        "plural": "Crown Shards",
+        "count": 3,
+        "why": "Reforged, the crown commands every soul buried under the border forts.",
+        "ifLost": "{villain} wears a crown of bone, and four centuries of dead soldiers stand up at once."
+      },
+      "clock": {
+        "label": "The Crown Reforged",
+        "segments": 8,
+        "onFill": "The third shard is set. The barrow-line wakes."
+      },
       "regionKind": "borderland",
-      "patterns": ["funnel_to_hub", "branch_reconverge"]
+      "patterns": [
+        "funnel_to_hub",
+        "branch_reconverge"
+      ],
+      "objectiveKinds": [
+        "collect",
+        "prevent",
+        "depose"
+      ]
     },
     {
       "id": "drowning-bell",
       "title": "The Drowning Bell",
       "logline": "A bell no one can find rings under the water every night, and each time it does, {region} loses another mile of coast.",
-      "tone": ["eerie", "elegiac"],
-      "themes": ["a debt coming due", "the sea keeps its promises"],
-      "villainKinds": ["aberrant_mind", "cult_leader", "fey_bargainer"],
-      "objective": { "noun": "Tide Anchor", "plural": "Tide Anchors", "count": 3, "why": "Three anchors were sunk to hold the bell silent. Two have already been cut loose.", "ifLost": "The bell rings without stopping and the water takes the harbour towns in a single night." },
-      "clock": { "label": "The Water Rises", "segments": 6, "onFill": "The last anchor parts. High tide never goes out again." },
+      "tone": [
+        "eerie",
+        "elegiac"
+      ],
+      "themes": [
+        "a debt coming due",
+        "the sea keeps its promises"
+      ],
+      "villainKinds": [
+        "aberrant_mind",
+        "cult_leader",
+        "fey_bargainer"
+      ],
+      "objective": {
+        "noun": "Tide Anchor",
+        "plural": "Tide Anchors",
+        "count": 3,
+        "why": "Three anchors were sunk to hold the bell silent. Two have already been cut loose.",
+        "ifLost": "The bell rings without stopping and the water takes the harbour towns in a single night."
+      },
+      "clock": {
+        "label": "The Water Rises",
+        "segments": 6,
+        "onFill": "The last anchor parts. High tide never goes out again."
+      },
       "regionKind": "coast",
-      "patterns": ["gated_sandbox", "hub_and_spoke"]
+      "patterns": [
+        "gated_sandbox",
+        "hub_and_spoke"
+      ],
+      "objectiveKinds": [
+        "prevent",
+        "collect",
+        "protect"
+      ]
     },
     {
       "id": "long-winter",
       "title": "The Long Winter",
       "logline": "Winter came early to {region} and has not moved since. Something is holding it in place on purpose.",
-      "tone": ["survival", "grim"],
-      "themes": ["scarcity", "who gets to be saved"],
-      "villainKinds": ["fey_bargainer", "giant_king", "aberrant_mind"],
-      "objective": { "noun": "Hearth Ember", "plural": "Hearth Embers", "count": 3, "why": "Three embers were carried out of the first fire. Rekindled together, they break any season held by force.", "ifLost": "The frost line reaches the lowlands and does not stop at the sea." },
-      "clock": { "label": "The Deepening Frost", "segments": 8, "onFill": "The last road out of {region} closes under forty feet of snow." },
+      "tone": [
+        "survival",
+        "grim"
+      ],
+      "themes": [
+        "scarcity",
+        "who gets to be saved"
+      ],
+      "villainKinds": [
+        "fey_bargainer",
+        "giant_king",
+        "aberrant_mind"
+      ],
+      "objective": {
+        "noun": "Hearth Ember",
+        "plural": "Hearth Embers",
+        "count": 3,
+        "why": "Three embers were carried out of the first fire. Rekindled together, they break any season held by force.",
+        "ifLost": "The frost line reaches the lowlands and does not stop at the sea."
+      },
+      "clock": {
+        "label": "The Deepening Frost",
+        "segments": 8,
+        "onFill": "The last road out of {region} closes under forty feet of snow."
+      },
       "regionKind": "highland",
-      "patterns": ["gated_sandbox", "hexcrawl_mega"]
+      "patterns": [
+        "gated_sandbox",
+        "hexcrawl_mega"
+      ],
+      "objectiveKinds": [
+        "prevent",
+        "collect",
+        "escape"
+      ]
     },
     {
       "id": "hollow-succession",
       "title": "The Hollow Succession",
       "logline": "The heir to {region} died three months ago. Someone is still wearing them, and the coronation is in six weeks.",
-      "tone": ["intrigue", "paranoid"],
-      "themes": ["who is real", "power without a face"],
-      "villainKinds": ["doppelganger_ring", "devil_broker", "cult_leader"],
-      "objective": { "noun": "Proof", "plural": "Proofs", "count": 3, "why": "Three pieces of evidence, taken together, unmake the impostor in front of witnesses who matter.", "ifLost": "The crown is placed on a thing that is not a person, and every noble house signs its name under it." },
-      "clock": { "label": "Days to the Coronation", "segments": 6, "onFill": "The coronation proceeds. The court belongs to {villain}." },
+      "tone": [
+        "intrigue",
+        "paranoid"
+      ],
+      "themes": [
+        "who is real",
+        "power without a face"
+      ],
+      "villainKinds": [
+        "doppelganger_ring",
+        "devil_broker",
+        "cult_leader"
+      ],
+      "objective": {
+        "noun": "Proof",
+        "plural": "Proofs",
+        "count": 3,
+        "why": "Three pieces of evidence, taken together, unmake the impostor in front of witnesses who matter.",
+        "ifLost": "The crown is placed on a thing that is not a person, and every noble house signs its name under it."
+      },
+      "clock": {
+        "label": "Days to the Coronation",
+        "segments": 6,
+        "onFill": "The coronation proceeds. The court belongs to {villain}."
+      },
       "regionKind": "heartland",
-      "patterns": ["act_structure", "node_investigation"]
+      "patterns": [
+        "act_structure",
+        "node_investigation"
+      ],
+      "objectiveKinds": [
+        "investigate",
+        "depose",
+        "broker"
+      ]
     },
     {
       "id": "green-flood",
       "title": "The Green Flood",
       "logline": "The forest has crossed the old boundary stones for the first time in nine hundred years, and it is not stopping at the fields.",
-      "tone": ["wild", "ominous"],
-      "themes": ["the world reclaiming itself", "bargains nobody remembers making"],
-      "villainKinds": ["fey_bargainer", "aberrant_mind", "cult_leader"],
-      "objective": { "noun": "Boundary Stone", "plural": "Boundary Stones", "count": 3, "why": "Three stones still stand. Re-cut and re-sworn, they hold the treaty line.", "ifLost": "The treaty is void. Everything built inside the old wood goes back to the wood." },
-      "clock": { "label": "The Wood Advances", "segments": 8, "onFill": "The last boundary stone is swallowed. {hub} has three days." },
+      "tone": [
+        "wild",
+        "ominous"
+      ],
+      "themes": [
+        "the world reclaiming itself",
+        "bargains nobody remembers making"
+      ],
+      "villainKinds": [
+        "fey_bargainer",
+        "aberrant_mind",
+        "cult_leader"
+      ],
+      "objective": {
+        "noun": "Boundary Stone",
+        "plural": "Boundary Stones",
+        "count": 3,
+        "why": "Three stones still stand. Re-cut and re-sworn, they hold the treaty line.",
+        "ifLost": "The treaty is void. Everything built inside the old wood goes back to the wood."
+      },
+      "clock": {
+        "label": "The Wood Advances",
+        "segments": 8,
+        "onFill": "The last boundary stone is swallowed. {hub} has three days."
+      },
       "regionKind": "forest",
-      "patterns": ["hub_and_spoke", "hexcrawl_mega"]
+      "patterns": [
+        "hub_and_spoke",
+        "hexcrawl_mega"
+      ],
+      "objectiveKinds": [
+        "protect",
+        "prevent",
+        "broker"
+      ]
     },
     {
       "id": "ash-covenant",
       "title": "The Ash Covenant",
       "logline": "A contract signed a hundred years ago is being called in, and the collectors have started at the smallest villages in {region}.",
-      "tone": ["dark", "legalistic"],
-      "themes": ["inherited guilt", "the fine print"],
-      "villainKinds": ["devil_broker", "cult_leader", "necromancer"],
-      "objective": { "noun": "Signatory Seal", "plural": "Signatory Seals", "count": 3, "why": "Three seals authenticate the contract. Break them and the whole covenant is unenforceable.", "ifLost": "The debt is collected in full. Every soul named in the ledger is carried off on the same night." },
-      "clock": { "label": "The Ledger Closes", "segments": 6, "onFill": "The account is settled. {hub} is empty by morning." },
+      "tone": [
+        "dark",
+        "legalistic"
+      ],
+      "themes": [
+        "inherited guilt",
+        "the fine print"
+      ],
+      "villainKinds": [
+        "devil_broker",
+        "cult_leader",
+        "necromancer"
+      ],
+      "objective": {
+        "noun": "Signatory Seal",
+        "plural": "Signatory Seals",
+        "count": 3,
+        "why": "Three seals authenticate the contract. Break them and the whole covenant is unenforceable.",
+        "ifLost": "The debt is collected in full. Every soul named in the ledger is carried off on the same night."
+      },
+      "clock": {
+        "label": "The Ledger Closes",
+        "segments": 6,
+        "onFill": "The account is settled. {hub} is empty by morning."
+      },
       "regionKind": "heartland",
-      "patterns": ["node_investigation", "branch_reconverge"]
+      "patterns": [
+        "node_investigation",
+        "branch_reconverge"
+      ],
+      "objectiveKinds": [
+        "investigate",
+        "prevent",
+        "protect"
+      ]
     },
     {
       "id": "wyrm-tithe",
       "title": "The Wyrm's Tithe",
       "logline": "{villain} has begun taking a tithe from {region}: first gold, then livestock, and this season, people.",
-      "tone": ["classic", "escalating"],
-      "themes": ["tyranny by degrees", "the courage of small places"],
-      "villainKinds": ["dragon_tyrant", "warlord", "giant_king"],
-      "objective": { "noun": "Oath-Token", "plural": "Oath-Tokens", "count": 3, "why": "Three neighbouring powers each hold a token of the old alliance. Bring them together and there is an army instead of a rout.", "ifLost": "{region} pays the tithe every season forever, and the price only goes up." },
-      "clock": { "label": "The Next Tithe", "segments": 8, "onFill": "The tithe is collected. {hub} loses a generation." },
+      "tone": [
+        "classic",
+        "escalating"
+      ],
+      "themes": [
+        "tyranny by degrees",
+        "the courage of small places"
+      ],
+      "villainKinds": [
+        "dragon_tyrant",
+        "warlord",
+        "giant_king"
+      ],
+      "objective": {
+        "noun": "Oath-Token",
+        "plural": "Oath-Tokens",
+        "count": 3,
+        "why": "Three neighbouring powers each hold a token of the old alliance. Bring them together and there is an army instead of a rout.",
+        "ifLost": "{region} pays the tithe every season forever, and the price only goes up."
+      },
+      "clock": {
+        "label": "The Next Tithe",
+        "segments": 8,
+        "onFill": "The tithe is collected. {hub} loses a generation."
+      },
       "regionKind": "highland",
-      "patterns": ["funnel_to_hub", "branch_reconverge"]
+      "patterns": [
+        "funnel_to_hub",
+        "branch_reconverge"
+      ],
+      "objectiveKinds": [
+        "depose",
+        "broker",
+        "protect"
+      ]
     },
     {
       "id": "quiet-plague",
       "title": "The Quiet Plague",
       "logline": "People in {region} are not dying. They are forgetting, a little more each week, and something is eating what they lose.",
-      "tone": ["eerie", "tragic"],
-      "themes": ["identity", "what a place is without its memory"],
-      "villainKinds": ["aberrant_mind", "cult_leader", "doppelganger_ring"],
-      "objective": { "noun": "Remembrance", "plural": "Remembrances", "count": 3, "why": "Three objects still hold true memory of what is being erased. They are the only evidence that will survive.", "ifLost": "Nobody in {region} can remember there was ever anything wrong." },
-      "clock": { "label": "The Forgetting", "segments": 8, "onFill": "{hub} forgets its own name, and the maps go blank." },
+      "tone": [
+        "eerie",
+        "tragic"
+      ],
+      "themes": [
+        "identity",
+        "what a place is without its memory"
+      ],
+      "villainKinds": [
+        "aberrant_mind",
+        "cult_leader",
+        "doppelganger_ring"
+      ],
+      "objective": {
+        "noun": "Remembrance",
+        "plural": "Remembrances",
+        "count": 3,
+        "why": "Three objects still hold true memory of what is being erased. They are the only evidence that will survive.",
+        "ifLost": "Nobody in {region} can remember there was ever anything wrong."
+      },
+      "clock": {
+        "label": "The Forgetting",
+        "segments": 8,
+        "onFill": "{hub} forgets its own name, and the maps go blank."
+      },
       "regionKind": "heartland",
-      "patterns": ["node_investigation", "gated_sandbox"]
+      "patterns": [
+        "node_investigation",
+        "gated_sandbox"
+      ],
+      "objectiveKinds": [
+        "investigate",
+        "prevent",
+        "collect"
+      ]
     },
     {
       "id": "iron-road",
       "title": "The Iron Road",
       "logline": "An army is marching a road that was not there last spring, and it runs straight through {region} to something older than the war.",
-      "tone": ["martial", "urgent"],
-      "themes": ["what war is actually for", "small people under big wheels"],
-      "villainKinds": ["warlord", "devil_broker", "giant_king"],
-      "objective": { "noun": "Road-Nail", "plural": "Road-Nails", "count": 3, "why": "The road is held down by three nails driven at its bends. Pull them and the road unmakes itself.", "ifLost": "The road reaches the gate it was built for, and what is behind that gate comes out." },
-      "clock": { "label": "The Column Advances", "segments": 6, "onFill": "The vanguard reaches the gate at the road's end." },
+      "tone": [
+        "martial",
+        "urgent"
+      ],
+      "themes": [
+        "what war is actually for",
+        "small people under big wheels"
+      ],
+      "villainKinds": [
+        "warlord",
+        "devil_broker",
+        "giant_king"
+      ],
+      "objective": {
+        "noun": "Road-Nail",
+        "plural": "Road-Nails",
+        "count": 3,
+        "why": "The road is held down by three nails driven at its bends. Pull them and the road unmakes itself.",
+        "ifLost": "The road reaches the gate it was built for, and what is behind that gate comes out."
+      },
+      "clock": {
+        "label": "The Column Advances",
+        "segments": 6,
+        "onFill": "The vanguard reaches the gate at the road's end."
+      },
       "regionKind": "borderland",
-      "patterns": ["branch_reconverge", "act_structure"]
+      "patterns": [
+        "branch_reconverge",
+        "act_structure"
+      ],
+      "objectiveKinds": [
+        "prevent",
+        "deliver",
+        "depose"
+      ]
     },
     {
       "id": "buried-star",
       "title": "The Buried Star",
       "logline": "Something fell in {region} a long time ago and was covered over carefully. The digging started again this spring.",
-      "tone": ["weird", "cosmic"],
-      "themes": ["curiosity as a fault", "some doors were shut for us"],
-      "villainKinds": ["aberrant_mind", "cult_leader", "necromancer"],
-      "objective": { "noun": "Warding Key", "plural": "Warding Keys", "count": 3, "why": "Three keys turn the seal. All three must turn, and only from the outside.", "ifLost": "The seal opens from the inside instead, and {region} is the first thing it sees." },
-      "clock": { "label": "The Dig Deepens", "segments": 8, "onFill": "The excavation reaches the hull, and the light goes wrong for sixty miles." },
+      "tone": [
+        "weird",
+        "cosmic"
+      ],
+      "themes": [
+        "curiosity as a fault",
+        "some doors were shut for us"
+      ],
+      "villainKinds": [
+        "aberrant_mind",
+        "cult_leader",
+        "necromancer"
+      ],
+      "objective": {
+        "noun": "Warding Key",
+        "plural": "Warding Keys",
+        "count": 3,
+        "why": "Three keys turn the seal. All three must turn, and only from the outside.",
+        "ifLost": "The seal opens from the inside instead, and {region} is the first thing it sees."
+      },
+      "clock": {
+        "label": "The Dig Deepens",
+        "segments": 8,
+        "onFill": "The excavation reaches the hull, and the light goes wrong for sixty miles."
+      },
       "regionKind": "wasteland",
-      "patterns": ["hexcrawl_mega", "gated_sandbox"]
+      "patterns": [
+        "hexcrawl_mega",
+        "gated_sandbox"
+      ],
+      "objectiveKinds": [
+        "prevent",
+        "protect",
+        "escape"
+      ]
     }
   ],
+  "objectiveKinds": [
+    {
+      "id": "collect",
+      "label": "Recover the scattered",
+      "placement": "scattered",
+      "count": 3,
+      "tokenVerb": "recover",
+      "frame": "{count} {objects} are out there, apart, and whoever holds all of them decides how this ends.",
+      "playerGoal": "Find the {objects} before {villain} does, and keep them out of their hands.",
+      "climax": "dungeon",
+      "failure": "{villain} holds every {object} and uses them as intended.",
+      "tokenNotes": [
+        "Held in the deepest room, and its keeper knows exactly what it is.",
+        "Hidden in plain sight and mislabelled; the party will walk past it once.",
+        "Already being moved when the party arrives, which is the whole encounter."
+      ]
+    },
+    {
+      "id": "prevent",
+      "label": "Break what the plan rests on",
+      "placement": "scattered",
+      "count": 3,
+      "tokenVerb": "destroy",
+      "frame": "{villain}'s work stands on {count} {objects}. None of them can be carried away, but all of them can be broken.",
+      "playerGoal": "Get to the {objects} and destroy them, before {villain} finishes what they are for.",
+      "climax": "ritual_interruption",
+      "failure": "The last {object} holds, the rite completes on schedule, and nobody was in the room to stop it.",
+      "tokenNotes": [
+        "Too heavy and too fixed to move; breaking it is loud, slow, and witnessed.",
+        "Breaking it releases what it was holding, which is a problem for the next ten minutes.",
+        "It can be broken from here or disabled properly from somewhere deeper, and only one of those lasts."
+      ]
+    },
+    {
+      "id": "investigate",
+      "label": "Prove it in public",
+      "placement": "scattered",
+      "count": 3,
+      "tokenVerb": "secure",
+      "frame": "Everyone suspects. Nobody can prove it. {count} pieces of {objects} exist, and each one alone is deniable.",
+      "playerGoal": "Gather proof that will stand up in front of people with the power to act, and get it in front of them intact.",
+      "climax": "trial",
+      "failure": "The case never comes together, the accusation is laughed out of the room, and {villain} is owed an apology.",
+      "tokenNotes": [
+        "A document, and it is worthless without the person who can swear to it.",
+        "A witness rather than an object: they have to survive to the end to matter.",
+        "Physical, damning, and currently sitting in someone else's evidence room."
+      ]
+    },
+    {
+      "id": "protect",
+      "label": "Hold what they want",
+      "placement": "carried",
+      "count": 1,
+      "tokenVerb": "keep",
+      "frame": "There is one {object}, the party has it or is standing in front of it, and {villain} is going to keep coming.",
+      "playerGoal": "Keep the {object} out of {villain}'s hands. You will not get to choose the ground.",
+      "climax": "siege",
+      "failure": "It is taken, in the end, and everything after is about what {villain} does with it.",
+      "tokenNotes": [
+        "It cannot be hidden, only moved, and moving it is when they come.",
+        "Someone in the party's own circle has already been offered a great deal of money for it."
+      ]
+    },
+    {
+      "id": "deliver",
+      "label": "Get it there",
+      "placement": "carried",
+      "count": 1,
+      "tokenVerb": "deliver",
+      "frame": "One {object} has to reach the far side of {region}, and every road there is watched.",
+      "playerGoal": "Get the {object} to where it is going, in one piece, with the people carrying it still alive.",
+      "climax": "chase",
+      "failure": "It never arrives, and the people waiting for it make their own arrangements.",
+      "tokenNotes": [
+        "Heavy, awkward, and impossible to explain at a checkpoint.",
+        "It has opinions about where it is going, and it is not shy about them."
+      ]
+    },
+    {
+      "id": "depose",
+      "label": "Pull down the pillars",
+      "placement": "scattered",
+      "count": 3,
+      "tokenVerb": "break",
+      "frame": "{villain} cannot be beaten in a straight fight, but they stand on {count} {objects}, and those can be taken away one at a time.",
+      "playerGoal": "Take away what holds {villain} up, until they can be reached at all.",
+      "climax": "negotiation",
+      "failure": "The support holds, and the party never gets within a mile of {villain}.",
+      "tokenNotes": [
+        "It is a person, an alliance, or a debt, and it can be broken by turning it rather than killing it.",
+        "Removing it publicly is worth twice what removing it quietly is.",
+        "It will not break; it can only be bought, and the price is real."
+      ]
+    },
+    {
+      "id": "escape",
+      "label": "Get out",
+      "placement": "scattered",
+      "count": 3,
+      "tokenVerb": "unlock",
+      "frame": "The way out of {region} is shut in {count} places, and {villain} would rather nobody left to talk about it.",
+      "playerGoal": "Open the road out and get everyone who wants to leave through it.",
+      "climax": "chase",
+      "failure": "The way stays shut. Whatever happens in {region} stays in {region}, which is exactly the point.",
+      "tokenNotes": [
+        "A pass, a gate, or a bridge, held by people who were told why.",
+        "It opens from the far side, which is a problem to be solved rather than a door to be picked.",
+        "It is not locked so much as watched, and the watchers are not the difficulty."
+      ]
+    },
+    {
+      "id": "broker",
+      "label": "Get them to agree",
+      "placement": "parties",
+      "count": 3,
+      "tokenVerb": "win over",
+      "frame": "{count} powers each hold part of what is needed, and none of them will move while the others are in the room.",
+      "playerGoal": "Get three parties who despise each other to agree to one thing, in writing, before it stops mattering.",
+      "climax": "negotiation",
+      "failure": "The talks collapse, everyone goes home armed, and {villain} deals with them one at a time.",
+      "tokenNotes": [
+        "They will sign if the party does something for them first, and it is not a small thing.",
+        "They will sign only if a particular other party is humiliated on the way.",
+        "They have already signed something else, with {villain}, and are hoping nobody checks."
+      ]
+    }
+  ],
+
+  "wardThreats": [
+    "A quiet approach: someone the party half-trusts asks to carry it, just for the crossing.",
+    "A crowd, a jostle, and hands that know exactly where it is kept.",
+    "An open attempt in daylight, by people who expected the party to be somewhere else.",
+    "Not a theft: an offer, generous enough that refusing it makes an enemy.",
+    "They take a hostage instead and name their price in the same breath.",
+    "A fire, a flood, or a collapse, aimed at making the party choose what to carry out.",
+    "Someone official arrives with paperwork demanding it be surrendered, and the paperwork is real.",
+    "They do not come at all, which is worse, because it means they know where it will be tomorrow."
+  ],
+  "climaxKinds": {
+    "dungeon": {
+      "elementKinds": [
+        "megadungeon",
+        "stronghold",
+        "temple"
+      ]
+    },
+    "ritual_interruption": {
+      "event": "ritual_interruption",
+      "site": "temple"
+    },
+    "trial": {
+      "event": "trial",
+      "site": null
+    },
+    "siege": {
+      "event": "siege",
+      "site": "stronghold"
+    },
+    "chase": {
+      "event": "chase",
+      "site": "ruin"
+    },
+    "negotiation": {
+      "event": "negotiation",
+      "site": null
+    }
+  },
 
   "villainKinds": {
     "necromancer": {
