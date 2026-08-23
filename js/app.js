@@ -48,9 +48,11 @@ const more = categoryTool({
   subtitle: 'Tools from around the community',
   // the sidebar switcher is hidden on mobile, so surface it here instead
   header: () => campaignCard(),
+  // Every chip here is mobile-only: on desktop the sidebar already reaches
+  // Settings and About, and Tools is the only content the page has, so the
+  // chip row would be a one-option choice. The page renders Tools directly.
   tabs: [
-    { ...linked, chipLabel: 'Tools' },
-    // on desktop these live in the sidebar; the chips only show on mobile
+    { ...linked, chipLabel: 'Tools', mobileOnly: true },
     { ...settings, mobileOnly: true },
     { ...about, mobileOnly: true },
   ],

@@ -513,17 +513,26 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   letter-spacing: 0.04em;
   color: var(--text-dim);
 }
+/* The segmented control is the OUTER element here: it wraps its buttons in a
+   3px padded, bordered shell, so sizing the buttons to 38px made the control
+   46px and left it standing proud of the row. Size the shell instead and let
+   the buttons fill it. `> .btn` keeps this off the segmented buttons. */
 .gen-controls select,
-.gen-controls .btn,
+.gen-controls > .btn,
 .gen-controls .stepper,
-.gen-controls .toggle-row .btn {
+.gen-controls .toggle-row.segmented {
   height: 38px;
   box-sizing: border-box;
 }
 .gen-controls select { padding: 0 10px; }
 .gen-controls .stepper input[type="number"] { width: 52px; padding: 0 2px; }
 .gen-controls .toggle-row { gap: 6px; margin: 0; }
-.gen-controls .toggle-row .btn { padding: 0 12px; font-size: 0.85rem; }
+.gen-controls .toggle-row.segmented { gap: 0; }
+.gen-controls .toggle-row.segmented .btn {
+  height: 100%;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
 .gen-controls > .btn.primary { padding: 0 20px; font-weight: 600; }
 
 /* Small round "i" that opens a reference popup for a control's options. */
