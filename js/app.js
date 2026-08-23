@@ -10,6 +10,7 @@ import initiative from './tools/initiative.js';
 import encounters from './tools/encounters.js';
 import dice from './tools/dice-roller.js';
 import party from './tools/party.js';
+import story from './tools/story.js';
 import travelCalc from './tools/travel.js';
 import randomEnc from './tools/random-encounters.js';
 import weather from './tools/weather.js';
@@ -32,10 +33,10 @@ const combat = categoryTool({
   subtitle: 'Initiative, encounters, dice, and the party',
   tabs: [initiative, encounters, dice, party],
 });
-const travel = categoryTool({
-  id: 'travel-page', title: 'Travel', icon: 'map',
-  subtitle: 'Journeys, random encounters, and the in-world calendar',
-  tabs: [travelCalc, randomEnc, calendar],
+const storyPage = categoryTool({
+  id: 'story', title: 'Story', icon: 'book',
+  subtitle: 'The campaign itself, and the travel between its chapters',
+  tabs: [story, travelCalc, randomEnc, calendar],
 });
 const generators = categoryTool({
   id: 'generators', title: 'Generators', icon: 'sparkle',
@@ -62,16 +63,18 @@ const more = categoryTool({
 
 // Settings and About are top-level sidebar entries on desktop/tablet;
 // the mobile tab bar reaches them through More instead.
-const TOOLS = [combat, travel, generators, reference, session, more, settings, about];
+const TOOLS = [storyPage, combat, generators, reference, session, more, settings, about];
 const byId = new Map(TOOLS.map(t => [t.id, t]));
-const DEFAULT_TABS = ['combat', 'travel-page', 'generators', 'reference', 'session', 'more'];
+const DEFAULT_TABS = ['story', 'combat', 'generators', 'reference', 'session', 'more'];
 
 // old per-tool routes land on their category page with the right chip active
 const SUB_REDIRECTS = {
   initiative: ['combat', 'initiative'], encounters: ['combat', 'encounters'],
   dice: ['combat', 'dice'], party: ['combat', 'party'],
-  travel: ['travel-page', 'travel'], 'random-encounters': ['travel-page', 'random-encounters'],
-  calendar: ['travel-page', 'calendar'],
+  // Travel was its own page before the Story generator moved in above it
+  'travel-page': ['story', 'travel'],
+  travel: ['story', 'travel'], 'random-encounters': ['story', 'random-encounters'],
+  calendar: ['story', 'calendar'], campaign: ['story', 'campaign'],
   npcs: ['generators', 'npcs'], names: ['generators', 'names'], loot: ['generators', 'loot'],
   shops: ['generators', 'shops'], quests: ['generators', 'quests'],
   weather: ['generators', 'weather'], tables: ['generators', 'tables'],
@@ -94,7 +97,7 @@ function routeId() {
     setPref('refType', h);
     return 'reference';
   }
-  return byId.has(h) ? h : 'combat';
+  return byId.has(h) ? h : 'story';
 }
 
 async function route() {
