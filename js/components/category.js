@@ -42,6 +42,9 @@ export function categoryTool({ id, title, shortTitle, icon, subtitle, tabs, head
 
       const draw = async () => {
         active?.onExit?.();
+        // if every chip is mobile-only, the row itself is too, or it leaves a
+        // gap on desktop where an invisible chip row used to be
+        chipsEl.classList.toggle('mobile-only', tabs.every(t => t.mobileOnly));
         chipsEl.innerHTML = '';
         for (const t of tabs) {
           const chip = el(`<button class="btn small ${t.id === tabId ? 'primary' : ''} ${t.mobileOnly ? 'mobile-only' : ''}" data-tab="${esc(t.id)}">${esc(t.chipLabel || t.shortTitle || t.title)}</button>`);
