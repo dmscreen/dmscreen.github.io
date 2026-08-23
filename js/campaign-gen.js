@@ -1148,6 +1148,75 @@ export async function generateCampaign(opts = {}) {
     ...some(C.clocks, 2).map(c => ({ id: uid('clk'), label: fill(c.label, slots), segments: c.segments, onFill: fill(c.onFill, slots), global: false, advances: some(C.clockTriggers, 2).map(t => fill(t, slots)) })),
   ];
 
+  // The turn. Published campaigns are remembered for the moment the ground
+  // moves, and the generator already had the raw material sitting unused in
+  // the appendix: a betrayer with a secret, a rival, a patron everyone
+  // trusts. Placed around the campaign's midpoint, with foreshadowing put in
+  // two earlier chapters so it lands as a reveal rather than a jump-scare.
+  const reversalDef = pick(C.reversals);
+  const reversalNpc = reversalDef.usesNpc
+    ? npcs.find(n => n.roleId === reversalDef.usesNpc) || pick(npcs)
+    : null;
+  const revSlots = {
+    ...slots,
+    npc: reversalNpc ? reversalNpc.name : slots.npc,
+    rival: rival.org,
+    place: hubName,
+  };
+
+  const midIndex = Math.max(1, Math.min(allChapters.length - 2, Math.round(allChapters.length * 0.6) - 1));
+  const turnChapter = allChapters[midIndex];
+  const reversal = {
+    id: uid('rev'),
+    label: reversalDef.label,
+    chapterId: turnChapter.id,
+    chapterTitle: turnChapter.title,
+    who: reversalNpc ? reversalNpc.name : (reversalDef.usesRival ? rival.org : null),
+    setup: fill(reversalDef.setup, revSlots),
+    turn: fill(reversalDef.turn, revSlots),
+    fallout: fill(reversalDef.fallout, revSlots),
+    ifMissed: fill(reversalDef.ifMissed, revSlots),
+    foreshadow: [],
+  };
+  turnChapter.reversal = reversal;
+
+  // two earlier chapters carry a line each, so the reveal has a past
+  const before = allChapters.slice(0, midIndex);
+  const seeds = some(reversalDef.foreshadow, Math.min(2, before.length));
+  before.slice(-2).forEach((ch, i) => {
+    if (!seeds[i]) return;
+    const text = fill(seeds[i], revSlots);
+    ch.foreshadow = text;
+    reversal.foreshadow.push({ chapterId: ch.id, chapterTitle: ch.title, text });
+  });
+
+  // What the villain actually takes when the campaign clock runs on. The
+  // schedule was advice; these are named losses, tied to segments of the
+  // global clock, so "Too Late" is something the DM watches approaching.
+  const globalClock = clocks.find(k => k.global) || clocks[0];
+  const gainSlots = {
+    ...slots,
+    npc: pick(npcs).name,
+    faction: pick(factionDefs).name,
+    place: pick(allChapters.filter(ch => ch.role !== 'hub_town')).title,
+    object: objective.noun,
+  };
+  villain.gains = some(C.villainGains, 3).map((text, i) => ({
+    id: uid('gain'),
+    at: Math.max(1, Math.round(globalClock.segments * (i + 1) / 4)),
+    clockId: globalClock.id,
+    clockLabel: globalClock.label,
+    text: fill(text, gainSlots),
+  })).sort((a, b) => a.at - b.at);
+  villain.gains.push({
+    id: uid('gain'),
+    at: globalClock.segments,
+    clockId: globalClock.id,
+    clockLabel: globalClock.label,
+    text: fill(objective.ifLost, slots),
+    final: true,
+  });
+
   const totals = computeTotals(allChapters);
 
   const title = chance(0.5)
@@ -1173,6 +1242,7 @@ export async function generateCampaign(opts = {}) {
     objectiveKind: { id: objKind.id, label: objKind.label, verb: objKind.tokenVerb, climax: objKind.climax },
     villain,
     rival,
+    reversal,
     flags,
     factions: factionDefs,
     clocks,
@@ -1262,6 +1332,12 @@ export async function rerollChapter(campaign, chapterId) {
   if (item) placeObjectiveItem(ctx, item, fresh);
 
   if (old.dilemma) fresh.dilemma = old.dilemma;
+  if (old.reversal) {
+    fresh.reversal = old.reversal;
+    fresh.reversal.chapterTitle = fresh.title;
+    if (campaign.reversal) campaign.reversal.chapterTitle = fresh.title;
+  }
+  if (old.foreshadow) fresh.foreshadow = old.foreshadow;
   if (old.reactions) fresh.reactions = old.reactions;
   // the rival was scheduled to show up here; a new site does not excuse them
   if (old.rival) {
@@ -1542,11 +1618,26 @@ export function campaignMarkdown(c) {
   if (c.villain.where) L.push(`- Found at: ${c.villain.where}`);
   L.push('', '### Lieutenants', '');
   c.villain.lieutenants.forEach(l => L.push(`- **${l.name}** - ${l.note}${l.statSuggestion ? ` (use ${l.statSuggestion.name}, CR ${l.statSuggestion.cr})` : ''}${l.where ? `. Found at ${l.where}` : ''}`));
+  if (c.villain.gains?.length) {
+    L.push('', '### What the villain takes if the clock runs', '');
+    c.villain.gains.forEach(g => L.push(`- **${g.clockLabel} at ${g.at}${g.final ? ' (full)' : ''}:** ${g.text}`));
+  }
   L.push('', '### Villain schedule', '');
   c.villain.timeline.forEach(t => L.push(`- ${t.when}: ${t.move}`));
   if (c.rival) {
     const r = c.rival;
-    L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
+    if (c.reversal) {
+    const r = c.reversal;
+    L.push('', '## The turn', '', `**${r.label}** - planned for ${r.chapterTitle}`, '');
+    L.push(`*What everyone believes:* ${r.setup}`, '', `*What is actually true (DM only):* ${r.turn}`, '');
+    if (r.foreshadow.length) {
+      L.push('Plant these first:', '');
+      r.foreshadow.forEach(f => L.push(`- ${f.chapterTitle}: ${f.text}`));
+      L.push('');
+    }
+    L.push(`*Afterwards:* ${r.fallout}`, '', `*If they never work it out:* ${r.ifMissed}`, '');
+  }
+  L.push('', '## The rival', '', `**${r.org}**, led by ${r.leader} (${r.title}, ${r.kind})`, '');
     L.push(`- Wants: ${r.wants}`, `- Method: ${r.method}`, `- Why they cross ${c.villain.name}: ${r.crosses}`);
     L.push(`- Offers the party: ${r.offers}`, `- Demands in return: ${r.demands}`, `- Leverage over them: ${r.leverage}`);
     if (r.statSuggestion) L.push(`- Stat block: ${r.statSuggestion.name} (CR ${r.statSuggestion.cr})`);
@@ -1591,6 +1682,8 @@ export function campaignMarkdown(c) {
         d.options.forEach(o => L.push(`- **${o.label}** - ${o.cost}`));
         L.push('', `*No clean way out:* ${d.noGoodAnswer}`, '', `*It comes back:* ${d.later}`, '', `*Running it:* ${d.framing}`, '');
       }
+      if (ch.foreshadow) L.push(`**Plant this (DM only):** ${ch.foreshadow}`, '');
+      if (ch.reversal) L.push(`**THE TURN - ${ch.reversal.label}:** ${ch.reversal.turn}`, '', `*Afterwards:* ${ch.reversal.fallout}`, '');
       if (ch.wardThreat) L.push(`**They come for it here:** ${ch.wardThreat}`, '');
       if (ch.rival) L.push(`**${ch.rival.org} is here${ch.rival.first ? ' (first meeting)' : ''}:** ${ch.rival.move}`, '');
       if (ch.milestone) L.push(`**Leveling:** ${ch.milestone}`, '');

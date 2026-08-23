@@ -217,6 +217,7 @@ export default {
         { kind: 'overview', label: campaign.title, sub: 'Overview', depth: 0 },
         { kind: 'villain', label: campaign.villain.name, sub: 'Antagonist', depth: 0 },
         ...(campaign.rival ? [{ kind: 'rival', label: campaign.rival.org, sub: 'Rival', depth: 0 }] : []),
+        ...(campaign.reversal ? [{ kind: 'reversal', label: campaign.reversal.label, sub: `The turn, ${campaign.reversal.chapterTitle}`, depth: 0 }] : []),
         { kind: 'world', label: 'Factions, clocks & region', depth: 0 },
       ];
       campaign.acts.forEach((act, ai) => {
@@ -477,6 +478,10 @@ export default {
         ${dmBox(`<p class="small"><b>No clean way out</b> ${esc(ch.dilemma.noGoodAnswer)}<br>
           <b>It comes back</b> ${esc(ch.dilemma.later)}<br>
           <b>Running it</b> ${esc(ch.dilemma.framing)}</p>`)}</div>` : ''}
+      ${ch.reversal ? `<div class="card outlook-card"><h3>The turn happens here: ${esc(ch.reversal.label)}</h3>
+        ${dmBox(`<p class="small">${esc(ch.reversal.turn)}</p><p class="small"><b>Afterwards</b> ${esc(ch.reversal.fallout)}</p>`)}
+        <p class="small faint">See the turn's own page for what to plant beforehand.</p></div>` : ''}
+      ${ch.foreshadow ? dmBox(`<p class="small"><b>Plant this in passing</b> ${esc(ch.foreshadow)}</p>`) : ''}
       ${ch.wardThreat ? `<div class="card"><h3>They come for it here</h3><p class="small">${esc(ch.wardThreat)}</p></div>` : ''}
       ${ch.rival ? `<div class="card"><h3>${esc(ch.rival.org)} is here${ch.rival.first ? ', for the first time' : ''}</h3>
         <p class="small">${esc(ch.rival.move)}</p>
@@ -578,6 +583,14 @@ export default {
         </div>
         <div class="card"><h3>Lieutenants</h3>
           ${v.lieutenants.map(l => `<p class="small"><b>${esc(l.name)}</b> (${esc(l.ancestry)}) - ${esc(l.note)}${l.statSuggestion ? `. Use <a href="javascript:void 0" data-mon="${esc(l.statSuggestion.slug)}">${esc(l.statSuggestion.name)}</a>, CR ${esc(l.statSuggestion.cr)}` : ''}${l.where ? `. Found at <b>${esc(l.where)}</b>` : ''}</p>`).join('')}</div>
+        ${v.gains?.length ? `<div class="card"><h3>What they take as the clock runs</h3>
+          <p class="small faint">Tied to ${esc(v.gains[0].clockLabel)}. Fill that clock on the Factions page and these become true in order; the ones already reached are marked.</p>
+          ${v.gains.map(g => {
+            const reached = (record?.clockFill?.[g.clockId] || 0) >= g.at;
+            return `<p class="small ${reached ? '' : 'faint'}">
+              <span class="pill ${reached ? 'danger' : ''}">${g.at}/${esc(String(campaign.clocks.find(k => k.id === g.clockId)?.segments || g.at))}</span>
+              ${reached ? '<b>' : ''}${esc(g.text)}${reached ? '</b>' : ''}</p>`;
+          }).join('')}</div>` : ''}
         <div class="card"><h3>Schedule, if the party does nothing</h3>
           <ol class="small">${v.timeline.map(t => `<li><b>${esc(t.when)}:</b> ${esc(t.move)}</li>`).join('')}</ol></div>`;
     };
@@ -647,6 +660,23 @@ export default {
           ${r.appearances.map(a => `<p class="small"><a href="javascript:void 0" data-ch="${esc(a.chapterId)}"><b>${esc(a.chapterTitle)}</b></a>${a.first ? ' <span class="pill accent">first meeting</span>' : ''}<br>${esc(a.move)}</p>`).join('')}</div>` : ''}`;
     };
 
+    const reversalHTML = () => {
+      const r = campaign.reversal;
+      return `<h2>${esc(r.label)}</h2>
+        <p class="muted">The campaign's turn, planned for <a href="javascript:void 0" data-ch="${esc(r.chapterId)}"><b>${esc(r.chapterTitle)}</b></a>${r.who ? `, and it is about ${esc(r.who)}` : ''}.</p>
+        <div class="card"><h3>What everyone believes</h3>
+          ${playerBox(esc(r.setup), 'True as far as the party knows')}</div>
+        <div class="card"><h3>What is actually true</h3>
+          ${dmBox(`<p class="small">${esc(r.turn)}</p>`)}</div>
+        ${r.foreshadow.length ? `<div class="card"><h3>Plant these first</h3>
+          <p class="small faint">Drop each one in passing. They should mean nothing at the time and everything afterwards.</p>
+          ${r.foreshadow.map(f => `<p class="small"><a href="javascript:void 0" data-ch="${esc(f.chapterId)}"><b>${esc(f.chapterTitle)}</b></a><br>${esc(f.text)}</p>`).join('')}</div>` : ''}
+        <div class="grid-2">
+          <div class="card"><h3>Afterwards</h3><p class="small">${esc(r.fallout)}</p></div>
+          <div class="card"><h3>If they never work it out</h3><p class="small">${esc(r.ifMissed)}</p></div>
+        </div>`;
+    };
+
     const worldHTML = () => `
       <h2>Factions, clocks &amp; region</h2>
       <div class="card"><h3>Factions</h3>
@@ -689,6 +719,7 @@ export default {
         case 'overview': html = overviewHTML(); break;
         case 'villain': html = villainHTML(); break;
         case 'rival': html = rivalHTML(); break;
+        case 'reversal': html = reversalHTML(); break;
         case 'world': html = worldHTML(); break;
         case 'act': html = actHTML(selection.ref); break;
         case 'chapter': html = chapterHTML(selection.ref); break;

@@ -1816,6 +1816,127 @@
     }
   ],
 
+  "reversals": [
+    {
+      "id": "patron_compromised",
+      "label": "The patron is bought",
+      "usesNpc": "patron",
+      "setup": "{npc} has paid, vouched, and opened doors since the first week, and every road the party has taken was one {npc} suggested.",
+      "turn": "{npc} has been reporting to {villain} the whole time. Not from malice: they were given a choice a year ago and took the only one that kept somebody alive.",
+      "foreshadow": [
+        "{npc} knows a detail about a site the party has not told anybody about yet.",
+        "A message reaches {villain}'s people faster than the party travelled, twice.",
+        "{npc} steers the party away from one specific name, smoothly, more than once."
+      ],
+      "fallout": "Everything the party told {npc} is already known. Every plan made in that room needs remaking, and {npc} is still the best-placed person to help, if they can be trusted with anything at all.",
+      "ifMissed": "If the party never work it out, {npc} sells them the location of the finale, and the last chapter starts with an ambush instead of an approach."
+    },
+    {
+      "id": "objective_is_bait",
+      "label": "The objective is the trap",
+      "setup": "The {objects} have been the point of everything: find them, hold them, keep them from {villain}.",
+      "turn": "Gathering them in one place is the last step of {villain}'s work, and the party has been doing it for them. Separated, the {objects} were inert. Together, they are the door.",
+      "foreshadow": [
+        "Resistance at the second site was thinner than it should have been.",
+        "Something in {villain}'s own records refers to the party's route approvingly.",
+        "A dying servant of {villain} laughs when told what the party is carrying."
+      ],
+      "fallout": "The party now has to decide whether to scatter what they spent the campaign gathering, and every ally who helped them gather it has an opinion.",
+      "ifMissed": "If they bring the {objects} together as planned, the finale begins with {villain} thanking them, sincerely, in front of witnesses."
+    },
+    {
+      "id": "villain_is_holding_the_line",
+      "label": "The villain was holding it back",
+      "setup": "{villain} has been the cause of everything: the deaths, the clocks, the ruined country.",
+      "turn": "{villain} is the last thing standing between {region} and what is actually underneath it. Their methods are indefensible; their reasoning is not.",
+      "foreshadow": [
+        "{villain}'s people are dying in numbers that make no sense for a plan that is going well.",
+        "Something the party breaks makes the surrounding country worse, immediately and measurably.",
+        "A captured lieutenant asks, genuinely, whether the party has any idea what they are doing."
+      ],
+      "fallout": "Beating {villain} is still possible and still might be right. It just no longer ends the campaign, and the party has to decide what does.",
+      "ifMissed": "If the party kill {villain} without learning this, the ending arrives anyway, on the last page, in the form of what comes up next."
+    },
+    {
+      "id": "the_ally_turns",
+      "label": "The one who was helping",
+      "usesNpc": "betrayer",
+      "setup": "{npc} has fought beside the party, taken wounds for them, and asked for nothing that seemed unreasonable.",
+      "turn": "{npc} wanted the party to succeed exactly this far and no further, and the moment they chose is the one where the party is most committed and least able to turn around.",
+      "foreshadow": [
+        "{npc} is unusually insistent about the order in which things are done.",
+        "Somebody who knew {npc} before reacts badly to the name and will not explain.",
+        "{npc} asks a question about the party's plans that only matters if the answer is going somewhere."
+      ],
+      "fallout": "The party is short one pair of hands at the worst time and long one enemy who knows their habits, their reserves, and how they fight.",
+      "ifMissed": "There is nothing to miss. This one happens to the party rather than being deduced, which is why the foreshadowing matters."
+    },
+    {
+      "id": "the_missing_returned",
+      "label": "Not dead, and not sorry",
+      "setup": "Somebody was lost early: taken, drowned, buried, written off with a name on a list.",
+      "turn": "They are alive and with {villain}, and they were not coerced. What they were offered, the party could not have matched.",
+      "foreshadow": [
+        "A body was never actually produced, only reported.",
+        "Somebody on the other side fights like a person the party has trained with.",
+        "A personal item turns up in a place it could only have been carried to."
+      ],
+      "fallout": "Every assumption about who talks to whom is wrong, and the party has to decide whether this is a rescue or a reckoning.",
+      "ifMissed": "They reveal themselves at the finale, at the moment the party most needs one more ally and are counting heads."
+    },
+    {
+      "id": "the_rival_was_right",
+      "label": "The rival read it correctly",
+      "usesRival": true,
+      "setup": "{rival} has been an obstacle, a competitor, and an irritant, and their account of the situation was self-serving nonsense.",
+      "turn": "Their account was accurate. They were the only people who understood the shape of this, which is why they behaved the way they did.",
+      "foreshadow": [
+        "{rival} declines an opportunity that would obviously profit them, and will not say why.",
+        "Their people are equipped for something the party has not encountered yet.",
+        "Something {rival} said in the first meeting turns out to have been a literal description."
+      ],
+      "fallout": "The party has spent the campaign hindering the one group with the correct plan, and repairing that costs either pride or leverage.",
+      "ifMissed": "If nobody catches on, {rival} carries out their plan without the party, succeeds partially, and the party arrives to a finished argument."
+    },
+    {
+      "id": "the_victim_authored_it",
+      "label": "The victim wrote the whole thing",
+      "usesNpc": "authority",
+      "setup": "{place} has been the wounded party throughout: raided, taxed, emptied, begging for help.",
+      "turn": "{place}, or the people who run it, invited this. They needed a crisis, or a scapegoat, or the war itself, and {villain} was the instrument rather than the author.",
+      "foreshadow": [
+        "The losses are always in the same quarter, and never the one that matters.",
+        "Somebody profits visibly and is never once suspected.",
+        "A record the party is shown has been very carefully curated."
+      ],
+      "fallout": "Beating {villain} solves the symptom and leaves the cause running the town the party has been using as a base.",
+      "ifMissed": "The party wins, is thanked publicly by the people who arranged it, and the epilogue is written by them."
+    },
+    {
+      "id": "the_clock_is_wrong",
+      "label": "The deadline is a lie",
+      "setup": "Everyone agrees on how long there is. The whole plan is built on that number.",
+      "turn": "The real deadline is much sooner, and the comfortable one was put about deliberately so that competent people would pace themselves.",
+      "foreshadow": [
+        "Preparations on the other side are further along than the timetable allows.",
+        "Two sources give the same date in the same words, which is one source.",
+        "Somebody who should be panicking is not."
+      ],
+      "fallout": "Every plan that depended on having time needs redoing now, and the party has to choose what to abandon.",
+      "ifMissed": "The clock simply fills earlier than the party expected, and they arrive to find the work already done."
+    }
+  ],
+
+  "villainGains": [
+    "{villain}'s people take the {object} from {place}. Whatever the party planned to do with it, they do it without.",
+    "The road through {place} is closed and held. Every journey in {region} is now two days longer and watched.",
+    "{npc} is dead. Not dramatically: they are simply not there the next time the party asks for them.",
+    "{faction} comes to terms with {villain}. Their doors, their people and their information close in the same afternoon.",
+    "{place} changes hands. The party's contacts there are now somebody else's contacts.",
+    "The party's approach to the finale is known and prepared for; the first encounter there begins with them surrounded.",
+    "{villain}'s lieutenant is promoted and given a free hand, and a second front opens behind the party.",
+    "A public account of events is circulated in which the party are the cause. Enough people believe it to matter."
+  ],
   "villainMoves": [
     "sends a competent lieutenant to negotiate, honestly, once",
     "takes something from {hub} that the party will notice",
