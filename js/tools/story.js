@@ -4,7 +4,7 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
-import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter } from '../campaign-gen.js';
+import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
 import { launchCombat } from './encounters.js';
 import { getParty } from './party.js';
@@ -67,10 +67,11 @@ export default {
     const out = container.querySelector('#sg-out');
 
     const length = toggleRow('Length', [
+      { value: 'oneshot', label: 'One shot' },
       { value: 'short', label: 'Short (5 levels)' },
       { value: 'standard', label: 'Standard (10 levels)' },
       { value: 'epic', label: 'Epic (15 levels)' },
-    ], (await getState('storyLength')) || 'standard', (v) => setState('storyLength', v));
+    ], (await getState('storyLength')) || 'standard', (v) => setState('storyLength', v), { segmented: true });
     container.querySelector('#sg-length').append(length.el);
 
     // The premise list and both info popups read the same table the generator
@@ -260,6 +261,12 @@ export default {
 
     const creatureLink = (c) => `<a href="javascript:void 0" data-mon="${esc(c.slug)}">${esc(c.name)}</a>`;
 
+    // Swap one creature for a comparable one without touching the rest of
+    // the fight; the encounter-level reroll rebuilds the whole thing.
+    const creatureLineHTML = (b, c) => `<span class="creature-line">${c.count} x ${creatureLink(c)}
+      <span class="small faint">CR ${esc(c.cr)}</span>
+      <button class="mini-reroll" data-swap="${esc(b.id)}|${esc(c.slug)}" title="Swap ${esc(c.name)} for something comparable">&#8635;</button></span>`;
+
     // The player/DM boundary, made visible. Boxed blue text is safe to say or
     // show; fenced amber blocks are spoilers. Everything unmarked is ordinary
     // DM working material.
@@ -302,8 +309,9 @@ export default {
           <span class="pill ${b.difficulty === 'deadly' ? 'danger' : b.difficulty === 'hard' ? 'accent' : 'info'}">${esc(b.difficulty)}</span>
           <span class="pill">${b.xp.toLocaleString()} adj XP</span>
           <button class="btn small" data-run="${esc(JSON.stringify(b.creatures))}">Run</button>
+          ${b.id ? `<button class="btn small" data-reroll-enc="${esc(b.id)}" title="Build a different fight at the same budget">Reroll fight</button>` : ''}
         </div>
-        <p>${b.creatures.map(c => `${c.count} x ${creatureLink(c)} <span class="small faint">CR ${esc(c.cr)}</span>`).join(', ')}</p>
+        <p>${b.creatures.map(c => creatureLineHTML(b, c)).join(' ')}</p>
         ${leaderHTML(b)}
         <p class="small"><b>Objective</b> ${esc(b.objective)}<br>
           <b>Tactics</b> ${esc(b.tactics)}<br>
@@ -625,6 +633,32 @@ export default {
           await persistRecord();
         }, 500);
       });
+      // Targeted rerolls: redraw in place so the DM keeps their scroll position.
+      box.querySelectorAll('[data-reroll-enc]').forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        try {
+          const fresh = await rerollEncounter(campaign, b.dataset.rerollEnc);
+          await persistRecord();
+          drawDetail();
+          toast(`New fight: ${fresh.creatures.map(c => `${c.count} x ${c.name}`).join(', ')}`);
+        } catch (err) {
+          toast(err.message, 'danger');
+          b.disabled = false;
+        }
+      }));
+      box.querySelectorAll('[data-swap]').forEach(b => b.addEventListener('click', async () => {
+        const [beatId, slug] = b.dataset.swap.split('|');
+        b.disabled = true;
+        try {
+          const line = await rerollCreature(campaign, beatId, slug);
+          await persistRecord();
+          drawDetail();
+          toast(`Swapped in ${line.count} x ${line.name}`);
+        } catch (err) {
+          toast(err.message, 'danger');
+          b.disabled = false;
+        }
+      }));
       box.querySelector('[data-done]')?.addEventListener('click', async (e) => {
         const id = e.currentTarget.dataset.done;
         record.progress ||= {};

@@ -393,7 +393,8 @@ function makeEvent(ctx, { title, level, pool, kindId }) {
     phases: def.phases.map((p, i) => ({ n: i + 1, text: fill(p, ctx.slots) })),
     objective: cap1(fill(def.objective, ctx.slots)),
     failure: fill(def.failure, ctx.slots),
-    climaxEncounter: enc,
+    // id so the DM can reroll this fight like any keyed-room encounter
+    climaxEncounter: enc ? { id: uid('beat'), kind: 'encounter', ...enc } : null,
     nodes: [],
   };
 }
@@ -744,7 +745,11 @@ export async function generateCampaign(opts = {}) {
   ]);
 
   const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
-  const patternId = opts.pattern && C.patterns[opts.pattern] ? opts.pattern : pick(premise.patterns);
+  // A one-shot is a length, but it dictates the skeleton too: no six-chapter
+  // shape fits in one sitting, so it overrides whatever shape was chosen.
+  const oneShot = opts.length === 'oneshot';
+  const patternId = oneShot ? 'one_shot'
+    : (opts.pattern && C.patterns[opts.pattern] ? opts.pattern : pick(premise.patterns));
   const pattern = C.patterns[patternId];
   const region = C.regionKinds[premise.regionKind];
   const villainKind = C.villainKinds[pick(premise.villainKinds)];
@@ -753,7 +758,7 @@ export async function generateCampaign(opts = {}) {
   // it: the start level defaults from the Party Tracker in the UI, and every
   // encounter budget in the campaign is computed against this party.
   const length = opts.length || 'standard';
-  const span = length === 'short' ? 4 : length === 'epic' ? 14 : 9;
+  const span = oneShot ? 0 : length === 'short' ? 4 : length === 'epic' ? 14 : 9;
   const startLevel = Math.min(20, Math.max(1, Number(opts.startLevel) || 1));
   const endLevel = Math.min(20, startLevel + span);
   const partySize = Math.min(8, Math.max(1, Number(opts.partySize) || 4));
@@ -947,7 +952,7 @@ export async function generateCampaign(opts = {}) {
     themes: premise.themes,
     pattern: { id: patternId, label: pattern.label, note: pattern.note },
     levelRange: { start: startLevel, end: endLevel },
-    sessions: `${totalChapters * 2}-${totalChapters * 4}`,
+    sessions: oneShot ? '1' : `${totalChapters * 2}-${totalChapters * 4}`,
     region: { name: regionName, kind: premise.regionKind, label: region.label, features: some(region.features, 3), terrain: region.terrain },
     hub: hubName,
     objective,
@@ -1080,6 +1085,113 @@ export async function rerollChapter(campaign, chapterId) {
     xp: totals.xpTotal,
   });
   return fresh;
+}
+
+/* ---------- targeted rerolls ---------- */
+
+// Rebuild one encounter beat in place, keeping its position in the dungeon
+// and the leader stationed there. The DM gets a different fight at the same
+// budget instead of regenerating a chapter they otherwise liked.
+export async function rerollEncounter(campaign, beatId) {
+  const [monsters, items, C] = await Promise.all([loadMonsters(), loadItems(), loadTables('campaign')]);
+  const gen = campaign.gen;
+  if (!gen) throw new Error('This campaign predates rerolling; generate a new one.');
+
+  const found = findBeat(campaign, beatId);
+  if (!found) throw new Error('Encounter not found.');
+  const { beat, chapter } = found;
+
+  const villainKind = C.villainKinds[gen.villainKindId] || pick(Object.values(C.villainKinds));
+  const pools = buildPools(monsters, villainKind, campaign.region.terrain);
+  // wilderness travel keeps to local wildlife; everything else is the enemy
+  const pool = chapter.role === 'region_leg' ? pools.wild : pools.faction;
+
+  const DIFFS = ['easy', 'medium', 'hard', 'deadly'];
+  const diff = Math.max(0, DIFFS.indexOf(beat.difficulty));
+  const fresh = buildEncounter(pool, chapter.levelGate, diff === -1 ? 2 : diff, gen.partySize || 4);
+  if (!fresh) throw new Error('No creatures fit that budget.');
+
+  const ctx = { C, items, slots: campaign.slots || {} };
+  beat.creatures = fresh.creatures;
+  beat.xp = fresh.xp;
+  beat.difficulty = fresh.difficulty;
+  beat.tactics = pick(C.encounterTactics);
+  beat.morale = pick(C.encounterMorale);
+  refreshTotals(campaign);
+  return beat;
+}
+
+// Swap a single creature line for a different creature of comparable weight,
+// leaving the rest of the encounter alone.
+export async function rerollCreature(campaign, beatId, slug) {
+  const [monsters, C] = await Promise.all([loadMonsters(), loadTables('campaign')]);
+  const gen = campaign.gen;
+  if (!gen) throw new Error('This campaign predates rerolling; generate a new one.');
+
+  const found = findBeat(campaign, beatId);
+  if (!found) throw new Error('Encounter not found.');
+  const { beat, chapter } = found;
+  const line = beat.creatures.find(c => c.slug === slug);
+  if (!line) throw new Error('Creature not found in that encounter.');
+
+  const villainKind = C.villainKinds[gen.villainKindId] || pick(Object.values(C.villainKinds));
+  const pools = buildPools(monsters, villainKind, campaign.region.terrain);
+  const pool = chapter.role === 'region_leg' ? pools.wild : pools.faction;
+
+  const current = monsters.find(m => m.slug === slug);
+  const targetXP = monsterXP(current) || 100;
+  const taken = new Set(beat.creatures.map(c => c.slug));
+  // within half to double the XP of what it replaces, so the fight stays
+  // roughly the weight it was budgeted at
+  let band = pool.filter(m => !taken.has(m.slug) && monsterXP(m) >= targetXP / 2 && monsterXP(m) <= targetXP * 2);
+  if (!band.length) band = pool.filter(m => !taken.has(m.slug) && inBand(m, chapter.levelGate));
+  if (!band.length) throw new Error('No comparable creature available.');
+
+  const swap = pick(band);
+  line.slug = swap.slug;
+  line.name = swap.name;
+  line.cr = fmtCR(swap.cr);
+
+  const size = Math.min(8, Math.max(1, gen.partySize || 4));
+  const raw = beat.creatures.reduce((a, c) => {
+    const m = monsters.find(x => x.slug === c.slug);
+    return a + (monsterXP(m) || 0) * c.count;
+  }, 0);
+  const count = beat.creatures.reduce((a, c) => a + c.count, 0);
+  beat.xp = Math.round(raw * encounterMultiplier(count, size));
+  refreshTotals(campaign);
+  return line;
+}
+
+function findBeat(campaign, beatId) {
+  for (const act of campaign.acts) {
+    for (const chapter of act.chapters) {
+      for (const el of chapter.elements) {
+        for (const node of el.nodes || []) {
+          const beat = node.beats.find(b => b.id === beatId);
+          if (beat) return { beat, node, el, chapter };
+        }
+        if (el.climaxEncounter && el.climaxEncounter.id === beatId) {
+          return { beat: el.climaxEncounter, node: null, el, chapter };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// Appendices and stats are derived, so recompute them after any edit.
+function refreshTotals(campaign) {
+  const chapters = campaign.acts.flatMap(a => a.chapters);
+  const totals = computeTotals(chapters);
+  campaign.appendices.creatures = totals.creatures;
+  campaign.appendices.magicItems = totals.magicItems;
+  campaign.treasure = totals.treasure;
+  Object.assign(campaign.stats, {
+    nodes: totals.nodeCount,
+    encounters: totals.encounterCount,
+    xp: totals.xpTotal,
+  });
 }
 
 /* ---------- player handout export ---------- */

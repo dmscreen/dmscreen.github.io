@@ -565,3 +565,39 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .card h3:first-child,
 .story-detail h3:first-child,
 .npc-card h3:first-child { margin-top: 0; }
+
+/* Inline reroll affordance on a single creature line. */
+.creature-line { white-space: nowrap; margin-right: 8px; display: inline-block; }
+.mini-reroll {
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.mini-reroll:hover { color: var(--accent); }
+.mini-reroll:disabled { opacity: 0.4; cursor: default; }
+
+/* Drop target for adding your own links in the Tools page. */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  color: var(--text-dim);
+}
+.dropzone.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--text); }
+.dropzone .btn { vertical-align: baseline; }
+.link-tile h2 a { color: inherit; text-decoration: none; }
+.link-tile h2 a:hover { color: var(--accent); }
+
+/* Storage tally on the About page. */
+.stat-group table.data td { padding: 4px 8px; }
+.stat-group .stat-num { text-align: right; font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
