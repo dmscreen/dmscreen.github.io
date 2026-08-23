@@ -213,12 +213,11 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     const roleDef = i === 0 ? C.nodeRoles.find(r => r.id === 'threshold')
       : (boss && i === count - 1) ? C.nodeRoles.find(r => r.id === 'boss')
         : weightedRole(kind.trapHeavy ? roles : roles.filter(r => r.id !== 'trap' || chance(0.5)));
-    const templates = C.roomTemplates[roleDef.id] || C.roomTemplates.empty;
     const node = {
       id: `${String.fromCharCode(97 + Math.floor(i / 26))}${i + 1}`,
       role: roleDef.id,
       roleLabel: roleDef.label,
-      description: pick(templates).replaceAll('{material}', material).replaceAll('{motif}', motif),
+      description: '',   // written once the exits are known
       dressing: chance(0.6) ? pick(C.dressings) : null,
       light: pick(C.lightLevels),
       exits: [],
@@ -228,11 +227,41 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   }
 
   // Mostly a spine with loops hung off it: readable to run, not a corridor.
+  // Edges are symmetric, because a passage the party walked down is still
+  // there when they turn around; listing it in only one room made half of
+  // every room's connections invisible.
+  const link = (a, b) => {
+    if (a === b || a < 0 || b < 0 || a >= nodes.length || b >= nodes.length) return;
+    if (!nodes[a].exits.includes(nodes[b].id)) nodes[a].exits.push(nodes[b].id);
+    if (!nodes[b].exits.includes(nodes[a].id)) nodes[b].exits.push(nodes[a].id);
+  };
   nodes.forEach((n, i) => {
-    if (i < nodes.length - 1) n.exits.push(nodes[i + 1].id);
-    if (i > 1 && chance(0.3)) n.exits.push(nodes[int(0, i - 2)].id);
-    if (n.role === 'shortcut') n.exits.push(nodes[0].id);
+    if (i < nodes.length - 1) link(i, i + 1);
+    if (i > 1 && chance(0.3)) link(i, int(0, i - 2));
+    if (n.role === 'shortcut') link(i, 0);
   });
+
+  // A junction with two ways out is a corridor. Give the rooms whose whole
+  // purpose is routing enough connections to deserve the name, since their
+  // read-aloud text counts them out loud.
+  nodes.forEach((n, i) => {
+    if (n.role !== 'junction') return;
+    for (let guard = 0; n.exits.length < 3 && guard < 8; guard++) link(i, int(0, nodes.length - 1));
+  });
+
+  // Read in the order the DM will walk them.
+  const order = new Map(nodes.map((n, i) => [n.id, i]));
+  for (const n of nodes) n.exits.sort((a, b) => order.get(a) - order.get(b));
+
+  // Now the descriptions, which can finally tell the truth about the exits.
+  const COUNT_WORDS = ['No', 'A single', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+  for (const node of nodes) {
+    const templates = C.roomTemplates[node.role] || C.roomTemplates.empty;
+    node.description = pick(templates)
+      .replaceAll('{material}', material)
+      .replaceAll('{motif}', motif)
+      .replaceAll('{passages}', COUNT_WORDS[node.exits.length] || 'Several');
+  }
 
   // Beats. Encounter density is deliberately below one per room; the empty and
   // junction rooms are the pacing.

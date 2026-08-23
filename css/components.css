@@ -635,3 +635,28 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 /* The ending the campaign is currently pointing at. */
 .outlook-card { border-color: var(--accent); border-left-width: 3px; }
 .outlook-card h3 { color: var(--accent); }
+
+/* Exits as buttons: the DM walks the dungeon by clicking through them. */
+.exit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.exit-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--bg-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+.exit-link:hover { border-color: var(--accent); color: var(--accent); }
+.exit-link .faint { font-family: var(--font); font-size: 0.75rem; }
+/* Brief flash so a jump between rooms is easy to follow. */
+.story-area.just-opened { animation: area-flash 1.1s ease-out 1; }
+@keyframes area-flash {
+  from { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  to   { border-color: var(--border); background: var(--bg-panel-75); }
+}
