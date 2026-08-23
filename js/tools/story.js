@@ -4,7 +4,7 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
-import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature } from '../campaign-gen.js';
+import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature, endingOutlook } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
 import { launchCombat } from './encounters.js';
 import { getParty } from './party.js';
@@ -231,7 +231,7 @@ export default {
       rows.push({ kind: 'npcs', label: 'NPCs', sub: `${campaign.appendices.npcs.length} in the roster`, depth: 0 });
       rows.push({ kind: 'creatures', label: 'Creatures', sub: `${campaign.appendices.creatures.length} stat blocks used`, depth: 0 });
       rows.push({ kind: 'items', label: 'Treasure & items', sub: `${campaign.appendices.magicItems.length} magic items, ${(campaign.treasure?.gp || 0).toLocaleString()} gp`, depth: 0 });
-      rows.push({ kind: 'endings', label: 'Endings', depth: 0 });
+      rows.push({ kind: 'endings', label: 'Endings', sub: `on course: ${outlook().label}`, depth: 0 });
       return rows;
     };
 
@@ -532,6 +532,15 @@ export default {
             <a href="javascript:void 0" data-ch="${esc(ch.id)}"><b>${esc(ch.title)}</b></a>
             ${ch.mandatory ? '' : '<span class="pill">optional</span>'}${isDone(ch) ? ' <span class="pill success">done</span>' : ''}<br>
             <span class="muted">${esc(ch.playerGoal || ch.summary)}</span></li>`).join('')}</ol></div>
+        ${(() => {
+          const o = outlook();
+          return `<div class="card outlook-card"><h3>Heading for: ${esc(o.label)}</h3>
+            <p class="small">${esc(o.text)}</p>
+            <p class="small faint">${o.why.map(esc).join(' ')}</p>
+            ${o.notes.length ? `<ul class="small faint">${o.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+            <p class="small faint">${o.progress.mandatoryDone}/${o.progress.mandatoryTotal} mandatory chapters resolved &middot; campaign clock ${o.pressure}% full.
+              This updates as you tick chapters, fill clocks and set flags.</p></div>`;
+        })()}
         ${flagsCardHTML()}
         <div class="card"><h3>Running it</h3>
           <p class="small">Leveling is by milestone; every chapter states its own gate. Encounters are budgeted for a party of ${c.gen?.partySize || 4} at each chapter's level, so nudge counts up or down if the table changes. Optional chapters are genuinely optional: skipping one costs content, never the plot, because every clue points at a mandatory chapter. Advance the clocks from their listed triggers, out loud, where the players can hear the tick.</p>
@@ -545,7 +554,7 @@ export default {
         <div class="card"><h3>What the campaign is about</h3>
           <p class="small"><span class="pill accent">${esc(c.objective.kindLabel || 'Recover the scattered')}</span></p>
           ${c.objective.frame ? `<p class="small">${esc(c.objective.frame)}</p>` : ''}
-          ${c.objective.playerGoal ? playerBox(esc(c.objective.playerGoal), 'The party's aim') : ''}
+          ${c.objective.playerGoal ? playerBox(esc(c.objective.playerGoal), 'What the party is trying to do') : ''}
           <p class="small">${c.objective.count} x <b>${esc(c.objective.plural)}</b>. ${esc(c.objective.why)}</p>
           ${c.objective.failure ? `<p class="small"><b>If they fail</b> ${esc(c.objective.failure)}</p>` : ''}
           <p class="small"><b>If ${esc(c.villain.name)} succeeds</b> ${esc(c.objective.ifLost)}</p>
@@ -576,6 +585,13 @@ export default {
     // Standing runs -3..+3 relative to the faction's written attitude.
     const standingOf = (f) => record?.factionStanding?.[f.id] || 0;
     const fmtStanding = (n) => n === 0 ? 'as written' : (n > 0 ? `+${n}` : String(n));
+
+    const outlook = () => endingOutlook(campaign, {
+      clockFill: record?.clockFill || {},
+      flags: record?.flags || {},
+      progress: record?.progress || {},
+      rivalStance: record?.rivalStance || campaign.rival?.defaultStance || 'wary',
+    });
 
     // Flags are the campaign's memory of what the party has already done.
     // The DM sets them; every later chapter then shows only the lines that
@@ -685,7 +701,16 @@ export default {
           ${c.appendices.magicItems.length
           ? `<p>${c.appendices.magicItems.map(i => `<a href="javascript:void 0" data-item="${esc(i.slug)}">${esc(i.name)}</a> <span class="pill">${esc(i.rarity)}</span>`).join(' &middot; ')}</p>`
           : '<p class="faint">None rolled into this one.</p>'}`; break;
-        case 'endings': html = `<h2>Endings</h2>${c.endings.map(e => `<div class="card"><h3>${esc(e.label)}</h3><p class="small">${esc(e.text)}</p></div>`).join('')}`; break;
+        case 'endings': {
+          const o = outlook();
+          html = `<h2>Endings</h2>
+            <p class="small muted">Which of these the campaign lands on is not chosen in advance. It follows the state you are keeping: the clocks, the flags, the chapters ticked off, and where the rival stands.</p>
+            ${c.endings.map(e => `<div class="card ${e.label === o.label ? 'outlook-card' : ''}">
+              <h3>${esc(e.label)}${e.label === o.label ? ' <span class="pill accent">on course</span>' : ''}</h3>
+              <p class="small">${esc(e.text)}</p>
+              ${e.label === o.label ? `<p class="small faint">${o.why.map(esc).join(' ')}</p>` : ''}</div>`).join('')}`;
+          break;
+        }
       }
       box.innerHTML = html;
 
@@ -724,12 +749,14 @@ export default {
         record.flags ||= {};
         record.flags[cb.dataset.flag] = cb.checked;
         await persistRecord();
+        drawTree();   // the outlook label lives here too
         drawDetail();
         toast(cb.checked ? 'Set; later chapters will react' : 'Cleared');
       }));
       box.querySelectorAll('[data-stance]').forEach(b => b.addEventListener('click', async () => {
         record.rivalStance = b.dataset.stance;
         await persistRecord();
+        drawTree();   // the outlook label lives here too
         drawDetail();
         toast(`${campaign.rival.org}: ${b.textContent}`);
       }));
@@ -739,6 +766,7 @@ export default {
         const cur = record.clockFill[clock] || 0;
         record.clockFill[clock] = Number(seg) === cur ? cur - 1 : Number(seg);
         await persistRecord();
+        drawTree();   // the outlook label lives here too
         drawDetail();
       }));
       box.querySelectorAll('[data-fac]').forEach(b => b.addEventListener('click', async () => {
@@ -746,6 +774,7 @@ export default {
         const cur = record.factionStanding[b.dataset.fac] || 0;
         record.factionStanding[b.dataset.fac] = Math.max(-3, Math.min(3, cur + Number(b.dataset.shift)));
         await persistRecord();
+        drawTree();   // the outlook label lives here too
         drawDetail();
       }));
       box.querySelector('[data-chnote]')?.addEventListener('input', (e) => {

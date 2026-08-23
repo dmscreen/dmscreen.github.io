@@ -1313,6 +1313,66 @@ export async function rerollChapter(campaign, chapterId) {
   return fresh;
 }
 
+/* ---------- which ending the campaign is heading for ---------- */
+
+// The five endings were a list the DM read once. They are a scoreboard:
+// given what the table has actually done, one of them is where this is
+// pointing right now. Everything here reads state the DM already maintains
+// (clock segments, flags, chapter ticks, rival stance), so nothing new has
+// to be tracked to make it work.
+export function endingOutlook(campaign, state = {}) {
+  const { clockFill = {}, flags = {}, progress = {}, rivalStance = 'wary' } = state;
+  const chapters = campaign.acts.flatMap(a => a.chapters);
+  const done = chapters.filter(ch => progress[ch.id]).length;
+  const mandatory = chapters.filter(ch => ch.mandatory);
+  const mandatoryDone = mandatory.filter(ch => progress[ch.id]).length;
+  const finished = mandatory.length > 0 && mandatoryDone === mandatory.length;
+
+  const global = campaign.clocks.find(k => k.global) || campaign.clocks[0];
+  const globalFilled = global ? (clockFill[global.id] || 0) >= global.segments : false;
+  const globalPressure = global ? (clockFill[global.id] || 0) / global.segments : 0;
+  const anyClockFull = campaign.clocks.some(k => (clockFill[k.id] || 0) >= k.segments);
+
+  const why = [];
+  let pick = 'Clean';
+
+  if (globalFilled) {
+    pick = 'Too Late';
+    why.push(`${global.label} is full.`);
+  } else if (rivalStance === 'allied' && finished) {
+    pick = 'Inherited';
+    why.push(`${campaign.rival.org} is allied and stands to collect once ${campaign.villain.name} is gone.`);
+  } else if (rivalStance === 'allied') {
+    pick = 'Bargained';
+    why.push(`${campaign.rival.org} is allied, and their price is part of the settlement.`);
+  } else if (flags.named_dead || flags.faction_burned || globalPressure >= 0.5 || anyClockFull) {
+    pick = 'Costly';
+    if (flags.named_dead) why.push('Someone under the party\'s protection is dead.');
+    if (flags.faction_burned) why.push('A faction has written the party off.');
+    if (globalPressure >= 0.5) why.push(`${global.label} is over half full.`);
+    if (anyClockFull && !globalFilled) why.push('A regional clock has already filled.');
+  } else {
+    why.push('No clock is close, nobody the party was protecting has died, and no bridge is burned.');
+  }
+
+  // Things that colour the ending without changing which one it is.
+  const notes = [];
+  if (flags.kept_the_object) notes.push(`The party is still holding a ${campaign.objective.noun} rather than securing it, which the epilogue has to answer for.`);
+  if (flags.public_win) notes.push('The party won in public, so whatever happens is credited to them by name.');
+  if (flags.rival_crossed) notes.push(`${campaign.rival.org} was crossed and will be somewhere in the last act.`);
+  if (finished && !globalFilled) notes.push('Every mandatory chapter is resolved; this is playable as an epilogue whenever the table is ready.');
+
+  const ending = campaign.endings.find(e => e.label === pick) || campaign.endings[0];
+  return {
+    label: pick,
+    text: ending.text,
+    why,
+    notes,
+    progress: { done, total: chapters.length, mandatoryDone, mandatoryTotal: mandatory.length },
+    pressure: Math.round(globalPressure * 100),
+  };
+}
+
 /* ---------- targeted rerolls ---------- */
 
 // Rebuild one encounter beat in place, keeping its position in the dungeon
