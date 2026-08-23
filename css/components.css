@@ -557,3 +557,11 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .info-entry:first-of-type { border-top: 0; }
 .info-entry h3 { margin: 0 0 3px; font-size: 0.98rem; color: var(--accent); }
 .info-entry p { margin: 0 0 3px; }
+
+/* A heading that opens a box already has the box's padding above it; its own
+   top margin on top of that reads as uneven space. Spacing between sections
+   inside a box is unaffected. */
+.card h2:first-child,
+.card h3:first-child,
+.story-detail h3:first-child,
+.npc-card h3:first-child { margin-top: 0; }
