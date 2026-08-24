@@ -256,6 +256,18 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
       .replaceAll('{passages}', COUNT_WORDS[node.exits.length] || 'Several');
   }
 
+  // The waterway, if the map grew one, appears in the text of every room it
+  // crosses, so the drawing and the read-aloud agree.
+  if (map.water) {
+    const line = map.water.kind === 'stream'
+      ? 'A cold stream cuts across the floor here.'
+      : 'A chasm splits the floor here, spanned where the old builders bothered.';
+    for (const id of map.water.rooms) {
+      const n = nodes.find(x => x.id === id);
+      if (n) n.description += ' ' + line;
+    }
+  }
+
   // Beats. Encounter density is deliberately below one per room; the empty and
   // junction rooms are the pacing.
   for (const node of nodes) {

@@ -256,6 +256,36 @@ export function generateDungeonMap(nodes, kindId) {
   const eDir = doorward(first, { x: c0.x + (c0.x - mapC.x || -1) * 10, y: c0.y + (c0.y - mapC.y || 0) * 10 });
   const entrance = { room: first.id, x: eDir.wall[0], y: eDir.wall[1], outside: eDir.out, orient: eDir.orient };
 
+  // ---- a waterway: a stream or chasm wandering across the site. Persisted
+  // with the map so the drawing and the room text agree for ever. Rooms it
+  // crosses remember it, and wherever it slips under a corridor the map
+  // gets a bridge.
+  let water = null;
+  if (chance(cave ? 0.5 : 0.25)) {
+    const wKind = cave ? (chance(0.7) ? 'stream' : 'chasm') : (chance(0.6) ? 'chasm' : 'stream');
+    const horiz = bounds.maxX >= bounds.maxY;
+    const main = horiz ? bounds.maxX : bounds.maxY;
+    const side = horiz ? bounds.maxY : bounds.maxX;
+    let cross = int(Math.round(side * 0.3), Math.round(side * 0.7));
+    const wCells = [];
+    for (let a = 0; a <= main; a++) {
+      wCells.push(horiz ? [a, cross] : [cross, a]);
+      cross = Math.max(1, Math.min(side - 1, cross + pick([-1, 0, 0, 1])));
+    }
+    const roomsCrossed = [];
+    const bridges = [];
+    let run = null;
+    for (const [x, y] of wCells) {
+      const inRoom = rooms.find(r => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+      if (inRoom && !roomsCrossed.includes(inRoom.id)) roomsCrossed.push(inRoom.id);
+      if (!inRoom && corridorCells.has(x + ',' + y)) { (run = run || []).push([x, y]); }
+      else if (run) { bridges.push(run[Math.floor(run.length / 2)]); run = null; }
+    }
+    if (run) bridges.push(run[Math.floor(run.length / 2)]);
+    // a waterway nobody meets is not worth the ink
+    if (roomsCrossed.length >= 2) water = { kind: wKind, horiz, cells: wCells, rooms: roomsCrossed, bridges };
+  }
+
   // ---- furniture: what the room's purpose looks like on the floor. Placed
   // here rather than at render time so it persists with the map, and kept
   // away from doorways so nothing blocks an opening.
@@ -310,7 +340,7 @@ export function generateDungeonMap(nodes, kindId) {
   return {
     grid: 5,           // feet per square
     style: cave ? 'cave' : 'built',
-    rooms, corridors, doors, entrance,
+    rooms, corridors, doors, entrance, water,
     bounds: { w: bounds.maxX, h: bounds.maxY },
     adjacency: Object.fromEntries([...adjacency].map(([id, set]) => [id, [...set]])),
     thinJunctions,
