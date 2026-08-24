@@ -311,6 +311,26 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
     ? { room: opts.stairUp, internal: true }
     : { room: first.id, x: eDir.wall[0], y: eDir.wall[1], outside: eDir.out, orient: eDir.orient };
 
+  // ---- what is waiting in the passages. A hallway is not just the gap
+  // between two keyed rooms: it is where a trap has room to work and where
+  // a builder had a whole wall to hide something in. Placed here so the
+  // drawing, the key and the player's copy all agree about where they are,
+  // and kept off the cells nearest a doorway so nothing lands on a threshold.
+  const corridorFeatures = [];
+  const takenCells = new Set(doors.map(d => d.x + ',' + d.y));
+  for (const co of corridors) {
+    if (co.cells.length < 5) continue;
+    const roll = Math.random();
+    const kind = roll < 0.20 ? 'trap' : (roll < 0.32 ? 'secret' : null);
+    if (!kind) continue;
+    // keep away from both ends, where the passage meets a room
+    const choices = co.cells.slice(2, -2).filter(([x, y]) => !takenCells.has(x + ',' + y));
+    if (!choices.length) continue;
+    const [x, y] = pick(choices);
+    takenCells.add(x + ',' + y);
+    corridorFeatures.push({ t: kind, x, y, between: [co.a, co.b] });
+  }
+
   // ---- a waterway: a stream or chasm wandering across the site. Persisted
   // with the map so the drawing and the room text agree for ever. Rooms it
   // crosses remember it, and wherever it slips under a corridor the map
@@ -466,7 +486,7 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
   return {
     grid: 5,           // feet per square
     style: cave ? 'cave' : 'built',
-    rooms, corridors, doors, entrance, water,
+    rooms, corridors, doors, entrance, water, corridorFeatures,
     bounds: { w: bounds.maxX, h: bounds.maxY },
     adjacency: Object.fromEntries([...adjacency].map(([id, set]) => [id, [...set]])),
     thinJunctions,
