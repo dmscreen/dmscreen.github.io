@@ -280,7 +280,7 @@ export default {
     // The real dungeon map: rooms and corridors as geometry on a 5-ft grid,
     // ink-and-hatch in the style of hand-drawn dungeon maps, themable for
     // light and dark. Rooms are clickable and jump to their key.
-    const dungeonMapSVG = (elt) => {
+    const dungeonMapSVG = (elt, player = false) => {
       const m = elt.map;
       if (!m || !m.rooms?.length) return legacyMapSVG(elt);
       const C = 12; // px per 5-ft square
@@ -288,6 +288,24 @@ export default {
       const cave = m.style === 'cave';
       const byId = new Map(m.rooms.map(r => [r.id, r]));
       const roleOf = new Map((elt.nodes || []).map(n => [n.id, n]));
+
+      // For the player's copy, anything sealed behind a secret door stays off
+      // the page: walk the map from the entrance refusing secret edges, and
+      // draw only the rooms and corridors that walk can reach.
+      let rooms = m.rooms, corridors = m.corridors, doors = m.doors;
+      if (player) {
+        const sealed = new Set(m.doors.filter(d => d.type === 'secret').map(d => d.between.join('|')));
+        const seen = new Set([m.entrance.room]); const queue = [m.entrance.room];
+        while (queue.length) {
+          const id = queue.pop();
+          for (const nb of (m.adjacency?.[id] || [])) {
+            if (!seen.has(nb) && !sealed.has(id + '|' + nb)) { seen.add(nb); queue.push(nb); }
+          }
+        }
+        rooms = m.rooms.filter(r => seen.has(r.id));
+        corridors = m.corridors.filter(co => seen.has(co.a) && seen.has(co.b) && !sealed.has(co.a + '|' + co.b));
+        doors = m.doors.filter(d => d.type !== 'secret' && seen.has(d.between[0]) && seen.has(d.between[1]));
+      }
 
       // stable pseudo-random from coordinates, so redraws do not shimmer
       const jig = (x, y, k = 0) => {
@@ -317,12 +335,12 @@ export default {
       const silhouette = () => {
         const cells = new Set();
         const mark = (x, y) => cells.add(x + ',' + y);
-        for (const r of m.rooms) {
+        for (const r of rooms) {
           for (let x = Math.floor(r.x); x < Math.ceil(r.x + r.w); x++) {
             for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) mark(x, y);
           }
         }
-        for (const co of m.corridors) for (const [x, y] of co.cells) mark(x, y);
+        for (const co of corridors) for (const [x, y] of co.cells) mark(x, y);
         // dilate twice for the band's thickness
         for (let pass = 0; pass < 2; pass++) {
           for (const k of [...cells]) {
@@ -400,13 +418,14 @@ export default {
 
       const crag = silhouette();
 
-      const corridorInk = m.corridors.map(co =>
+      const corridorInk = corridors.map(co =>
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
-      const corridorFloor = m.corridors.map(co =>
+      const corridorFloor = corridors.map(co =>
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
 
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
       const featSvg = (r) => (r.features || []).map(f => {
+        if (player && f.t === 'chest') return '';
         if (f.t === 'column') return `<circle cx="${(f.x * C).toFixed(1)}" cy="${(f.y * C).toFixed(1)}" r="${(C * 0.3).toFixed(1)}" class="map-column"/>`;
         if (f.t === 'dais') return `<rect x="${(f.x * C).toFixed(1)}" y="${(f.y * C).toFixed(1)}" width="${(f.w * C).toFixed(1)}" height="${(f.h * C).toFixed(1)}" class="map-furn"/>
           <rect x="${((f.x + 0.35) * C).toFixed(1)}" y="${((f.y + 0.3) * C).toFixed(1)}" width="${((f.w - 0.7) * C).toFixed(1)}" height="${((f.h - 0.55) * C).toFixed(1)}" class="map-furn"/>`;
@@ -444,10 +463,10 @@ export default {
         return out;
       };
 
-      const roomsSvg = m.rooms.map(r => {
+      const roomsSvg = rooms.map(r => {
         const node = roleOf.get(r.id) || {};
-        return `<g class="map-room" data-goto="${esc(r.id)}">
-          <title>${esc(r.id)}: ${esc(node.roleLabel || r.role)}</title>
+        return `<g class="map-room"${player ? '' : ` data-goto="${esc(r.id)}"`}>
+          ${player ? '' : `<title>${esc(r.id)}: ${esc(node.roleLabel || r.role)}</title>`}
           <path class="map-floor" d="${roomPath(r)}"/>
           ${stipple(r)}${featSvg(r)}
         </g>`;
@@ -457,10 +476,10 @@ export default {
       let grid = '';
       for (let gx = 0; gx <= m.bounds.w; gx++) grid += `<line x1="${gx * C}" y1="0" x2="${gx * C}" y2="${H}"/>`;
       for (let gy = 0; gy <= m.bounds.h; gy++) grid += `<line x1="0" y1="${gy * C}" x2="${W}" y2="${gy * C}"/>`;
-      const clip = m.rooms.map(r => `<path d="${roomPath(r)}"/>`).join('');
+      const clip = rooms.map(r => `<path d="${roomPath(r)}"/>`).join('');
 
       // doors: erase the wall stroke across the opening, then the glyph
-      const doorsSvg = m.doors.map(d => {
+      const doorsSvg = doors.map(d => {
         const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
         const along = d.orient === 'h' ? 'v' : 'h';
@@ -508,7 +527,7 @@ export default {
         ${corridorInk}${corridorFloor}
         ${roomsSvg}
         <g clip-path="url(#dmrooms)" class="map-grid">${grid}</g>
-        <g class="map-labels-over">${m.rooms.map(r => {
+        <g class="map-labels-over">${player ? '' : rooms.map(r => {
           const tint = ROLE_TINT[r.role];
           const lx = (r.x + r.w / 2) * C, ly = (r.y + r.h / 2) * C;
           const rr = r.id.length > 2 ? 8.5 : 7;
@@ -518,7 +537,38 @@ export default {
         ${doorsSvg}
         ${entranceSvg}
       </svg>
-      <p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`;
+      ${player ? '' : `<p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`}`;
+    };
+
+    // The player's copy as a standalone file: parchment ink whatever the app
+    // theme, styles inlined so it opens anywhere, nothing on it a player
+    // should not see.
+    const PLAYER_MAP_CSS = `
+      .map-crag path { stroke: none; }
+      .map-floor { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 2.6; stroke-linejoin: round; }
+      .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
+      .is-cave .map-grid line { stroke-width: 0.6; }
+      .map-eraser { fill: var(--map-floor); }
+      .map-door { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.6; }
+      .map-entrance line { stroke: var(--map-ink); stroke-width: 2; fill: none; stroke-linecap: round; }
+      .map-column { fill: var(--map-ink); }
+      .map-furn { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }
+      .map-furn-line { stroke: var(--map-ink); stroke-width: 1.2; }
+      .map-rubble { fill: var(--map-ink); opacity: 0.75; }
+      .map-stipple { fill: var(--map-ink); opacity: 0.35; }
+      .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }`;
+    const downloadPlayerMap = (elt) => {
+      const src = dungeonMapSVG(elt, true);
+      const svg = src.slice(src.indexOf('<svg'), src.indexOf('</svg>') + 6)
+        .replace('<svg class="dungeon-map', '<svg xmlns="http://www.w3.org/2000/svg" style="--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2" class="dungeon-map')
+        .replace('<defs>', `<style>${PLAYER_MAP_CSS}</style><defs>`);
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${elt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-player-map.svg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('Player map downloaded; safe to share as-is');
     };
 
     // The old dot-graph plan, kept for campaigns saved before rooms had
@@ -623,7 +673,9 @@ export default {
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
-      if (elt.type === 'dungeon') return `${head}${dungeonMapSVG(elt)}${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
+      if (elt.type === 'dungeon') return `${head}${dungeonMapSVG(elt)}
+        ${elt.map?.rooms?.length ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
+        ${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
         <div class="grid-2 mt">
@@ -1002,6 +1054,9 @@ export default {
         }
       }
       box.innerHTML = html;
+
+      // The player's copy of the dungeon map, exported as a standalone file.
+      box.querySelector('#dm-playermap')?.addEventListener('click', () => downloadPlayerMap(selection.ref));
 
       // Walking the dungeon: an exit opens its room and brings it into view.
       box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
