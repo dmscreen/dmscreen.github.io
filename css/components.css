@@ -753,7 +753,13 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .map-zoom .btn { justify-content: center; }
 .exit-link.is-outside { border-style: dashed; }
-.map-level-head { margin-bottom: 2px; }
-.dungeon-map .map-waterway { pointer-events: none; }
+.map-tabs { display: flex; gap: 4px; margin: 0 0 6px; }
+.map-tab.is-active { border-color: var(--accent); color: var(--accent); }
+/* Only the floors are targets. Everything else drawn on a level -- the grid,
+   the door glyphs, labels, furniture, the hatching -- sits on top of the
+   rooms, and magnifies with them: zoomed in, a grid line is wide enough to
+   swallow the click meant for the room under it. */
+.dungeon-map * { pointer-events: none; }
+.dungeon-map .map-floor { pointer-events: auto; }
 .dungeon-map { --map-water: #3d5661; }
 [data-theme='light'] .dungeon-map { --map-water: #b9cdd2; }

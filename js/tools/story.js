@@ -622,20 +622,29 @@ export default {
       </svg>`;
       };
 
-      const lvlName = (li) => maps.length === 2 ? (li === 0 ? 'Upper level' : 'Lower level') : `Level ${li + 1}`;
+      const lvlName = (li) => `Level ${li + 1}`;
       const wtr = maps.find(mm => mm.water)?.water;
       const legend = player ? '' : `<p class="small faint">1 square = ${maps[0].grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${wtr ? (wtr.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}${multi ? ' The boxed stair on each level is the same stair: down on one, up on the other.' : ''}</p>`;
-      return maps.map((mm, li) => {
-        const head = multi && !player ? `<p class="small map-level-head"><b>${lvlName(li)}</b></p>` : '';
-        const svg = renderLevel(mm, li);
-        if (player) return head + svg;
-        return `${head}<div class="map-wrap">${svg}
-          <div class="map-zoom">
-            <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
-            <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
-            <button class="btn small" data-zoom="reset" title="Fit the whole level" aria-label="Fit the whole level">Fit</button>
-          </div></div>`;
-      }).join('') + legend;
+      // The player's sheet stacks the levels, since paper has no tabs.
+      if (player) return maps.map((mm, li) => renderLevel(mm, li)).join('');
+
+      const panels = maps.map((mm, li) => `
+        <div class="map-panel" data-level="${li}"${li ? ' hidden' : ''}>
+          <div class="map-wrap">${renderLevel(mm, li)}
+            <div class="map-zoom">
+              <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+              <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+              <button class="btn small" data-zoom="reset" title="Fit the whole level" aria-label="Fit the whole level">Fit</button>
+            </div>
+          </div>
+        </div>`).join('');
+
+      // One level at a time, starting at the top. Walking a stair switches
+      // the tab for you, so the map keeps up with where the party is.
+      const tabs = multi ? `<div class="map-tabs" role="tablist">${maps.map((mm, li) =>
+        `<button class="btn small map-tab${li ? '' : ' is-active'}" data-level="${li}" role="tab" aria-selected="${li ? 'false' : 'true'}">${lvlName(li)}</button>`).join('')}</div>` : '';
+
+      return `<div class="map-levels">${tabs}${panels}</div>${legend}`;
     };
 
     // The player's copy as a standalone file: parchment ink whatever the app
@@ -672,7 +681,7 @@ export default {
         const W2 = Math.max(...dims.map(d2 => d2.w));
         let y2 = 8;
         const inner = parts.map((p2, i2) => {
-          const label = `<text x="${W2 / 2}" y="${y2 + 14}" text-anchor="middle" style="font:600 13px Georgia, serif; fill: var(--map-ink)">${parts.length === 2 ? (i2 === 0 ? 'Upper level' : 'Lower level') : `Level ${i2 + 1}`}</text>`;
+          const label = `<text x="${W2 / 2}" y="${y2 + 14}" text-anchor="middle" style="font:600 13px Georgia, serif; fill: var(--map-ink)">Level ${i2 + 1}</text>`;
           const placed = p2.replace('<svg ', `<svg x="${((W2 - dims[i2].w) / 2).toFixed(1)}" y="${y2 + 22}" width="${dims[i2].w}" height="${dims[i2].h}" `);
           y2 += dims[i2].h + 46;
           return label + placed;
@@ -884,16 +893,24 @@ export default {
         let drag = null;
         svg.addEventListener('pointerdown', (ev) => {
           if (cur.w >= home.w - 0.5 || ev.button !== 0) return;
-          drag = { x: ev.clientX, y: ev.clientY, ox: cur.x, oy: cur.y, moved: false };
-          wrap.classList.add('is-dragging');
-          svg.setPointerCapture(ev.pointerId);
+          // Deliberately no pointer capture yet. Capturing here would make the
+          // browser retarget the click that follows to this <svg>, so it would
+          // never reach the room's own handler and a zoomed-in map would stop
+          // being clickable. Capture belongs to a drag, and there is no drag
+          // until the pointer has actually moved.
+          drag = { x: ev.clientX, y: ev.clientY, ox: cur.x, oy: cur.y, moved: false, id: ev.pointerId };
         });
         svg.addEventListener('pointermove', (ev) => {
           if (!drag) return;
+          if (!drag.moved) {
+            if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) <= 3) return;
+            drag.moved = true;
+            wrap.classList.add('is-dragging');
+            try { svg.setPointerCapture(drag.id); } catch { /* pointer already gone */ }
+          }
           const r = svg.getBoundingClientRect();
           const dx = ((ev.clientX - drag.x) / r.width) * cur.w;
           const dy = ((ev.clientY - drag.y) / r.height) * cur.h;
-          if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) > 3) drag.moved = true;
           cancelAnimationFrame(raf);
           set({ ...cur, x: drag.ox - dx, y: drag.oy - dy });
         });
@@ -901,9 +918,12 @@ export default {
           wrap.classList.remove('is-dragging');
           if (!drag) return;
           // a drag should not also count as clicking the room underneath
-          if (drag.moved) { svg.__suppressClick = true; setTimeout(() => { svg.__suppressClick = false; }, 0); }
+          if (drag.moved) {
+            svg.__suppressClick = true;
+            setTimeout(() => { svg.__suppressClick = false; }, 0);
+            try { svg.releasePointerCapture(drag.id); } catch { /* already gone */ }
+          }
           drag = null;
-          try { svg.releasePointerCapture(ev.pointerId); } catch { /* already gone */ }
         };
         svg.addEventListener('pointerup', endDrag);
         svg.addEventListener('pointercancel', endDrag);
@@ -1337,12 +1357,36 @@ export default {
         }
       }));
 
+      // Switching which level is on show, by tab or by walking a stair.
+      const showLevel = (levels, idx) => {
+        if (!levels) return;
+        levels.querySelectorAll(':scope > .map-panel').forEach(pane => { pane.hidden = +pane.dataset.level !== idx; });
+        levels.querySelectorAll(':scope > .map-tabs > .map-tab').forEach(t => {
+          const on = +t.dataset.level === idx;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+      };
+      box.querySelectorAll('.map-tabs .map-tab').forEach(t => t.addEventListener('click', () => {
+        showLevel(t.closest('.map-levels'), +t.dataset.level);
+      }));
+
+      // Bring a room's own level to the front and return its shape on the map.
+      const revealRoom = (id) => {
+        const g = box.querySelector(`svg.dungeon-map g.map-room[data-goto="${CSS.escape(id)}"]`);
+        if (!g) return null;
+        const pane = g.closest('.map-panel');
+        if (pane) showLevel(pane.closest('.map-levels'), +pane.dataset.level);
+        return g;
+      };
+
       // Walking the dungeon: an exit opens its room and brings it into view.
       box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
         const id = b.dataset.goto;
         const dest = box.querySelector(`#area-${CSS.escape(id)}`);
-        // a room on the map also pulls the drawing over to it
-        if (b.closest('svg.dungeon-map')) frameRoom(b.closest('.map-wrap'), b);
+        // the drawing follows the walk, across levels if the way out is a stair
+        const onMap = revealRoom(id);
+        if (onMap) frameRoom(onMap.closest('.map-wrap'), onMap);
         if (!dest) return;
         dest.open = true;
         dest.scrollIntoView({ behavior: 'smooth', block: 'center' });
