@@ -456,7 +456,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   padding: 0 7px;
   border-radius: 99px;
   border: 1px solid;
-  margin: 2px 0 4px;
+  margin: 2px 8px 4px 0;
   vertical-align: middle;
 }
 .facing.player { color: var(--info); border-color: var(--info); }
@@ -732,20 +732,26 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 
 /* the drawn level and its camera controls */
 .map-wrap { position: relative; }
-.map-wrap .dungeon-map { display: block; touch-action: pan-y; }
-.map-wrap.is-zoomed .dungeon-map { cursor: grab; }
-.map-wrap.is-zoomed .dungeon-map:active { cursor: grabbing; }
+/* Room labels are part of the drawing, not prose: letting them highlight
+   turns every pan into a text selection. */
+.map-wrap .dungeon-map {
+  display: block;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* The pan cursor belongs to an actual drag. Showing a grab hand over the
+   whole map whenever it happens to be zoomed tells the reader the map is a
+   surface to push around, which is exactly when they stop trying to click
+   the rooms; the rooms stay clickable at every zoom, so they go on looking
+   it too. */
+.map-wrap.is-dragging .dungeon-map,
+.map-wrap.is-dragging .dungeon-map .map-floor { cursor: grabbing; }
 .map-zoom {
   position: absolute; top: 8px; right: 8px;
   display: flex; flex-direction: column; gap: 4px;
-  opacity: 0.55; transition: opacity 0.15s;
 }
-.map-wrap:hover .map-zoom, .map-zoom:focus-within { opacity: 1; }
-.map-zoom .btn {
-  min-width: 30px; padding: 2px 7px; line-height: 1.5;
-  background: var(--map-page); border-color: var(--map-hatch); color: var(--map-ink);
-}
-.map-zoom .btn:hover { border-color: var(--accent); color: var(--accent); }
+.map-zoom .btn { justify-content: center; }
 .exit-link.is-outside { border-style: dashed; }
 .map-level-head { margin-bottom: 2px; }
 .dungeon-map .map-waterway { pointer-events: none; }
