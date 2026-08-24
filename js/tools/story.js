@@ -310,19 +310,78 @@ export default {
         return `M${x},${y} h${w} v${h} h${-w} Z`;
       };
 
-      // the craggy rock band: each space, outset and jittered, filled with
-      // hatch. Cheap, stable, and merges where spaces sit close together.
-      const cragFor = (r) => {
-        const cx = (r.x + r.w / 2) * C, cy = (r.y + r.h / 2) * C;
-        const rx = (r.w / 2 + 1.1) * C, ry = (r.h / 2 + 1.1) * C;
-        const steps = Math.max(10, Math.round((r.w + r.h) * 0.8));
-        const pts = [];
-        for (let i = 0; i < steps; i++) {
-          const a = (i / steps) * Math.PI * 2;
-          const j = 0.86 + jig(r.x + i, r.y, 3) * 0.5;
-          pts.push(`${(cx + Math.cos(a) * rx * j).toFixed(1)},${(cy + Math.sin(a) * ry * j).toFixed(1)}`);
+      // One merged rock band for the whole dungeon: rasterise every floor
+      // cell, dilate outward, trace the outline with marching squares, and
+      // jitter the trace so it reads as rough stone. Because it is a single
+      // silhouette, crowded rooms share one band instead of double-hatching.
+      const silhouette = () => {
+        const cells = new Set();
+        const mark = (x, y) => cells.add(x + ',' + y);
+        for (const r of m.rooms) {
+          for (let x = Math.floor(r.x); x < Math.ceil(r.x + r.w); x++) {
+            for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) mark(x, y);
+          }
         }
-        return `<path d="M${pts.join('L')}Z"/>`;
+        for (const co of m.corridors) for (const [x, y] of co.cells) mark(x, y);
+        // dilate twice for the band's thickness
+        for (let pass = 0; pass < 2; pass++) {
+          for (const k of [...cells]) {
+            const [x, y] = k.split(',').map(Number);
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) mark(x + dx, y + dy);
+          }
+        }
+        // marching squares: collect boundary segments between corner points
+        const segs = new Map(); // "x,y" start -> [ex, ey]
+        const has = (x, y) => cells.has(x + ',' + y);
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const k of cells) {
+          const [x, y] = k.split(',').map(Number);
+          if (x < minX) minX = x; if (y < minY) minY = y;
+          if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+        }
+        const addSeg = (x1, y1, x2, y2) => segs.set(`${x1},${y1}|${Math.random()}`, [[x1, y1], [x2, y2]]);
+        for (let x = minX; x <= maxX; x++) for (let y = minY; y <= maxY; y++) {
+          if (!has(x, y)) continue;
+          if (!has(x, y - 1)) addSeg(x, y, x + 1, y);
+          if (!has(x, y + 1)) addSeg(x + 1, y + 1, x, y + 1);
+          if (!has(x - 1, y)) addSeg(x, y + 1, x, y);
+          if (!has(x + 1, y)) addSeg(x + 1, y, x + 1, y + 1);
+        }
+        // chain segments into loops
+        const byStart = new Map();
+        for (const [, [a, b]] of segs) {
+          byStart.set(a[0] + ',' + a[1], (byStart.get(a[0] + ',' + a[1]) || []).concat([[a, b]]));
+        }
+        const used = new Set();
+        const loops = [];
+        for (const [, list] of byStart) {
+          for (const seg of list) {
+            const segKey = seg[0] + '>' + seg[1];
+            if (used.has(segKey)) continue;
+            const loop = [seg[0]];
+            let cur = seg;
+            for (let guard = 0; guard < 5000; guard++) {
+              used.add(cur[0] + '>' + cur[1]);
+              const nexts = (byStart.get(cur[1][0] + ',' + cur[1][1]) || []).filter(s2 => !used.has(s2[0] + '>' + s2[1]));
+              if (!nexts.length) break;
+              cur = nexts[0];
+              loop.push(cur[0]);
+              if (cur[1][0] === seg[0][0] && cur[1][1] === seg[0][1]) break;
+            }
+            if (loop.length > 3) loops.push(loop);
+          }
+        }
+        // drop collinear runs, then jitter what remains
+        const d = loops.map(loop => {
+          const slim = loop.filter((pt, i) => {
+            const prev = loop[(i - 1 + loop.length) % loop.length], next = loop[(i + 1) % loop.length];
+            return (prev[0] - pt[0]) * (next[1] - pt[1]) !== (prev[1] - pt[1]) * (next[0] - pt[0]);
+          });
+          return 'M' + slim.map(([x, y]) =>
+            `${((x + (jig(x, y) - 0.5) * 0.55) * C).toFixed(1)},${((y + (jig(y, x, 5) - 0.5) * 0.55) * C).toFixed(1)}`
+          ).join('L') + 'Z';
+        }).join(' ');
+        return `<path d="${d}" fill-rule="evenodd"/>`;
       };
 
       const corridorPts = (cells) => {
@@ -339,8 +398,7 @@ export default {
         }).join(' ');
       };
 
-      const crag = m.rooms.map(cragFor).join('') +
-        m.corridors.map(co => `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="url(#dmhatch)" stroke-width="${C * 2.7}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      const crag = silhouette();
 
       const corridorInk = m.corridors.map(co =>
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -348,11 +406,50 @@ export default {
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
 
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
+      const featSvg = (r) => (r.features || []).map(f => {
+        if (f.t === 'column') return `<circle cx="${(f.x * C).toFixed(1)}" cy="${(f.y * C).toFixed(1)}" r="${(C * 0.3).toFixed(1)}" class="map-column"/>`;
+        if (f.t === 'dais') return `<rect x="${(f.x * C).toFixed(1)}" y="${(f.y * C).toFixed(1)}" width="${(f.w * C).toFixed(1)}" height="${(f.h * C).toFixed(1)}" class="map-furn"/>
+          <rect x="${((f.x + 0.35) * C).toFixed(1)}" y="${((f.y + 0.3) * C).toFixed(1)}" width="${((f.w - 0.7) * C).toFixed(1)}" height="${((f.h - 0.55) * C).toFixed(1)}" class="map-furn"/>`;
+        if (f.t === 'chest') return `<rect x="${((f.x - 0.35) * C).toFixed(1)}" y="${((f.y - 0.25) * C).toFixed(1)}" width="${(C * 0.7).toFixed(1)}" height="${(C * 0.5).toFixed(1)}" class="map-furn"/>
+          <line x1="${((f.x - 0.35) * C).toFixed(1)}" y1="${(f.y * C).toFixed(1)}" x2="${((f.x + 0.35) * C).toFixed(1)}" y2="${(f.y * C).toFixed(1)}" class="map-furn-line"/>`;
+        if (f.t === 'table') return `<rect x="${(f.x * C).toFixed(1)}" y="${(f.y * C).toFixed(1)}" width="${(f.w * C).toFixed(1)}" height="${(f.h * C).toFixed(1)}" class="map-furn"/>`;
+        if (f.t === 'pool') {
+          const pts = [];
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2;
+            const rr = f.r * (0.7 + jig(f.x + i, f.y, 9) * 0.5);
+            pts.push(`${((f.x + Math.cos(a) * rr) * C).toFixed(1)},${((f.y + Math.sin(a) * rr) * C).toFixed(1)}`);
+          }
+          return `<path d="M${pts.join('L')}Z" class="map-pool"/>`;
+        }
+        if (f.t === 'rubble') {
+          let dots = '';
+          for (let i = 0; i < 5; i++) {
+            dots += `<circle cx="${((f.x + (jig(f.x, f.y, i) - 0.5) * 1.6) * C).toFixed(1)}" cy="${((f.y + (jig(f.y, f.x, i + 3) - 0.5) * 1.6) * C).toFixed(1)}" r="${(C * (0.06 + jig(i, f.x) * 0.07)).toFixed(1)}" class="map-rubble"/>`;
+          }
+          return dots;
+        }
+        return '';
+      }).join('');
+
+      // stipple gives cave floors their texture without any stored data
+      const stipple = (r) => {
+        if (r.shape !== 'cave') return '';
+        let out = '';
+        const n2 = Math.round(r.w * r.h * 0.25);
+        for (let i = 0; i < n2; i++) {
+          const x = r.x + jig(r.x + i, r.y, 11) * r.w, y = r.y + jig(r.y + i, r.x, 13) * r.h;
+          out += `<circle cx="${(x * C).toFixed(1)}" cy="${(y * C).toFixed(1)}" r="0.8" class="map-stipple"/>`;
+        }
+        return out;
+      };
+
       const roomsSvg = m.rooms.map(r => {
         const node = roleOf.get(r.id) || {};
         return `<g class="map-room" data-goto="${esc(r.id)}">
           <title>${esc(r.id)}: ${esc(node.roleLabel || r.role)}</title>
           <path class="map-floor" d="${roomPath(r)}"/>
+          ${stipple(r)}${featSvg(r)}
         </g>`;
       }).join('');
 
@@ -382,12 +479,21 @@ export default {
       const e = m.entrance;
       const ex = ((e.x + e.outside[0]) / 2 + 0.5) * C, ey = ((e.y + e.outside[1]) / 2 + 0.5) * C;
       const dx = (e.x - e.outside[0]) * C * 0.9, dy = (e.y - e.outside[1]) * C * 0.9;
+      // stairs descending through the opening: rungs that shorten with depth
+      const ux = dx / (Math.hypot(dx, dy) || 1), uy = dy / (Math.hypot(dx, dy) || 1);
+      const px2 = -uy, py2 = ux; // perpendicular
+      let rungs = '';
+      for (let i = 0; i < 4; i++) {
+        const t = (i - 2.1) * C * 0.34;
+        const half = C * (0.52 - i * 0.07);
+        const rx0 = ex + ux * t, ry0 = ey + uy * t;
+        rungs += `<line x1="${(rx0 - px2 * half).toFixed(1)}" y1="${(ry0 - py2 * half).toFixed(1)}" x2="${(rx0 + px2 * half).toFixed(1)}" y2="${(ry0 + py2 * half).toFixed(1)}"/>`;
+      }
       const entranceSvg = `
         ${e.orient === 'h'
           ? `<rect x="${ex - C * 0.5}" y="${ey - C * 0.4}" width="${C}" height="${C * 0.8}" class="map-eraser"/>`
           : `<rect x="${ex - C * 0.4}" y="${ey - C * 0.5}" width="${C * 0.8}" height="${C}" class="map-eraser"/>`}
-        <g class="map-entrance"><line x1="${ex - dx}" y1="${ey - dy}" x2="${ex + dx * 0.4}" y2="${ey + dy * 0.4}"/>
-        <path d="M${ex + dx * 0.4},${ey + dy * 0.4} l${-dx * 0.35 - dy * 0.22},${-dy * 0.35 + dx * 0.22} m${dx * 0.35 + dy * 0.22},${dy * 0.35 - dx * 0.22} l${-dx * 0.35 + dy * 0.22},${-dy * 0.35 - dx * 0.22}"/></g>`;
+        <g class="map-entrance">${rungs}</g>`;
 
       return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
         <defs>
@@ -404,12 +510,15 @@ export default {
         <g clip-path="url(#dmrooms)" class="map-grid">${grid}</g>
         <g class="map-labels-over">${m.rooms.map(r => {
           const tint = ROLE_TINT[r.role];
-          return `<text x="${(r.x + r.w / 2) * C}" y="${((r.y + r.h / 2) * C + 3.5).toFixed(1)}" class="map-label" ${tint ? `style="fill:${tint}"` : ''}>${esc(r.id)}</text>`;
+          const lx = (r.x + r.w / 2) * C, ly = (r.y + r.h / 2) * C;
+          const rr = r.id.length > 2 ? 8.5 : 7;
+          return `<circle cx="${lx}" cy="${ly}" r="${rr}" class="map-badge" ${tint ? `style="stroke:${tint}"` : ''}/>
+            <text x="${lx}" y="${(ly + 3).toFixed(1)}" class="map-label">${esc(r.id)}</text>`;
         }).join('')}</g>
         ${doorsSvg}
         ${entranceSvg}
       </svg>
-      <p class="small faint">1 square = ${m.grid} ft. The arrow is the way in; S is a secret door. Click a room to jump to its key. Labels: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`;
+      <p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`;
     };
 
     // The old dot-graph plan, kept for campaigns saved before rooms had
