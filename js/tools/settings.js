@@ -1,6 +1,7 @@
 // Settings: theme, mobile tabs, campaigns, backup and restore.
 import { getPrefs, setPref, exportAll, exportCampaign, importAll, dbAll, dbPut, dbDelete, activeCampaignId, setActiveCampaign, STORES, storageStatus, requestPersistence } from '../store.js';
 import { el, esc, toast, confirmDialog, promptDialog, toggleRow } from '../components/ui.js';
+import { autosave, autosaveSupported, autosavePick, autosaveStop, autosaveWrite, autosaveReconnect, onAutosaveChange } from '../autosave.js';
 
 export default {
   id: 'settings', title: 'Settings', shortTitle: 'Settings', group: 'More', icon: 'gear',
@@ -31,6 +32,16 @@ export default {
             <button class="btn" id="st-import">Import...</button>
             <input type="file" id="st-file" accept=".json,application/json" style="display:none">
           </div>
+        </div>
+        <div class="card" id="st-autosave" hidden>
+          <h2>Auto-save to a file</h2>
+          <p class="small muted">Pick a file once and every change writes a full backup to it, no clicking Export. Point it at a folder your cloud drive syncs and your campaigns leave this machine on their own. The file is the same format as <b>Export everything</b>, so <b>Import...</b> on any device reads it.</p>
+          <div class="row mt">
+            <button class="btn" id="st-as-pick">Choose a file...</button>
+            <button class="btn" id="st-as-now" hidden>Save now</button>
+            <button class="btn danger" id="st-as-stop" hidden>Stop</button>
+          </div>
+          <p class="small mt" id="st-as-status"></p>
         </div>
         <div class="card">
           <h2>Storage health</h2>
@@ -133,6 +144,58 @@ export default {
       });
     };
     drawStorage();
+
+    const drawAutosave = () => {
+      const panel = container.querySelector('#st-autosave');
+      if (!panel) return;
+      if (!autosaveSupported()) { panel.hidden = true; return; }
+      panel.hidden = false;
+
+      const on = !!autosave.handle;
+      panel.querySelector('#st-as-pick').textContent = on ? 'Choose a different file...' : 'Choose a file...';
+      panel.querySelector('#st-as-now').hidden = !on;
+      panel.querySelector('#st-as-stop').hidden = !on;
+
+      const status = panel.querySelector('#st-as-status');
+      if (!on) {
+        status.innerHTML = 'Not set up. Nothing is written anywhere until you pick a file.';
+        return;
+      }
+      // Paused, which is where a refresh normally leaves things. Said
+      // plainly, with the way to stop it happening every time.
+      if (autosave.perm === 'prompt') {
+        status.innerHTML = `Paused. Browsers allow writing to a file for one visit at a time, so this asks again after a refresh.
+          <button class="btn small" id="st-as-reconnect">Resume</button>
+          <span class="faint" style="display:block;margin-top:.4rem">Choosing <b>Allow on every visit</b> in the browser prompt stops it asking again.</span>`;
+        status.querySelector('#st-as-reconnect').addEventListener('click', autosaveReconnect);
+        return;
+      }
+      if (autosave.perm === 'denied') {
+        status.innerHTML = `<b style="color:var(--danger)">This browser is blocking writes to ${esc(autosave.name)}.</b> Nothing is being saved to it. Allow file editing for this site in the browser settings, or pick the file again.
+          <button class="btn small" id="st-as-reconnect">Try again</button>`;
+        status.querySelector('#st-as-reconnect').addEventListener('click', autosaveReconnect);
+        return;
+      }
+      if (autosave.error) {
+        status.innerHTML = `<b style="color:var(--danger)">${esc(autosave.name)} could not be written:</b> ${esc(autosave.error)}`;
+        return;
+      }
+      status.textContent = `Saving to ${autosave.name}` +
+        (autosave.at ? `, last written ${autosave.at.toLocaleTimeString()}.` : ', not written yet.');
+    };
+    container.querySelector('#st-as-pick').addEventListener('click', autosavePick);
+    container.querySelector('#st-as-now').addEventListener('click', () => autosaveWrite(true));
+    container.querySelector('#st-as-stop').addEventListener('click', () => {
+      confirmDialog('Stop auto-saving? The file keeps everything written so far; it just stops being updated.', () => autosaveStop(), { label: 'Stop', danger: false });
+    });
+    const unsubAutosave = onAutosaveChange(() => {
+      // this settings render is replaced wholesale on navigation, so the
+      // subscription lets go of itself once its DOM is gone
+      if (!container.isConnected || !container.querySelector('#st-autosave')) { unsubAutosave(); return; }
+      drawAutosave();
+      drawStorage();   // a successful write updates the last-backup line too
+    });
+    drawAutosave();
 
     const download = (dump, filename) => {
       const blob = new Blob([JSON.stringify(dump, null, 1)], { type: 'application/json' });
