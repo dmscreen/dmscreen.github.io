@@ -46,19 +46,79 @@ const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 
 // A wobbly polygon inside the room's rectangle, for cave chambers. Kept in
 // the data so the blob a DM saw yesterday is the blob they see today.
-function caveOutline(r) {
+// A natural chamber: an irregular ring around the room's footprint. The
+// radius runs a little under and a little over the rectangle rather than
+// well inside it, so a corridor still meets stone where it arrives and the
+// blob never pulls away from its own doorways.
+function caveOutline(r, lo = 0.88, hi = 1.12) {
   const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
   const points = Math.max(9, Math.round((r.w + r.h) * 0.9));
   const poly = [];
   for (let i = 0; i < points; i++) {
     const ang = (i / points) * Math.PI * 2;
-    const jit = 0.62 + Math.random() * 0.36;
+    const jit = lo + Math.random() * (hi - lo);
     poly.push([
       +(cx + Math.cos(ang) * (r.w / 2) * jit).toFixed(2),
       +(cy + Math.sin(ang) * (r.h / 2) * jit).toFixed(2),
     ]);
   }
   return poly;
+}
+
+function insidePoly(poly, x, y) {
+  let hit = false;
+  for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
+    const [xi, yi] = poly[i], [xk, yk] = poly[k];
+    if ((yi > y) !== (yk > y) && x < ((xk - xi) * (y - yi)) / (yk - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
+// Push the outline out wherever a doorway would otherwise be left standing
+// outside the room it belongs to.
+function repairPoly(poly, r, crit) {
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  for (const [px, py] of crit) {
+    if (insidePoly(poly, px, py)) continue;
+    const need = Math.hypot(px - cx, py - cy) + 0.5;
+    const ang = Math.atan2(py - cy, px - cx);
+    for (let i = 0; i < poly.length; i++) {
+      const [vx, vy] = poly[i];
+      let d = Math.atan2(vy - cy, vx - cx) - ang;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      if (Math.abs(d) > 1.0) continue;
+      const cur = Math.hypot(vx - cx, vy - cy) || 0.01;
+      const want = need * (1 - Math.abs(d) / 1.6);
+      if (cur < want) poly[i] = [+(cx + ((vx - cx) / cur) * want).toFixed(2), +(cy + ((vy - cy) / cur) * want).toFixed(2)];
+    }
+  }
+  return poly;
+}
+
+// Corners cut on the diagonal: the angled walls the hand-drawn maps use to
+// stop every room reading as the same box.
+function chamferPoly(r, cuts) {
+  const x1 = r.x, y1 = r.y, x2 = r.x + r.w, y2 = r.y + r.h;
+  const k = Math.min(2, Math.max(1, Math.round(Math.min(r.w, r.h) * 0.28)));
+  const out = [];
+  out.push(...(cuts.includes(0) ? [[x1 + k, y1]] : [[x1, y1]]));
+  out.push(...(cuts.includes(1) ? [[x2 - k, y1], [x2, y1 + k]] : [[x2, y1]]));
+  out.push(...(cuts.includes(2) ? [[x2, y2 - k], [x2 - k, y2]] : [[x2, y2]]));
+  out.push(...(cuts.includes(3) ? [[x1 + k, y2], [x1, y2 - k]] : [[x1, y2]]));
+  if (cuts.includes(0)) out.push([x1, y1 + k]);
+  return out;
+}
+
+// A rectangle with one corner taken out of it.
+function ellPoly(r, corner) {
+  const x1 = r.x, y1 = r.y, x2 = r.x + r.w, y2 = r.y + r.h;
+  const bw = Math.max(2, Math.round(r.w * (0.32 + Math.random() * 0.16)));
+  const bh = Math.max(2, Math.round(r.h * (0.32 + Math.random() * 0.16)));
+  if (corner === 0) return [[x1 + bw, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1 + bh], [x1 + bw, y1 + bh]];
+  if (corner === 1) return [[x1, y1], [x2 - bw, y1], [x2 - bw, y1 + bh], [x2, y1 + bh], [x2, y2], [x1, y2]];
+  if (corner === 2) return [[x1, y1], [x2, y1], [x2, y2 - bh], [x2 - bw, y2 - bh], [x2 - bw, y2], [x1, y2]];
+  return [[x1, y1], [x2, y1], [x2, y2], [x1 + bw, y2], [x1 + bw, y2 - bh], [x1, y2 - bh]];
 }
 
 /* ---------- corridor routing ---------- */
@@ -173,14 +233,6 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
   for (const r of rooms) { r.x -= minX; r.y -= minY; }
   const byId = new Map(rooms.map(r => [r.id, r]));
 
-  // shapes: caves get blobs; a few big built rooms go round or octagonal
-  for (const r of rooms) {
-    if (cave) { r.shape = 'cave'; r.poly = caveOutline(r); }
-    else if (ROUNDABLE.has(r.role) && r.w >= 4 && Math.abs(r.w - r.h) <= 2 && chance(0.3)) {
-      r.shape = chance(0.5) ? 'round' : 'octagon';
-    } else r.shape = 'rect';
-  }
-
   const bounds = {
     minX: 0, minY: 0,
     maxX: Math.max(...rooms.map(r => r.x + r.w)) + 4,
@@ -289,17 +341,64 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
     if (roomsCrossed.length >= 2) water = { kind: wKind, horiz, cells: wCells, rooms: roomsCrossed, bridges };
   }
 
-  // ---- furniture: what the room's purpose looks like on the floor. Placed
-  // here rather than at render time so it persists with the map, and kept
-  // away from doorways so nothing blocks an opening.
   const doorCellsByRoom = new Map();
   for (const d of doors) {
     if (!doorCellsByRoom.has(d.between[0])) doorCellsByRoom.set(d.between[0], []);
     doorCellsByRoom.get(d.between[0]).push([d.x, d.y]);
   }
+
+  // ---- shapes. Deliberately after the doors, because a room's drawn outline
+  // has to keep its own doorways inside it: every candidate shape is tested
+  // against the openings already cut into it and rejected if it would strand
+  // one in the rock. Caves get irregular chambers; built sites get a mix of
+  // boxes, cut corners, L-shaped halls, rotundas and the odd collapsed cave,
+  // so a floor plan does not read as one rectangle repeated.
+  for (const r of rooms) {
+    const crit = (doorCellsByRoom.get(r.id) || []).map(([x, y]) => [x + 0.5, y + 0.5]);
+    if (entrance && !entrance.internal && entrance.room === r.id) crit.push([entrance.x + 0.5, entrance.y + 0.5]);
+    const holds = (poly) => crit.every(([x, y]) => insidePoly(poly, x, y));
+    const tryPoly = (poly) => {
+      const fixed = repairPoly(poly, r, crit);
+      return holds(fixed) ? fixed : null;
+    };
+
+    let poly = null, shape = 'rect';
+    if (cave) {
+      // some chambers smooth, some ragged
+      poly = tryPoly(chance(0.5) ? caveOutline(r, 0.9, 1.08) : caveOutline(r, 0.82, 1.16));
+      if (poly) shape = 'cave';
+    } else {
+      const roll = Math.random();
+      const big = r.w >= 5 && r.h >= 5;
+      if (ROUNDABLE.has(r.role) && r.w >= 4 && Math.abs(r.w - r.h) <= 2 && roll < 0.34) {
+        shape = chance(0.5) ? 'round' : 'octagon';
+      } else if (roll < 0.46) {
+        const corners = [0, 1, 2, 3].filter(() => chance(0.55));
+        if (corners.length) {
+          poly = tryPoly(chamferPoly(r, corners));
+          if (poly) shape = 'chamfer';
+        }
+      } else if (big && roll < 0.60) {
+        poly = tryPoly(ellPoly(r, int(0, 3)));
+        if (poly) shape = 'ell';
+      } else if (roll < 0.70 && !['boss', 'threshold'].includes(r.role)) {
+        // a stretch where the built work gave out and the rock took over
+        poly = tryPoly(caveOutline(r, 0.86, 1.12));
+        if (poly) shape = 'cave';
+      }
+    }
+    r.shape = shape;
+    if (poly && shape !== 'rect') r.poly = poly; else delete r.poly;
+  }
+
+  // ---- furniture: what the room's purpose looks like on the floor. Placed
+  // here rather than at render time so it persists with the map, and kept
+  // away from doorways so nothing blocks an opening.
   for (const r of rooms) {
     const feats = [];
     const nearDoor = (x, y) => (doorCellsByRoom.get(r.id) || []).some(([dx2, dy2]) => Math.abs(dx2 - x) + Math.abs(dy2 - y) < 2);
+    // a carved room has corners that are no longer floor; nothing goes there
+    const onFloor = (x, y) => !r.poly || insidePoly(r.poly, x, y);
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
     const big = r.w * r.h >= 30;
 
@@ -316,7 +415,8 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
         cand.push({ x: r.x + r.w - 1.6, y: r.y + r.h - 3, w: 1, h: 2, orient: 'v' });
       }
       cand.push({ x: r.x + 1, y: r.y + 1, w: 2, h: 1, orient: 'h' });
-      stairZone = cand.find(s2 => !nearDoor(Math.round(s2.x + s2.w / 2), Math.round(s2.y + s2.h / 2))) || cand[0];
+      stairZone = cand.find(s2 => !nearDoor(Math.round(s2.x + s2.w / 2), Math.round(s2.y + s2.h / 2))
+        && onFloor(s2.x + s2.w / 2, s2.y + s2.h / 2) && onFloor(s2.x, s2.y) && onFloor(s2.x + s2.w, s2.y + s2.h)) || cand[0];
       feats.push({ t: 'stair', x: +stairZone.x.toFixed(1), y: +stairZone.y.toFixed(1), w: stairZone.w, h: stairZone.h, orient: stairZone.orient, dir: opts.stairDown === r.id ? 'down' : 'up' });
     }
     const nearStair = (x, y) => !!stairZone && x > stairZone.x - 1.2 && x < stairZone.x + stairZone.w + 1.2 && y > stairZone.y - 1.2 && y < stairZone.y + stairZone.h + 1.2;
@@ -324,40 +424,40 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
     if (r.role === 'boss') {
       // a dais against the wall furthest from the first door, and columns
       const dw = Math.max(2, Math.round(r.w * 0.45)), dh = Math.max(1.5, r.h * 0.22);
-      if (!nearStair(cx, r.y + 1.2)) feats.push({ t: 'dais', x: +(cx - dw / 2).toFixed(1), y: +(r.y + 0.8).toFixed(1), w: dw, h: +dh.toFixed(1) });
+      if (!nearStair(cx, r.y + 1.2) && [[cx - dw / 2, r.y + 0.8], [cx + dw / 2, r.y + 0.8], [cx - dw / 2, r.y + 0.8 + dh], [cx + dw / 2, r.y + 0.8 + dh]].every(([fx, fy]) => onFloor(fx, fy))) feats.push({ t: 'dais', x: +(cx - dw / 2).toFixed(1), y: +(r.y + 0.8).toFixed(1), w: dw, h: +dh.toFixed(1) });
       const colY = [r.y + r.h * 0.55, r.y + r.h * 0.8];
       for (const yy of colY) for (const xx of [r.x + r.w * 0.25, r.x + r.w * 0.75]) {
-        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy) && onFloor(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     } else if (r.role === 'puzzle' && !cave) {
       // two ranks of pillars, the furniture of every puzzle room ever keyed
       for (const fx of [0.3, 0.7]) for (const fy of [0.3, 0.5, 0.7]) {
         const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
-        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy) && onFloor(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     } else if (r.role === 'treasure') {
       const n2 = int(1, 3);
       for (let i = 0; i < n2; i++) {
         const px3 = +(r.x + 1 + Math.random() * (r.w - 2)).toFixed(1), py3 = +(r.y + 0.9 + Math.random() * 0.8).toFixed(1);
-        if (!nearStair(px3, py3)) feats.push({ t: 'chest', x: px3, y: py3 });
+        if (!nearStair(px3, py3) && onFloor(px3, py3)) feats.push({ t: 'chest', x: px3, y: py3 });
       }
     } else if (r.role === 'lore') {
-      if (!nearStair(r.x + 1.5, cy)) feats.push({ t: 'table', x: +(r.x + 0.8).toFixed(1), y: +(cy - 0.4).toFixed(1), w: +Math.min(r.w - 1.6, 3).toFixed(1), h: 0.8 });
+      if (!nearStair(r.x + 1.5, cy) && onFloor(r.x + 1.5, cy)) feats.push({ t: 'table', x: +(r.x + 0.8).toFixed(1), y: +(cy - 0.4).toFixed(1), w: +Math.min(r.w - 1.6, 3).toFixed(1), h: 0.8 });
     } else if (r.role === 'haven') {
-      if (!nearStair(cx, cy)) feats.push({ t: 'table', x: +(cx - 1).toFixed(1), y: +(cy - 0.4).toFixed(1), w: 2, h: 0.8 });
+      if (!nearStair(cx, cy) && onFloor(cx, cy)) feats.push({ t: 'table', x: +(cx - 1).toFixed(1), y: +(cy - 0.4).toFixed(1), w: 2, h: 0.8 });
     } else if (r.role === 'encounter' && big && !cave && chance(0.6)) {
       for (const fy of [0.33, 0.66]) for (const fx of [0.3, 0.7]) {
         const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
-        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy) && onFloor(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     }
     if (cave && big && chance(0.3)) {
       const plx = +(cx + (Math.random() - 0.5) * r.w * 0.3).toFixed(1), ply = +(cy + (Math.random() - 0.5) * r.h * 0.3).toFixed(1);
-      if (!nearStair(plx, ply)) feats.push({ t: 'pool', x: plx, y: ply, r: +(Math.min(r.w, r.h) * 0.28).toFixed(1) });
+      if (!nearStair(plx, ply) && onFloor(plx, ply)) feats.push({ t: 'pool', x: plx, y: ply, r: +(Math.min(r.w, r.h) * 0.28).toFixed(1) });
     }
     if ((cave && chance(0.5)) || (['empty', 'junction'].includes(r.role) && chance(0.3))) {
       const rbx = +(r.x + 0.8 + Math.random() * (r.w - 1.6)).toFixed(1), rby = +(r.y + 0.8 + Math.random() * (r.h - 1.6)).toFixed(1);
-      if (!nearStair(rbx, rby)) feats.push({ t: 'rubble', x: rbx, y: rby });
+      if (!nearStair(rbx, rby) && onFloor(rbx, rby)) feats.push({ t: 'rubble', x: rbx, y: rby });
     }
     if (feats.length) r.features = feats;
   }

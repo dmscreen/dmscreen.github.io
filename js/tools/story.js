@@ -272,6 +272,9 @@ export default {
     // The player/DM boundary, made visible. Boxed blue text is safe to say or
     // show; fenced amber blocks are spoilers. Everything unmarked is ordinary
     // DM working material.
+    // { eltId, nodeId } for the one dungeon room left open
+    let openArea = null;
+
     const playerBox = (html, tag = 'Read aloud') =>
       `<div class="player-text"><span class="facing player">${esc(tag)}</span>${html}</div>`;
     const dmBox = (html) =>
@@ -319,7 +322,7 @@ export default {
       };
 
       const roomPath = (r) => {
-        if (r.shape === 'cave' && r.poly) {
+        if (r.poly) {
           return 'M' + r.poly.map(([px, py]) => `${(px * C).toFixed(1)},${(py * C).toFixed(1)}`).join('L') + 'Z';
         }
         const x = r.x * C, y = r.y * C, w = r.w * C, h = r.h * C;
@@ -337,17 +340,35 @@ export default {
       // cell, dilate outward, trace the outline with marching squares, and
       // jitter the trace so it reads as rough stone. Because it is a single
       // silhouette, crowded rooms share one band instead of double-hatching.
-      const silhouette = () => {
+      const inPoly = (poly, x, y) => {
+        let hit = false;
+        for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
+          const [xi, yi] = poly[i], [xk, yk] = poly[k];
+          if ((yi > y) !== (yk > y) && x < ((xk - xi) * (y - yi)) / (yk - yi) + xi) hit = !hit;
+        }
+        return hit;
+      };
+
+      const silhouette = (grow = 2) => {
         const cells = new Set();
         const mark = (x, y) => cells.add(x + ',' + y);
         for (const r of rooms) {
-          for (let x = Math.floor(r.x); x < Math.ceil(r.x + r.w); x++) {
-            for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) mark(x, y);
+          // a carved room contributes the floor it actually has, so the rock
+          // closes into the bite of an L and follows a cavern's bulges
+          if (r.poly) {
+            for (let x = Math.floor(r.x) - 2; x < Math.ceil(r.x + r.w) + 2; x++) {
+              for (let y = Math.floor(r.y) - 2; y < Math.ceil(r.y + r.h) + 2; y++) {
+                if (inPoly(r.poly, x + 0.5, y + 0.5)) mark(x, y);
+              }
+            }
+          } else {
+            for (let x = Math.floor(r.x); x < Math.ceil(r.x + r.w); x++) {
+              for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) mark(x, y);
+            }
           }
         }
         for (const co of corridors) for (const [x, y] of co.cells) mark(x, y);
-        // dilate twice for the band's thickness
-        for (let pass = 0; pass < 2; pass++) {
+        for (let pass = 0; pass < grow; pass++) {
           for (const k of [...cells]) {
             const [x, y] = k.split(',').map(Number);
             for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) mark(x + dx, y + dy);
@@ -421,7 +442,11 @@ export default {
         }).join(' ');
       };
 
-      const crag = silhouette();
+      const crag = silhouette(2);
+      // The hatching is strongest against the wall and gives out into the
+      // page: a blurred copy of the inner band masks it, so the rock reads
+      // as shading rather than a second border drawn around the rooms.
+      const fadeBand = silhouette(1);
 
       const corridorInk = corridors.map(co =>
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -573,9 +598,15 @@ export default {
             <line x1="0" y1="4.6" x2="4.4" y2="4.6" stroke="var(--map-hatch)" stroke-width="0.9"/>
           </pattern>
           <clipPath id="dmrooms${li}">${clip}</clipPath>
+          <filter id="dmsoft${li}" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="${(C * 0.62).toFixed(1)}"/>
+          </filter>
+          <mask id="dmfade${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
+            <g filter="url(#dmsoft${li})" fill="#fff">${fadeBand}</g>
+          </mask>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
-        <g class="map-crag" fill="url(#dmhatch${li})">${crag}</g>
+        <g class="map-crag" fill="url(#dmhatch${li})" mask="url(#dmfade${li})">${crag}</g>
         ${corridorInk}${corridorFloor}
         ${roomsSvg}${waterSvg}
         <g clip-path="url(#dmrooms${li})" class="map-grid">${grid}</g>
@@ -594,7 +625,17 @@ export default {
       const lvlName = (li) => maps.length === 2 ? (li === 0 ? 'Upper level' : 'Lower level') : `Level ${li + 1}`;
       const wtr = maps.find(mm => mm.water)?.water;
       const legend = player ? '' : `<p class="small faint">1 square = ${maps[0].grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${wtr ? (wtr.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}${multi ? ' The boxed stair on each level is the same stair: down on one, up on the other.' : ''}</p>`;
-      return maps.map((mm, li) => (multi && !player ? `<p class="small map-level-head"><b>${lvlName(li)}</b></p>` : '') + renderLevel(mm, li)).join('') + legend;
+      return maps.map((mm, li) => {
+        const head = multi && !player ? `<p class="small map-level-head"><b>${lvlName(li)}</b></p>` : '';
+        const svg = renderLevel(mm, li);
+        if (player) return head + svg;
+        return `${head}<div class="map-wrap">${svg}
+          <div class="map-zoom">
+            <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+            <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+            <button class="btn small" data-zoom="reset" title="Fit the whole level" aria-label="Fit the whole level">Fit</button>
+          </div></div>`;
+      }).join('') + legend;
     };
 
     // The player's copy as a standalone file: parchment ink whatever the app
@@ -719,14 +760,22 @@ export default {
       if (!n.exits.length) return '<p class="small faint">No other way out of this room.</p>';
       const byId = new Map((elt.nodes || []).map(x => [x.id, x]));
       return `<p class="small exit-row"><b>Ways out:</b> ${n.exits.map(id => {
+        // the doorway the party came in by, which is also the way back out
+        if (id === 'outside') {
+          return `<button class="exit-link is-outside" data-goto-approach="1" title="Back out the way they came in">outside <span class="faint">the way in</span></button>`;
+        }
         const dest = byId.get(id);
         return `<button class="exit-link" data-goto="${esc(id)}" title="${esc(dest ? dest.roleLabel : 'elsewhere')}">${esc(id)}${
           dest ? ` <span class="faint">${esc(dest.roleLabel)}</span>` : ''}</button>`;
       }).join('')}</p>`;
     };
 
-    const nodesHTML = (elt) => (elt.nodes || []).map((n, i) => `
-      <details class="story-area" id="area-${esc(n.id)}" ${i === 0 ? 'open' : ''}>
+    // Which room is open survives a redraw, so rerolling a fight inside a
+    // room leaves you looking at that room rather than back at the top.
+    const nodesHTML = (elt) => {
+      const remembered = openArea && openArea.eltId === elt.id ? openArea.nodeId : null;
+      return (elt.nodes || []).map((n, i) => `
+      <details class="story-area" id="area-${esc(n.id)}" data-elt="${esc(elt.id)}" data-node="${esc(n.id)}" ${(remembered ? n.id === remembered : i === 0) ? 'open' : ''}>
         <summary><b>${esc(n.id)}</b> ${esc(n.roleLabel)}
           <span class="small faint">${esc(n.light)}${n.exits.length ? ` &middot; ${n.exits.length} way${n.exits.length === 1 ? '' : 's'} out: ${esc(n.exits.join(', '))}` : ' &middot; dead end'}</span>
           ${n.beats.map(b => `<span class="pill ${b.kind === 'encounter' ? 'danger' : ''}">${esc(b.kind)}</span>`).join('')}
@@ -735,6 +784,131 @@ export default {
         ${exitsHTML(elt, n)}
         ${n.beats.map(beatHTML).join('')}
       </details>`).join('');
+    };
+
+    /* ---- panning and zooming a drawn level ------------------------------
+       The SVG's viewBox is the camera: narrowing it magnifies, moving it
+       pans. Every move is eased over a few frames so the map slides rather
+       than jumping, which matters most when a click reframes a room. Plain
+       wheel scrolling is left to the page; zooming asks for Ctrl or the
+       buttons, so the map cannot swallow a scroll on the way past. */
+    const MAX_ZOOM = 6;
+    const camOf = (wrap) => {
+      const svg = wrap?.querySelector('svg.dungeon-map');
+      return svg && svg.__cam ? svg.__cam : null;
+    };
+
+    const frameRoom = (wrap, target) => {
+      const cam = camOf(wrap);
+      if (!cam || !target) return;
+      let bb;
+      try { bb = target.getBBox(); } catch { return; }
+      if (!bb.width || !bb.height) return;
+      // the room should sit in the middle and own a good share of the frame
+      const fill = 0.42;
+      const ratio = cam.home.w / cam.home.h;
+      let w = Math.max(bb.width / fill, (bb.height / fill) * ratio);
+      w = Math.min(cam.home.w, Math.max(cam.home.w / MAX_ZOOM, w));
+      cam.to({ x: bb.x + bb.width / 2 - w / 2, y: bb.y + bb.height / 2 - (w / ratio) / 2, w });
+    };
+
+    const wireMaps = (box) => {
+      box.querySelectorAll('.map-wrap').forEach(wrap => {
+        const svg = wrap.querySelector('svg.dungeon-map');
+        if (!svg || svg.__cam) return;
+        const [hx, hy, hw, hh] = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+        if (!hw || !hh) return;
+        const home = { x: hx, y: hy, w: hw, h: hh };
+        const ratio = hw / hh;
+        let cur = { ...home };
+        let raf = 0;
+
+        const clamp = (v) => {
+          const w = Math.min(home.w, Math.max(home.w / MAX_ZOOM, v.w));
+          const h = w / ratio;
+          // keep the drawing in view: never scroll the page off the edge
+          const x = Math.min(home.x + home.w - w, Math.max(home.x, v.x));
+          const y = Math.min(home.y + home.h - h, Math.max(home.y, v.y));
+          return { x, y, w, h };
+        };
+        const paint = () => svg.setAttribute('viewBox', `${cur.x.toFixed(2)} ${cur.y.toFixed(2)} ${cur.w.toFixed(2)} ${cur.h.toFixed(2)}`);
+        const set = (v) => { cur = clamp(v); paint(); };
+        const to = (v) => {
+          const goal = clamp({ ...cur, ...v });
+          cancelAnimationFrame(raf);
+          // Nothing to ease towards on a tab nobody is looking at, and easing
+          // is exactly what someone asking for reduced motion does not want:
+          // in both cases go straight there.
+          if (document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+            cur = goal; paint();
+            wrap.classList.toggle('is-zoomed', cur.w < home.w - 0.5);
+            return;
+          }
+          const from = { ...cur };
+          const t0 = performance.now();
+          const step = (now) => {
+            const k = Math.min(1, (now - t0) / 260);
+            const e = 1 - Math.pow(1 - k, 3);
+            cur = { x: from.x + (goal.x - from.x) * e, y: from.y + (goal.y - from.y) * e, w: from.w + (goal.w - from.w) * e, h: from.h + (goal.h - from.h) * e };
+            paint();
+            if (k < 1) raf = requestAnimationFrame(step);
+            else wrap.classList.toggle('is-zoomed', cur.w < home.w - 0.5);
+          };
+          raf = requestAnimationFrame(step);
+        };
+        // zoom about a point given in viewBox units
+        const zoomAt = (factor, px, py) => {
+          const w = Math.min(home.w, Math.max(home.w / MAX_ZOOM, cur.w * factor));
+          const k = w / cur.w;
+          to({ x: px - (px - cur.x) * k, y: py - (py - cur.y) * k, w });
+        };
+        svg.__cam = { home, to, set, zoomAt, get cur() { return cur; } };
+
+        const atClient = (ev) => {
+          const r = svg.getBoundingClientRect();
+          return [cur.x + ((ev.clientX - r.left) / r.width) * cur.w, cur.y + ((ev.clientY - r.top) / r.height) * cur.h];
+        };
+
+        wrap.querySelector('[data-zoom="in"]')?.addEventListener('click', () => zoomAt(1 / 1.5, cur.x + cur.w / 2, cur.y + cur.h / 2));
+        wrap.querySelector('[data-zoom="out"]')?.addEventListener('click', () => zoomAt(1.5, cur.x + cur.w / 2, cur.y + cur.h / 2));
+        wrap.querySelector('[data-zoom="reset"]')?.addEventListener('click', () => to(home));
+
+        wrap.addEventListener('wheel', (ev) => {
+          if (!ev.ctrlKey && !ev.metaKey) return;   // the page keeps plain scrolling
+          ev.preventDefault();
+          const [px, py] = atClient(ev);
+          zoomAt(ev.deltaY > 0 ? 1.22 : 1 / 1.22, px, py);
+        }, { passive: false });
+
+        // drag to pan once there is somewhere to pan to
+        let drag = null;
+        svg.addEventListener('pointerdown', (ev) => {
+          if (cur.w >= home.w - 0.5 || ev.button !== 0) return;
+          drag = { x: ev.clientX, y: ev.clientY, ox: cur.x, oy: cur.y, moved: false };
+          svg.setPointerCapture(ev.pointerId);
+        });
+        svg.addEventListener('pointermove', (ev) => {
+          if (!drag) return;
+          const r = svg.getBoundingClientRect();
+          const dx = ((ev.clientX - drag.x) / r.width) * cur.w;
+          const dy = ((ev.clientY - drag.y) / r.height) * cur.h;
+          if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) > 3) drag.moved = true;
+          cancelAnimationFrame(raf);
+          set({ ...cur, x: drag.ox - dx, y: drag.oy - dy });
+        });
+        const endDrag = (ev) => {
+          if (!drag) return;
+          // a drag should not also count as clicking the room underneath
+          if (drag.moved) { svg.__suppressClick = true; setTimeout(() => { svg.__suppressClick = false; }, 0); }
+          drag = null;
+          try { svg.releasePointerCapture(ev.pointerId); } catch { /* already gone */ }
+        };
+        svg.addEventListener('pointerup', endDrag);
+        svg.addEventListener('pointercancel', endDrag);
+        svg.addEventListener('click', (ev) => { if (svg.__suppressClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+        svg.addEventListener('dblclick', () => to(home));
+      });
+    };
 
     const elementHTML = (elt) => {
       const head = `<h2>${esc(elt.title)}</h2>
@@ -749,7 +923,9 @@ export default {
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
-      if (elt.type === 'dungeon') return `${head}${dungeonMapSVG(elt)}
+      if (elt.type === 'dungeon') return `${head}
+        ${elt.approach ? `<div id="dm-approach">${playerBox(esc(elt.approach), 'Read aloud outside, before they go in')}</div>` : ''}
+        ${dungeonMapSVG(elt)}
         ${(elt.map?.rooms?.length || elt.map?.levels?.length) ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
@@ -1097,6 +1273,18 @@ export default {
         <p class="small">${esc(ch.summary)}</p>
         ${ch.link ? `<p class="small faint">Leads to ${esc(ch.link.toTitle)}</p>` : ''}</div>`).join('')}`;
 
+    // Rerolling something inside a room should not move the page under the
+    // reader: the open room is remembered by nodesHTML, and the scroll
+    // position is put back once the new markup is in.
+    const redrawInPlace = () => {
+      const box = out.querySelector('#sg-detail');
+      const top = window.scrollY, inner = box ? box.scrollTop : 0;
+      drawDetail();
+      const box2 = out.querySelector('#sg-detail');
+      if (box2) box2.scrollTop = inner;
+      window.scrollTo({ top, behavior: 'instant' in window ? 'instant' : 'auto' });
+    };
+
     const drawDetail = () => {
       const box = out.querySelector('#sg-detail');
       const c = campaign;
@@ -1134,9 +1322,25 @@ export default {
       // The player's copy of the dungeon map, exported as a standalone file.
       box.querySelector('#dm-playermap')?.addEventListener('click', () => downloadPlayerMap(selection.ref));
 
+      // One room open at a time. Opening a second closes the first, and the
+      // choice is remembered so a reroll does not throw you back to the top.
+      box.querySelectorAll('details.story-area').forEach(d => d.addEventListener('toggle', () => {
+        if (!d.open) {
+          if (openArea && openArea.nodeId === d.dataset.node && openArea.eltId === d.dataset.elt) openArea = null;
+          return;
+        }
+        openArea = { eltId: d.dataset.elt, nodeId: d.dataset.node };
+        for (const other of box.querySelectorAll('details.story-area[open]')) {
+          if (other !== d) other.open = false;
+        }
+      }));
+
       // Walking the dungeon: an exit opens its room and brings it into view.
       box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
-        const dest = box.querySelector(`#area-${CSS.escape(b.dataset.goto)}`);
+        const id = b.dataset.goto;
+        const dest = box.querySelector(`#area-${CSS.escape(id)}`);
+        // a room on the map also pulls the drawing over to it
+        if (b.closest('svg.dungeon-map')) frameRoom(b.closest('.map-wrap'), b);
         if (!dest) return;
         dest.open = true;
         dest.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1144,6 +1348,15 @@ export default {
         void dest.offsetWidth;   // restart the highlight if it is still running
         dest.classList.add('just-opened');
       }));
+
+      // "outside" is a way out of the first room like any other; it leads
+      // back to the approach text rather than to another key.
+      box.querySelectorAll('[data-goto-approach]').forEach(b => b.addEventListener('click', () => {
+        const dest = box.querySelector('#dm-approach') || box.querySelector('.map-wrap');
+        dest?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }));
+
+      wireMaps(box);
       box.querySelectorAll('[data-mon]').forEach(a => a.addEventListener('click', () => {
         const m = bySlug.get(a.dataset.mon);
         m ? showStatBlock(m) : toast('Stat block not found', 'danger');
@@ -1221,7 +1434,7 @@ export default {
         try {
           const fresh = await rerollEncounter(campaign, b.dataset.rerollEnc);
           await persistRecord();
-          drawDetail();
+          redrawInPlace();
           toast(`New fight: ${fresh.creatures.map(c => `${c.count} x ${c.name}`).join(', ')}`);
         } catch (err) {
           toast(err.message, 'danger');
@@ -1234,7 +1447,7 @@ export default {
         try {
           const line = await rerollCreature(campaign, beatId, slug);
           await persistRecord();
-          drawDetail();
+          redrawInPlace();
           toast(`Swapped in ${line.count} x ${line.name}`);
         } catch (err) {
           toast(err.message, 'danger');
