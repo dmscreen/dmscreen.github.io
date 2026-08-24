@@ -1,5 +1,6 @@
 // App shell: registry, router, nav, campaign switcher.
 import { getPrefs, setPref, onCampaignChange, requestPersistence } from './store.js';
+import { autosaveInit } from './autosave.js';
 import { preloadAll } from './srd.js';
 import { el, esc, enhanceNumberInputs, attachHoverSwitch } from './components/ui.js';
 import { icon } from './components/icons.js';
@@ -207,6 +208,9 @@ async function boot() {
 
   // ask the browser not to evict the campaign data under storage pressure
   requestPersistence();
+
+  // reconnect the auto-save file handle, if one was ever picked
+  autosaveInit();
 
   // warm all reference data in the background so later page switches are instant
   setTimeout(preloadAll, 400);

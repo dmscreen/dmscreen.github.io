@@ -94,12 +94,19 @@ function tx(storeName, mode, fn) {
   }));
 }
 
+// Anything that wants to know when a record changes (the file auto-save)
+// subscribes here; store.js stays free of imports from the rest of the app.
+const writeListeners = new Set();
+export function onDbWrite(fn) { writeListeners.add(fn); }
+function notifyWrite(store) { for (const fn of writeListeners) fn(store); }
+
 export const uid = () => crypto.randomUUID();
 
 export async function dbPut(store, obj) {
   if (!obj.id) obj.id = uid();
   obj.updated = Date.now();
   await tx(store, 'readwrite', s => s.put(obj));
+  notifyWrite(store);
   return obj;
 }
 
@@ -107,8 +114,9 @@ export function dbGet(store, id) {
   return tx(store, 'readonly', s => s.get(id));
 }
 
-export function dbDelete(store, id) {
-  return tx(store, 'readwrite', s => s.delete(id));
+export async function dbDelete(store, id) {
+  await tx(store, 'readwrite', s => s.delete(id));
+  notifyWrite(store);
 }
 
 export async function dbAll(store, campaignId) {
