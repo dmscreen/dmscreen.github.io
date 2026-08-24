@@ -127,7 +127,7 @@ function doorward(room, toward) {
 // nodes: the campaign's rooms, in DM reading order. kindId decides built vs
 // cave styling. Returns geometry plus the adjacency the caller should adopt
 // as each node's exits.
-export function generateDungeonMap(nodes, kindId) {
+export function generateDungeonMap(nodes, kindId, opts = {}) {
   const cave = CAVE_KINDS.has(kindId);
   const rooms = [];
 
@@ -254,7 +254,40 @@ export function generateDungeonMap(nodes, kindId) {
   const c0 = center(first);
   const mapC = { x: bounds.maxX / 2, y: bounds.maxY / 2 };
   const eDir = doorward(first, { x: c0.x + (c0.x - mapC.x || -1) * 10, y: c0.y + (c0.y - mapC.y || 0) * 10 });
-  const entrance = { room: first.id, x: eDir.wall[0], y: eDir.wall[1], outside: eDir.out, orient: eDir.orient };
+  // a lower level is entered by its stair, not by a door to the outside
+  const entrance = opts.stairUp
+    ? { room: opts.stairUp, internal: true }
+    : { room: first.id, x: eDir.wall[0], y: eDir.wall[1], outside: eDir.out, orient: eDir.orient };
+
+  // ---- a waterway: a stream or chasm wandering across the site. Persisted
+  // with the map so the drawing and the room text agree for ever. Rooms it
+  // crosses remember it, and wherever it slips under a corridor the map
+  // gets a bridge.
+  let water = null;
+  if (chance(cave ? 0.5 : 0.25)) {
+    const wKind = cave ? (chance(0.7) ? 'stream' : 'chasm') : (chance(0.6) ? 'chasm' : 'stream');
+    const horiz = bounds.maxX >= bounds.maxY;
+    const main = horiz ? bounds.maxX : bounds.maxY;
+    const side = horiz ? bounds.maxY : bounds.maxX;
+    let cross = int(Math.round(side * 0.3), Math.round(side * 0.7));
+    const wCells = [];
+    for (let a = 0; a <= main; a++) {
+      wCells.push(horiz ? [a, cross] : [cross, a]);
+      cross = Math.max(1, Math.min(side - 1, cross + pick([-1, 0, 0, 1])));
+    }
+    const roomsCrossed = [];
+    const bridges = [];
+    let run = null;
+    for (const [x, y] of wCells) {
+      const inRoom = rooms.find(r => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+      if (inRoom && !roomsCrossed.includes(inRoom.id)) roomsCrossed.push(inRoom.id);
+      if (!inRoom && corridorCells.has(x + ',' + y)) { (run = run || []).push([x, y]); }
+      else if (run) { bridges.push(run[Math.floor(run.length / 2)]); run = null; }
+    }
+    if (run) bridges.push(run[Math.floor(run.length / 2)]);
+    // a waterway nobody meets is not worth the ink
+    if (roomsCrossed.length >= 2) water = { kind: wKind, horiz, cells: wCells, rooms: roomsCrossed, bridges };
+  }
 
   // ---- furniture: what the room's purpose looks like on the floor. Placed
   // here rather than at render time so it persists with the map, and kept
@@ -270,38 +303,61 @@ export function generateDungeonMap(nodes, kindId) {
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
     const big = r.w * r.h >= 30;
 
+    // the stair that joins this level to the next, against a quiet wall
+    let stairZone = null;
+    if (opts.stairDown === r.id || opts.stairUp === r.id) {
+      const cand = [];
+      if (r.w >= 4) {
+        cand.push({ x: r.x + 1, y: r.y + 0.6, w: 2, h: 1, orient: 'h' });
+        cand.push({ x: r.x + r.w - 3, y: r.y + r.h - 1.6, w: 2, h: 1, orient: 'h' });
+      }
+      if (r.h >= 4) {
+        cand.push({ x: r.x + 0.6, y: r.y + 1, w: 1, h: 2, orient: 'v' });
+        cand.push({ x: r.x + r.w - 1.6, y: r.y + r.h - 3, w: 1, h: 2, orient: 'v' });
+      }
+      cand.push({ x: r.x + 1, y: r.y + 1, w: 2, h: 1, orient: 'h' });
+      stairZone = cand.find(s2 => !nearDoor(Math.round(s2.x + s2.w / 2), Math.round(s2.y + s2.h / 2))) || cand[0];
+      feats.push({ t: 'stair', x: +stairZone.x.toFixed(1), y: +stairZone.y.toFixed(1), w: stairZone.w, h: stairZone.h, orient: stairZone.orient, dir: opts.stairDown === r.id ? 'down' : 'up' });
+    }
+    const nearStair = (x, y) => !!stairZone && x > stairZone.x - 1.2 && x < stairZone.x + stairZone.w + 1.2 && y > stairZone.y - 1.2 && y < stairZone.y + stairZone.h + 1.2;
+
     if (r.role === 'boss') {
       // a dais against the wall furthest from the first door, and columns
       const dw = Math.max(2, Math.round(r.w * 0.45)), dh = Math.max(1.5, r.h * 0.22);
-      feats.push({ t: 'dais', x: +(cx - dw / 2).toFixed(1), y: +(r.y + 0.8).toFixed(1), w: dw, h: +dh.toFixed(1) });
+      if (!nearStair(cx, r.y + 1.2)) feats.push({ t: 'dais', x: +(cx - dw / 2).toFixed(1), y: +(r.y + 0.8).toFixed(1), w: dw, h: +dh.toFixed(1) });
       const colY = [r.y + r.h * 0.55, r.y + r.h * 0.8];
       for (const yy of colY) for (const xx of [r.x + r.w * 0.25, r.x + r.w * 0.75]) {
-        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     } else if (r.role === 'puzzle' && !cave) {
       // two ranks of pillars, the furniture of every puzzle room ever keyed
       for (const fx of [0.3, 0.7]) for (const fy of [0.3, 0.5, 0.7]) {
         const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
-        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     } else if (r.role === 'treasure') {
       const n2 = int(1, 3);
-      for (let i = 0; i < n2; i++) feats.push({ t: 'chest', x: +(r.x + 1 + Math.random() * (r.w - 2)).toFixed(1), y: +(r.y + 0.9 + Math.random() * 0.8).toFixed(1) });
+      for (let i = 0; i < n2; i++) {
+        const px3 = +(r.x + 1 + Math.random() * (r.w - 2)).toFixed(1), py3 = +(r.y + 0.9 + Math.random() * 0.8).toFixed(1);
+        if (!nearStair(px3, py3)) feats.push({ t: 'chest', x: px3, y: py3 });
+      }
     } else if (r.role === 'lore') {
-      feats.push({ t: 'table', x: +(r.x + 0.8).toFixed(1), y: +(cy - 0.4).toFixed(1), w: +Math.min(r.w - 1.6, 3).toFixed(1), h: 0.8 });
+      if (!nearStair(r.x + 1.5, cy)) feats.push({ t: 'table', x: +(r.x + 0.8).toFixed(1), y: +(cy - 0.4).toFixed(1), w: +Math.min(r.w - 1.6, 3).toFixed(1), h: 0.8 });
     } else if (r.role === 'haven') {
-      feats.push({ t: 'table', x: +(cx - 1).toFixed(1), y: +(cy - 0.4).toFixed(1), w: 2, h: 0.8 });
+      if (!nearStair(cx, cy)) feats.push({ t: 'table', x: +(cx - 1).toFixed(1), y: +(cy - 0.4).toFixed(1), w: 2, h: 0.8 });
     } else if (r.role === 'encounter' && big && !cave && chance(0.6)) {
       for (const fy of [0.33, 0.66]) for (const fx of [0.3, 0.7]) {
         const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
-        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+        if (!nearDoor(Math.round(xx), Math.round(yy)) && !nearStair(xx, yy)) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
       }
     }
     if (cave && big && chance(0.3)) {
-      feats.push({ t: 'pool', x: +(cx + (Math.random() - 0.5) * r.w * 0.3).toFixed(1), y: +(cy + (Math.random() - 0.5) * r.h * 0.3).toFixed(1), r: +(Math.min(r.w, r.h) * 0.28).toFixed(1) });
+      const plx = +(cx + (Math.random() - 0.5) * r.w * 0.3).toFixed(1), ply = +(cy + (Math.random() - 0.5) * r.h * 0.3).toFixed(1);
+      if (!nearStair(plx, ply)) feats.push({ t: 'pool', x: plx, y: ply, r: +(Math.min(r.w, r.h) * 0.28).toFixed(1) });
     }
     if ((cave && chance(0.5)) || (['empty', 'junction'].includes(r.role) && chance(0.3))) {
-      feats.push({ t: 'rubble', x: +(r.x + 0.8 + Math.random() * (r.w - 1.6)).toFixed(1), y: +(r.y + 0.8 + Math.random() * (r.h - 1.6)).toFixed(1) });
+      const rbx = +(r.x + 0.8 + Math.random() * (r.w - 1.6)).toFixed(1), rby = +(r.y + 0.8 + Math.random() * (r.h - 1.6)).toFixed(1);
+      if (!nearStair(rbx, rby)) feats.push({ t: 'rubble', x: rbx, y: rby });
     }
     if (feats.length) r.features = feats;
   }
@@ -310,7 +366,7 @@ export function generateDungeonMap(nodes, kindId) {
   return {
     grid: 5,           // feet per square
     style: cave ? 'cave' : 'built',
-    rooms, corridors, doors, entrance,
+    rooms, corridors, doors, entrance, water,
     bounds: { w: bounds.maxX, h: bounds.maxY },
     adjacency: Object.fromEntries([...adjacency].map(([id, set]) => [id, [...set]])),
     thinJunctions,

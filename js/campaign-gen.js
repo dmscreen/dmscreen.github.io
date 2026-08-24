@@ -230,13 +230,43 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   // Real geometry: the engine places every room on a 5-ft grid and routes
   // corridors between them, and adjacency is read off what it drew, so the
   // map and the room tiles can never disagree about what connects to what.
-  const map = generateDungeonMap(nodes, kind.id);
+  // Big sites go down as well as across: around nine rooms to a level, up
+  // to three levels, each level its own map joined to the next by a stair.
+  // Exits and text treat the stair like any other way on.
+  let map;
+  const nLevels = Math.min(3, Math.ceil(nodes.length / 9));
+  if (nLevels > 1) {
+    const perLevel = Math.ceil(nodes.length / nLevels);
+    const groups = [];
+    for (let i = 0; i < nodes.length; i += perLevel) groups.push(nodes.slice(i, i + perLevel));
+    const stairs = [];
+    const levels = groups.map((g, i) => {
+      const lopts = {};
+      if (i > 0) lopts.stairUp = g[0].id;
+      if (i < groups.length - 1) {
+        lopts.stairDown = g[g.length - 1].id;
+        stairs.push({ down: g[g.length - 1].id, up: groups[i + 1][0].id });
+      }
+      return generateDungeonMap(g, kind.id, lopts);
+    });
+    map = {
+      grid: levels[0].grid, style: levels[0].style, levels, stairs,
+      adjacency: Object.assign({}, ...levels.map(l => l.adjacency)),
+      thinJunctions: levels.flatMap(l => l.thinJunctions),
+    };
+    for (const st of stairs) {
+      map.adjacency[st.down] = [...(map.adjacency[st.down] || []), st.up];
+      map.adjacency[st.up] = [st.down, ...(map.adjacency[st.up] || [])];
+    }
+  } else {
+    map = generateDungeonMap(nodes, kind.id);
+  }
 
   // A junction the geometry could not give three ways out is not a junction;
   // demote it to an empty room rather than let the read-aloud text lie.
   for (const id of map.thinJunctions) {
     const n = nodes.find(x => x.id === id);
-    const mr = map.rooms.find(r => r.id === id);
+    const mr = (map.levels ? map.levels.flatMap(l => l.rooms) : map.rooms).find(r => r.id === id);
     if (n) { n.role = 'empty'; n.roleLabel = C.nodeRoles.find(r => r.id === 'empty').label; }
     if (mr) mr.role = 'empty';
   }
@@ -254,6 +284,27 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
       .replaceAll('{material}', material)
       .replaceAll('{motif}', motif)
       .replaceAll('{passages}', COUNT_WORDS[node.exits.length] || 'Several');
+  }
+
+  // The waterway, if the map grew one, appears in the text of every room it
+  // crosses, so the drawing and the read-aloud agree.
+  for (const lvl of (map.levels || [map])) {
+    if (!lvl.water) continue;
+    const line = lvl.water.kind === 'stream'
+      ? 'A cold stream cuts across the floor here.'
+      : 'A chasm splits the floor here, spanned where the old builders bothered.';
+    for (const id of lvl.water.rooms) {
+      const n = nodes.find(x => x.id === id);
+      if (n) n.description += ' ' + line;
+    }
+  }
+
+  // Each stair between levels reads as what it is at both ends.
+  for (const st of (map.stairs || [])) {
+    const dn = nodes.find(x => x.id === st.down);
+    const up2 = nodes.find(x => x.id === st.up);
+    if (dn) dn.description += ' A stair descends to the level below.';
+    if (up2) up2.description += ' A stair climbs back toward the level above.';
   }
 
   // Beats. Encounter density is deliberately below one per room; the empty and
