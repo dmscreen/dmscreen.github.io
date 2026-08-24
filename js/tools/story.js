@@ -885,6 +885,7 @@ export default {
         svg.addEventListener('pointerdown', (ev) => {
           if (cur.w >= home.w - 0.5 || ev.button !== 0) return;
           drag = { x: ev.clientX, y: ev.clientY, ox: cur.x, oy: cur.y, moved: false };
+          wrap.classList.add('is-dragging');
           svg.setPointerCapture(ev.pointerId);
         });
         svg.addEventListener('pointermove', (ev) => {
@@ -897,6 +898,7 @@ export default {
           set({ ...cur, x: drag.ox - dx, y: drag.oy - dy });
         });
         const endDrag = (ev) => {
+          wrap.classList.remove('is-dragging');
           if (!drag) return;
           // a drag should not also count as clicking the room underneath
           if (drag.moved) { svg.__suppressClick = true; setTimeout(() => { svg.__suppressClick = false; }, 0); }
