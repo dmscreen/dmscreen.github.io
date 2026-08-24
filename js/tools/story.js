@@ -472,6 +472,33 @@ export default {
         </g>`;
       }).join('');
 
+      // the waterway: visible only where it crosses open floor (the room
+      // clip does that), with plank bridges where a corridor passes over it
+      let waterSvg = '', bridgeSvg = '';
+      if (m.water) {
+        const wpts = m.water.cells.map(([x, y]) =>
+          `${((x + 0.5 + (jig(x, y, 21) - 0.5) * 0.6) * C).toFixed(1)},${((y + 0.5 + (jig(y, x, 23) - 0.5) * 0.6) * C).toFixed(1)}`).join(' ');
+        const inner = m.water.kind === 'stream' ? 'var(--map-water)' : 'var(--map-page)';
+        waterSvg = `<g clip-path="url(#dmrooms)" class="map-waterway">
+          <polyline points="${wpts}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 1.0).toFixed(1)}" stroke-linejoin="round"/>
+          <polyline points="${wpts}" fill="none" stroke="${inner}" stroke-width="${(C * 0.72).toFixed(1)}" stroke-linejoin="round"/>
+        </g>`;
+        // on the player's copy, a bridge over a hidden corridor would give
+        // the corridor away, so only bridge what is drawn
+        const drawn = player ? new Set(corridors.flatMap(co => co.cells.map(c2 => c2.join(',')))) : null;
+        bridgeSvg = (m.water.bridges || []).filter(b => !drawn || drawn.has(b.join(','))).map(([bx2, by2]) => {
+          let planks = '';
+          for (let i = -1; i <= 1; i++) {
+            const ox = (bx2 + 0.5) * C + (m.water.horiz ? 0 : i * C * 0.3);
+            const oy = (by2 + 0.5) * C + (m.water.horiz ? i * C * 0.3 : 0);
+            planks += m.water.horiz
+              ? `<line x1="${(ox - C * 0.55).toFixed(1)}" y1="${oy.toFixed(1)}" x2="${(ox + C * 0.55).toFixed(1)}" y2="${oy.toFixed(1)}"/>`
+              : `<line x1="${ox.toFixed(1)}" y1="${(oy - C * 0.55).toFixed(1)}" x2="${ox.toFixed(1)}" y2="${(oy + C * 0.55).toFixed(1)}"/>`;
+          }
+          return `<g class="map-bridge">${planks}</g>`;
+        }).join('');
+      }
+
       // grid inside rooms only
       let grid = '';
       for (let gx = 0; gx <= m.bounds.w; gx++) grid += `<line x1="${gx * C}" y1="0" x2="${gx * C}" y2="${H}"/>`;
@@ -525,7 +552,7 @@ export default {
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
         <g class="map-crag" fill="url(#dmhatch)">${crag}</g>
         ${corridorInk}${corridorFloor}
-        ${roomsSvg}
+        ${roomsSvg}${waterSvg}
         <g clip-path="url(#dmrooms)" class="map-grid">${grid}</g>
         <g class="map-labels-over">${player ? '' : rooms.map(r => {
           const tint = ROLE_TINT[r.role];
@@ -534,10 +561,10 @@ export default {
           return `<circle cx="${lx}" cy="${ly}" r="${rr}" class="map-badge" ${tint ? `style="stroke:${tint}"` : ''}/>
             <text x="${lx}" y="${(ly + 3).toFixed(1)}" class="map-label">${esc(r.id)}</text>`;
         }).join('')}</g>
-        ${doorsSvg}
+        ${doorsSvg}${bridgeSvg}
         ${entranceSvg}
       </svg>
-      ${player ? '' : `<p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`}`;
+      ${player ? '' : `<p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${m.water ? (m.water.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}</p>`}`;
     };
 
     // The player's copy as a standalone file: parchment ink whatever the app
@@ -556,7 +583,8 @@ export default {
       .map-furn-line { stroke: var(--map-ink); stroke-width: 1.2; }
       .map-rubble { fill: var(--map-ink); opacity: 0.75; }
       .map-stipple { fill: var(--map-ink); opacity: 0.35; }
-      .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }`;
+      .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }
+      .map-bridge line { stroke: var(--map-ink); stroke-width: 1.7; stroke-linecap: round; }`;
     const downloadPlayerMap = (elt) => {
       const src = dungeonMapSVG(elt, true);
       const svg = src.slice(src.indexOf('<svg'), src.indexOf('</svg>') + 6)
