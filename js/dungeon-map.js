@@ -256,6 +256,56 @@ export function generateDungeonMap(nodes, kindId) {
   const eDir = doorward(first, { x: c0.x + (c0.x - mapC.x || -1) * 10, y: c0.y + (c0.y - mapC.y || 0) * 10 });
   const entrance = { room: first.id, x: eDir.wall[0], y: eDir.wall[1], outside: eDir.out, orient: eDir.orient };
 
+  // ---- furniture: what the room's purpose looks like on the floor. Placed
+  // here rather than at render time so it persists with the map, and kept
+  // away from doorways so nothing blocks an opening.
+  const doorCellsByRoom = new Map();
+  for (const d of doors) {
+    if (!doorCellsByRoom.has(d.between[0])) doorCellsByRoom.set(d.between[0], []);
+    doorCellsByRoom.get(d.between[0]).push([d.x, d.y]);
+  }
+  for (const r of rooms) {
+    const feats = [];
+    const nearDoor = (x, y) => (doorCellsByRoom.get(r.id) || []).some(([dx2, dy2]) => Math.abs(dx2 - x) + Math.abs(dy2 - y) < 2);
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    const big = r.w * r.h >= 30;
+
+    if (r.role === 'boss') {
+      // a dais against the wall furthest from the first door, and columns
+      const dw = Math.max(2, Math.round(r.w * 0.45)), dh = Math.max(1.5, r.h * 0.22);
+      feats.push({ t: 'dais', x: +(cx - dw / 2).toFixed(1), y: +(r.y + 0.8).toFixed(1), w: dw, h: +dh.toFixed(1) });
+      const colY = [r.y + r.h * 0.55, r.y + r.h * 0.8];
+      for (const yy of colY) for (const xx of [r.x + r.w * 0.25, r.x + r.w * 0.75]) {
+        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+      }
+    } else if (r.role === 'puzzle' && !cave) {
+      // two ranks of pillars, the furniture of every puzzle room ever keyed
+      for (const fx of [0.3, 0.7]) for (const fy of [0.3, 0.5, 0.7]) {
+        const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
+        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+      }
+    } else if (r.role === 'treasure') {
+      const n2 = int(1, 3);
+      for (let i = 0; i < n2; i++) feats.push({ t: 'chest', x: +(r.x + 1 + Math.random() * (r.w - 2)).toFixed(1), y: +(r.y + 0.9 + Math.random() * 0.8).toFixed(1) });
+    } else if (r.role === 'lore') {
+      feats.push({ t: 'table', x: +(r.x + 0.8).toFixed(1), y: +(cy - 0.4).toFixed(1), w: +Math.min(r.w - 1.6, 3).toFixed(1), h: 0.8 });
+    } else if (r.role === 'haven') {
+      feats.push({ t: 'table', x: +(cx - 1).toFixed(1), y: +(cy - 0.4).toFixed(1), w: 2, h: 0.8 });
+    } else if (r.role === 'encounter' && big && !cave && chance(0.6)) {
+      for (const fy of [0.33, 0.66]) for (const fx of [0.3, 0.7]) {
+        const xx = r.x + r.w * fx, yy = r.y + r.h * fy;
+        if (!nearDoor(Math.round(xx), Math.round(yy))) feats.push({ t: 'column', x: +xx.toFixed(1), y: +yy.toFixed(1) });
+      }
+    }
+    if (cave && big && chance(0.3)) {
+      feats.push({ t: 'pool', x: +(cx + (Math.random() - 0.5) * r.w * 0.3).toFixed(1), y: +(cy + (Math.random() - 0.5) * r.h * 0.3).toFixed(1), r: +(Math.min(r.w, r.h) * 0.28).toFixed(1) });
+    }
+    if ((cave && chance(0.5)) || (['empty', 'junction'].includes(r.role) && chance(0.3))) {
+      feats.push({ t: 'rubble', x: +(r.x + 0.8 + Math.random() * (r.w - 1.6)).toFixed(1), y: +(r.y + 0.8 + Math.random() * (r.h - 1.6)).toFixed(1) });
+    }
+    if (feats.length) r.features = feats;
+  }
+
   for (const r of rooms) delete r.anchor;
   return {
     grid: 5,           // feet per square

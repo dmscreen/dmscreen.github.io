@@ -718,3 +718,14 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .dungeon-map .map-entrance path { stroke: var(--map-ink); stroke-width: 2; fill: none; stroke-linecap: round; }
 /* caves read softer: no hard grid, rounder ink */
 .dungeon-map.is-cave .map-grid line { stroke-width: 0.6; }
+
+/* Dungeon map furniture and details. */
+.dungeon-map .map-column { fill: var(--map-ink); }
+.dungeon-map .map-furn { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }
+.dungeon-map .map-furn-line { stroke: var(--map-ink); stroke-width: 1.2; }
+.dungeon-map .map-rubble { fill: var(--map-ink); opacity: 0.75; }
+.dungeon-map .map-stipple { fill: var(--map-ink); opacity: 0.35; }
+.dungeon-map .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }
+.dungeon-map .map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; pointer-events: none; }
+.dungeon-map { --map-water: #3d5661; }
+[data-theme='light'] .dungeon-map { --map-water: #b9cdd2; }
