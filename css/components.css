@@ -660,3 +660,61 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   from { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
   to   { border-color: var(--border); background: var(--bg-panel-75); }
 }
+
+/* ---------- Dungeon map (geometry renderer) ---------- */
+/* One set of geometry, two inks. The app defaults to dark, so dark is the
+   base and light overrides to match the hand-drawn reference style:
+   black ink and dense hatch on a pale page. */
+.dungeon-map {
+  --map-page: #221c15;
+  --map-floor: #39312a;
+  --map-ink: #e6d9c0;
+  --map-hatch: #8d7c60;
+  --map-grid: rgba(230, 217, 192, 0.10);
+  width: 100%;
+  max-height: 480px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 8px;
+}
+[data-theme='light'] .dungeon-map {
+  --map-page: #e4dccb;
+  --map-floor: #f7f2e7;
+  --map-ink: #191309;
+  --map-hatch: #2b2214;
+  --map-grid: rgba(25, 19, 9, 0.13);
+}
+.dungeon-map .map-crag path { stroke: none; }
+.dungeon-map .map-floor {
+  fill: var(--map-floor);
+  stroke: var(--map-ink);
+  stroke-width: 2.6;
+  cursor: pointer;
+}
+.dungeon-map .map-room:hover .map-floor { stroke: var(--accent); stroke-width: 3.2; }
+.dungeon-map .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
+.dungeon-map .map-label {
+  fill: var(--map-ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--map-floor);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+.dungeon-map .map-eraser { fill: var(--map-floor); }
+.dungeon-map .map-door { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.6; }
+.dungeon-map .map-secret {
+  fill: var(--map-ink);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.dungeon-map .map-entrance line,
+.dungeon-map .map-entrance path { stroke: var(--map-ink); stroke-width: 2; fill: none; stroke-linecap: round; }
+/* caves read softer: no hard grid, rounder ink */
+.dungeon-map.is-cave .map-grid line { stroke-width: 0.6; }

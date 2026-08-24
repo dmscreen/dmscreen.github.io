@@ -277,10 +277,144 @@ export default {
     const dmBox = (html) =>
       `<div class="dm-note"><span class="facing dm">DM only</span>${html}</div>`;
 
-    // A rough plan of the site: nodes laid out on a staggered grid with the
-    // exit connections drawn between them. Not a battle map, just enough that
-    // the DM does not have to sketch the graph from an exits list.
-    const mapSVG = (elt) => {
+    // The real dungeon map: rooms and corridors as geometry on a 5-ft grid,
+    // ink-and-hatch in the style of hand-drawn dungeon maps, themable for
+    // light and dark. Rooms are clickable and jump to their key.
+    const dungeonMapSVG = (elt) => {
+      const m = elt.map;
+      if (!m || !m.rooms?.length) return legacyMapSVG(elt);
+      const C = 12; // px per 5-ft square
+      const W = m.bounds.w * C, H = m.bounds.h * C;
+      const cave = m.style === 'cave';
+      const byId = new Map(m.rooms.map(r => [r.id, r]));
+      const roleOf = new Map((elt.nodes || []).map(n => [n.id, n]));
+
+      // stable pseudo-random from coordinates, so redraws do not shimmer
+      const jig = (x, y, k = 0) => {
+        const t = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453;
+        return t - Math.floor(t);
+      };
+
+      const roomPath = (r) => {
+        if (r.shape === 'cave' && r.poly) {
+          return 'M' + r.poly.map(([px, py]) => `${(px * C).toFixed(1)},${(py * C).toFixed(1)}`).join('L') + 'Z';
+        }
+        const x = r.x * C, y = r.y * C, w = r.w * C, h = r.h * C;
+        if (r.shape === 'round') {
+          return `M${x + w / 2},${y} a${w / 2},${h / 2} 0 1,0 0.01,0 Z`;
+        }
+        if (r.shape === 'octagon') {
+          const c1 = Math.min(w, h) * 0.28;
+          return `M${x + c1},${y} H${x + w - c1} L${x + w},${y + c1} V${y + h - c1} L${x + w - c1},${y + h} H${x + c1} L${x},${y + h - c1} V${y + c1} Z`;
+        }
+        return `M${x},${y} h${w} v${h} h${-w} Z`;
+      };
+
+      // the craggy rock band: each space, outset and jittered, filled with
+      // hatch. Cheap, stable, and merges where spaces sit close together.
+      const cragFor = (r) => {
+        const cx = (r.x + r.w / 2) * C, cy = (r.y + r.h / 2) * C;
+        const rx = (r.w / 2 + 1.1) * C, ry = (r.h / 2 + 1.1) * C;
+        const steps = Math.max(10, Math.round((r.w + r.h) * 0.8));
+        const pts = [];
+        for (let i = 0; i < steps; i++) {
+          const a = (i / steps) * Math.PI * 2;
+          const j = 0.86 + jig(r.x + i, r.y, 3) * 0.5;
+          pts.push(`${(cx + Math.cos(a) * rx * j).toFixed(1)},${(cy + Math.sin(a) * ry * j).toFixed(1)}`);
+        }
+        return `<path d="M${pts.join('L')}Z"/>`;
+      };
+
+      const corridorPts = (cells) => {
+        // simplify the cell path to bend points, then optionally wobble
+        const pts = [cells[0]];
+        for (let i = 1; i < cells.length - 1; i++) {
+          const [ax, ay] = cells[i - 1], [bx, by] = cells[i], [cx2, cy2] = cells[i + 1];
+          if ((bx - ax) !== (cx2 - bx) || (by - ay) !== (cy2 - by)) pts.push(cells[i]);
+        }
+        if (cells.length > 1) pts.push(cells[cells.length - 1]);
+        return pts.map(([x, y]) => {
+          const wob = cave ? (jig(x, y) - 0.5) * 0.5 : 0;
+          return `${((x + 0.5 + wob) * C).toFixed(1)},${((y + 0.5 + (cave ? (jig(y, x, 7) - 0.5) * 0.5 : 0)) * C).toFixed(1)}`;
+        }).join(' ');
+      };
+
+      const crag = m.rooms.map(cragFor).join('') +
+        m.corridors.map(co => `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="url(#dmhatch)" stroke-width="${C * 2.7}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+
+      const corridorInk = m.corridors.map(co =>
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      const corridorFloor = m.corridors.map(co =>
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+
+      const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
+      const roomsSvg = m.rooms.map(r => {
+        const node = roleOf.get(r.id) || {};
+        return `<g class="map-room" data-goto="${esc(r.id)}">
+          <title>${esc(r.id)}: ${esc(node.roleLabel || r.role)}</title>
+          <path class="map-floor" d="${roomPath(r)}"/>
+        </g>`;
+      }).join('');
+
+      // grid inside rooms only
+      let grid = '';
+      for (let gx = 0; gx <= m.bounds.w; gx++) grid += `<line x1="${gx * C}" y1="0" x2="${gx * C}" y2="${H}"/>`;
+      for (let gy = 0; gy <= m.bounds.h; gy++) grid += `<line x1="0" y1="${gy * C}" x2="${W}" y2="${gy * C}"/>`;
+      const clip = m.rooms.map(r => `<path d="${roomPath(r)}"/>`).join('');
+
+      // doors: erase the wall stroke across the opening, then the glyph
+      const doorsSvg = m.doors.map(d => {
+        const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
+        const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
+        const along = d.orient === 'h' ? 'v' : 'h';
+        const eraser = along === 'h'
+          ? `<rect x="${bx - C * 0.55}" y="${by - C * 0.34}" width="${C * 1.1}" height="${C * 0.68}" class="map-eraser"/>`
+          : `<rect x="${bx - C * 0.34}" y="${by - C * 0.55}" width="${C * 0.68}" height="${C * 1.1}" class="map-eraser"/>`;
+        if (d.type === 'arch') return eraser;
+        const glyph = along === 'h'
+          ? `<rect x="${bx - C * 0.42}" y="${by - C * 0.18}" width="${C * 0.84}" height="${C * 0.36}" class="map-door"/>`
+          : `<rect x="${bx - C * 0.18}" y="${by - C * 0.42}" width="${C * 0.36}" height="${C * 0.84}" class="map-door"/>`;
+        const secret = d.type === 'secret' ? `<text x="${bx}" y="${by + 3}" class="map-secret">S</text>` : '';
+        return eraser + glyph + secret;
+      }).join('');
+
+      // the way in: an opening plus an arrow pointing into the first room
+      const e = m.entrance;
+      const ex = ((e.x + e.outside[0]) / 2 + 0.5) * C, ey = ((e.y + e.outside[1]) / 2 + 0.5) * C;
+      const dx = (e.x - e.outside[0]) * C * 0.9, dy = (e.y - e.outside[1]) * C * 0.9;
+      const entranceSvg = `
+        ${e.orient === 'h'
+          ? `<rect x="${ex - C * 0.5}" y="${ey - C * 0.4}" width="${C}" height="${C * 0.8}" class="map-eraser"/>`
+          : `<rect x="${ex - C * 0.4}" y="${ey - C * 0.5}" width="${C * 0.8}" height="${C}" class="map-eraser"/>`}
+        <g class="map-entrance"><line x1="${ex - dx}" y1="${ey - dy}" x2="${ex + dx * 0.4}" y2="${ey + dy * 0.4}"/>
+        <path d="M${ex + dx * 0.4},${ey + dy * 0.4} l${-dx * 0.35 - dy * 0.22},${-dy * 0.35 + dx * 0.22} m${dx * 0.35 + dy * 0.22},${dy * 0.35 - dx * 0.22} l${-dx * 0.35 + dy * 0.22},${-dy * 0.35 - dx * 0.22}"/></g>`;
+
+      return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
+        <defs>
+          <pattern id="dmhatch" width="7" height="7" patternTransform="rotate(-42)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="1" x2="7" y2="1" stroke="var(--map-hatch)" stroke-width="1.1"/>
+            <line x1="0" y1="4.6" x2="4.4" y2="4.6" stroke="var(--map-hatch)" stroke-width="0.9"/>
+          </pattern>
+          <clipPath id="dmrooms">${clip}</clipPath>
+        </defs>
+        <rect width="${W}" height="${H}" fill="var(--map-page)"/>
+        <g class="map-crag" fill="url(#dmhatch)">${crag}</g>
+        ${corridorInk}${corridorFloor}
+        ${roomsSvg}
+        <g clip-path="url(#dmrooms)" class="map-grid">${grid}</g>
+        <g class="map-labels-over">${m.rooms.map(r => {
+          const tint = ROLE_TINT[r.role];
+          return `<text x="${(r.x + r.w / 2) * C}" y="${((r.y + r.h / 2) * C + 3.5).toFixed(1)}" class="map-label" ${tint ? `style="fill:${tint}"` : ''}>${esc(r.id)}</text>`;
+        }).join('')}</g>
+        ${doorsSvg}
+        ${entranceSvg}
+      </svg>
+      <p class="small faint">1 square = ${m.grid} ft. The arrow is the way in; S is a secret door. Click a room to jump to its key. Labels: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.</p>`;
+    };
+
+    // The old dot-graph plan, kept for campaigns saved before rooms had
+    // real geometry.
+    const legacyMapSVG = (elt) => {
       const ns = elt.nodes || [];
       if (ns.length < 3) return '';
       const cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(ns.length * 1.6))));
@@ -380,7 +514,7 @@ export default {
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
-      if (elt.type === 'dungeon') return `${head}${mapSVG(elt)}${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
+      if (elt.type === 'dungeon') return `${head}${dungeonMapSVG(elt)}${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
         <div class="grid-2 mt">
