@@ -729,6 +729,24 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .dungeon-map .map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; pointer-events: none; }
 .dungeon-map .map-bridge line { stroke: var(--map-ink); stroke-width: 1.7; stroke-linecap: round; }
 .dungeon-map .map-stair line { stroke: var(--map-ink); stroke-width: 1.5; }
+
+/* the drawn level and its camera controls */
+.map-wrap { position: relative; }
+.map-wrap .dungeon-map { display: block; touch-action: pan-y; }
+.map-wrap.is-zoomed .dungeon-map { cursor: grab; }
+.map-wrap.is-zoomed .dungeon-map:active { cursor: grabbing; }
+.map-zoom {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  opacity: 0.55; transition: opacity 0.15s;
+}
+.map-wrap:hover .map-zoom, .map-zoom:focus-within { opacity: 1; }
+.map-zoom .btn {
+  min-width: 30px; padding: 2px 7px; line-height: 1.5;
+  background: var(--map-page); border-color: var(--map-hatch); color: var(--map-ink);
+}
+.map-zoom .btn:hover { border-color: var(--accent); color: var(--accent); }
+.exit-link.is-outside { border-style: dashed; }
 .map-level-head { margin-bottom: 2px; }
 .dungeon-map .map-waterway { pointer-events: none; }
 .dungeon-map { --map-water: #3d5661; }

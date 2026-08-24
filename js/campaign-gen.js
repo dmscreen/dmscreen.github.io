@@ -275,6 +275,10 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   for (const n of nodes) {
     n.exits = (map.adjacency[n.id] || []).slice().sort((a, b) => order.get(a) - order.get(b));
   }
+  // The way in is a way out as well. Listing it keeps the first room honest:
+  // a party can always turn round and leave, and the room's passage count
+  // has to include the doorway they came through.
+  if (nodes.length) nodes[0].exits = ['outside', ...nodes[0].exits];
 
   // Now the descriptions, which can finally tell the truth about the exits.
   const COUNT_WORDS = ['No', 'A single', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
@@ -340,6 +344,12 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     title,
     subtitle: kind.label,
     summary: `${kind.label}, ${nodes.length} keyed areas. ${cap1(fill(pick(kind.origins), ctx.slots))}.`,
+    // read-aloud for the approach, before the party is inside anything
+    approach: kind.approaches?.length
+      ? fill(pick(kind.approaches), ctx.slots)
+        .replaceAll('{material}', material)
+        .replaceAll('{motif}', motif)
+      : null,
     hazard: chance(0.5) ? pick(C.hazards) : null,
     alerts: kind.alerts ? 'Once the site is alerted, surviving occupants regroup at the deepest defensible room and post watches on the approach.' : null,
     wandering,
