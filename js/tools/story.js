@@ -281,13 +281,18 @@ export default {
     // ink-and-hatch in the style of hand-drawn dungeon maps, themable for
     // light and dark. Rooms are clickable and jump to their key.
     const dungeonMapSVG = (elt, player = false) => {
-      const m = elt.map;
-      if (!m || !m.rooms?.length) return legacyMapSVG(elt);
+      const top = elt.map;
+      if (!top || !(top.rooms?.length || top.levels?.length)) return legacyMapSVG(elt);
+      const maps = top.levels || [top];
+      const multi = maps.length > 1;
       const C = 12; // px per 5-ft square
+      const roleOf = new Map((elt.nodes || []).map(n => [n.id, n]));
+
+      // Each level draws as its own map; def ids carry the level index so
+      // two levels can share one page without their defs colliding.
+      const renderLevel = (m, li) => {
       const W = m.bounds.w * C, H = m.bounds.h * C;
       const cave = m.style === 'cave';
-      const byId = new Map(m.rooms.map(r => [r.id, r]));
-      const roleOf = new Map((elt.nodes || []).map(n => [n.id, n]));
 
       // For the player's copy, anything sealed behind a secret door stays off
       // the page: walk the map from the entrance refusing secret edges, and
@@ -426,6 +431,23 @@ export default {
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
       const featSvg = (r) => (r.features || []).map(f => {
         if (player && f.t === 'chest') return '';
+        if (f.t === 'stair') {
+          // a boxed stair well: treads that shorten toward the deep end
+          let treads = '';
+          for (let i = 0; i < 5; i++) {
+            const t3 = (i + 0.5) / 5;
+            const deep = f.dir === 'down' ? t3 : 1 - t3;
+            const half = (f.orient === 'h' ? f.h : f.w) * C * 0.5 * (1 - deep * 0.45);
+            if (f.orient === 'h') {
+              const tx = (f.x + f.w * t3) * C, tyc = (f.y + f.h / 2) * C;
+              treads += `<line x1="${tx.toFixed(1)}" y1="${(tyc - half).toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(tyc + half).toFixed(1)}"/>`;
+            } else {
+              const ty = (f.y + f.h * t3) * C, txc = (f.x + f.w / 2) * C;
+              treads += `<line x1="${(txc - half).toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(txc + half).toFixed(1)}" y2="${ty.toFixed(1)}"/>`;
+            }
+          }
+          return `<rect x="${(f.x * C).toFixed(1)}" y="${(f.y * C).toFixed(1)}" width="${(f.w * C).toFixed(1)}" height="${(f.h * C).toFixed(1)}" class="map-furn"/><g class="map-stair">${treads}</g>`;
+        }
         if (f.t === 'column') return `<circle cx="${(f.x * C).toFixed(1)}" cy="${(f.y * C).toFixed(1)}" r="${(C * 0.3).toFixed(1)}" class="map-column"/>`;
         if (f.t === 'dais') return `<rect x="${(f.x * C).toFixed(1)}" y="${(f.y * C).toFixed(1)}" width="${(f.w * C).toFixed(1)}" height="${(f.h * C).toFixed(1)}" class="map-furn"/>
           <rect x="${((f.x + 0.35) * C).toFixed(1)}" y="${((f.y + 0.3) * C).toFixed(1)}" width="${((f.w - 0.7) * C).toFixed(1)}" height="${((f.h - 0.55) * C).toFixed(1)}" class="map-furn"/>`;
@@ -479,7 +501,7 @@ export default {
         const wpts = m.water.cells.map(([x, y]) =>
           `${((x + 0.5 + (jig(x, y, 21) - 0.5) * 0.6) * C).toFixed(1)},${((y + 0.5 + (jig(y, x, 23) - 0.5) * 0.6) * C).toFixed(1)}`).join(' ');
         const inner = m.water.kind === 'stream' ? 'var(--map-water)' : 'var(--map-page)';
-        waterSvg = `<g clip-path="url(#dmrooms)" class="map-waterway">
+        waterSvg = `<g clip-path="url(#dmrooms${li})" class="map-waterway">
           <polyline points="${wpts}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 1.0).toFixed(1)}" stroke-linejoin="round"/>
           <polyline points="${wpts}" fill="none" stroke="${inner}" stroke-width="${(C * 0.72).toFixed(1)}" stroke-linejoin="round"/>
         </g>`;
@@ -523,6 +545,8 @@ export default {
 
       // the way in: an opening plus an arrow pointing into the first room
       const e = m.entrance;
+      let entranceSvg = '';
+      if (e && !e.internal) {
       const ex = ((e.x + e.outside[0]) / 2 + 0.5) * C, ey = ((e.y + e.outside[1]) / 2 + 0.5) * C;
       const dx = (e.x - e.outside[0]) * C * 0.9, dy = (e.y - e.outside[1]) * C * 0.9;
       // stairs descending through the opening: rungs that shorten with depth
@@ -535,25 +559,26 @@ export default {
         const rx0 = ex + ux * t, ry0 = ey + uy * t;
         rungs += `<line x1="${(rx0 - px2 * half).toFixed(1)}" y1="${(ry0 - py2 * half).toFixed(1)}" x2="${(rx0 + px2 * half).toFixed(1)}" y2="${(ry0 + py2 * half).toFixed(1)}"/>`;
       }
-      const entranceSvg = `
+      entranceSvg = `
         ${e.orient === 'h'
           ? `<rect x="${ex - C * 0.5}" y="${ey - C * 0.4}" width="${C}" height="${C * 0.8}" class="map-eraser"/>`
           : `<rect x="${ex - C * 0.4}" y="${ey - C * 0.5}" width="${C * 0.8}" height="${C}" class="map-eraser"/>`}
         <g class="map-entrance">${rungs}</g>`;
+      }
 
       return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
         <defs>
-          <pattern id="dmhatch" width="7" height="7" patternTransform="rotate(-42)" patternUnits="userSpaceOnUse">
+          <pattern id="dmhatch${li}" width="7" height="7" patternTransform="rotate(-42)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="1" x2="7" y2="1" stroke="var(--map-hatch)" stroke-width="1.1"/>
             <line x1="0" y1="4.6" x2="4.4" y2="4.6" stroke="var(--map-hatch)" stroke-width="0.9"/>
           </pattern>
-          <clipPath id="dmrooms">${clip}</clipPath>
+          <clipPath id="dmrooms${li}">${clip}</clipPath>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
-        <g class="map-crag" fill="url(#dmhatch)">${crag}</g>
+        <g class="map-crag" fill="url(#dmhatch${li})">${crag}</g>
         ${corridorInk}${corridorFloor}
         ${roomsSvg}${waterSvg}
-        <g clip-path="url(#dmrooms)" class="map-grid">${grid}</g>
+        <g clip-path="url(#dmrooms${li})" class="map-grid">${grid}</g>
         <g class="map-labels-over">${player ? '' : rooms.map(r => {
           const tint = ROLE_TINT[r.role];
           const lx = (r.x + r.w / 2) * C, ly = (r.y + r.h / 2) * C;
@@ -563,8 +588,13 @@ export default {
         }).join('')}</g>
         ${doorsSvg}${bridgeSvg}
         ${entranceSvg}
-      </svg>
-      ${player ? '' : `<p class="small faint">1 square = ${m.grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${m.water ? (m.water.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}</p>`}`;
+      </svg>`;
+      };
+
+      const lvlName = (li) => maps.length === 2 ? (li === 0 ? 'Upper level' : 'Lower level') : `Level ${li + 1}`;
+      const wtr = maps.find(mm => mm.water)?.water;
+      const legend = player ? '' : `<p class="small faint">1 square = ${maps[0].grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${wtr ? (wtr.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}${multi ? ' The boxed stair on each level is the same stair: down on one, up on the other.' : ''}</p>`;
+      return maps.map((mm, li) => (multi && !player ? `<p class="small map-level-head"><b>${lvlName(li)}</b></p>` : '') + renderLevel(mm, li)).join('') + legend;
     };
 
     // The player's copy as a standalone file: parchment ink whatever the app
@@ -584,12 +614,30 @@ export default {
       .map-rubble { fill: var(--map-ink); opacity: 0.75; }
       .map-stipple { fill: var(--map-ink); opacity: 0.35; }
       .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }
-      .map-bridge line { stroke: var(--map-ink); stroke-width: 1.7; stroke-linecap: round; }`;
+      .map-bridge line { stroke: var(--map-ink); stroke-width: 1.7; stroke-linecap: round; }
+      .map-stair line { stroke: var(--map-ink); stroke-width: 1.5; }`;
     const downloadPlayerMap = (elt) => {
       const src = dungeonMapSVG(elt, true);
-      const svg = src.slice(src.indexOf('<svg'), src.indexOf('</svg>') + 6)
-        .replace('<svg class="dungeon-map', '<svg xmlns="http://www.w3.org/2000/svg" style="--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2" class="dungeon-map')
-        .replace('<defs>', `<style>${PLAYER_MAP_CSS}</style><defs>`);
+      const parts = src.match(/<svg[\s\S]*?<\/svg>/g) || [];
+      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2';
+      let svg;
+      if (parts.length === 1) {
+        svg = parts[0]
+          .replace('<svg class="dungeon-map', `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map`)
+          .replace('<defs>', `<style>${PLAYER_MAP_CSS}</style><defs>`);
+      } else {
+        // levels stack into one sheet, each under its name
+        const dims = parts.map(p2 => { const mm2 = p2.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/); return { w: +mm2[1], h: +mm2[2] }; });
+        const W2 = Math.max(...dims.map(d2 => d2.w));
+        let y2 = 8;
+        const inner = parts.map((p2, i2) => {
+          const label = `<text x="${W2 / 2}" y="${y2 + 14}" text-anchor="middle" style="font:600 13px Georgia, serif; fill: var(--map-ink)">${parts.length === 2 ? (i2 === 0 ? 'Upper level' : 'Lower level') : `Level ${i2 + 1}`}</text>`;
+          const placed = p2.replace('<svg ', `<svg x="${((W2 - dims[i2].w) / 2).toFixed(1)}" y="${y2 + 22}" width="${dims[i2].w}" height="${dims[i2].h}" `);
+          y2 += dims[i2].h + 46;
+          return label + placed;
+        }).join('');
+        svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map" viewBox="0 0 ${W2} ${y2}"><style>${PLAYER_MAP_CSS}</style><rect width="${W2}" height="${y2}" fill="var(--map-page)"/>${inner}</svg>`;
+      }
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -702,7 +750,7 @@ export default {
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
       if (elt.type === 'dungeon') return `${head}${dungeonMapSVG(elt)}
-        ${elt.map?.rooms?.length ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
+        ${(elt.map?.rooms?.length || elt.map?.levels?.length) ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
