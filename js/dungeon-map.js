@@ -96,13 +96,6 @@ function repairPoly(poly, r, crit) {
   return poly;
 }
 
-// A carved outline is free to wander anywhere except across its own
-// doorways. Wherever one is cut, the outline is laid flat along the room's
-// rectangular wall for the width of that one square, so the opening is cut
-// out of a straight piece of wall sitting exactly on the grid line the
-// hallway arrives at. Without this a wobbly edge can sit half a square
-// inside the doorway: the wall never opens, the hallway dead-ends into it,
-// and the opening lands in the middle of the floor doing nothing.
 // A vertex every half square or so. A cave outline is drawn with only a
 // handful of points, and a doorway is one square wide: without this, most
 // doorways fall between two vertices with nothing to lay flat.
@@ -119,12 +112,31 @@ function densify(poly, step) {
   return out;
 }
 
-function squareAtDoor(poly, dx, dy, ox, oy) {
+// A carved outline is free to wander anywhere except across its own
+// doorways. Wherever one is cut, the outline is laid flat along the room's
+// rectangular wall, so the opening is cut out of a straight piece of wall
+// sitting exactly on the grid line the hallway arrives at. Without this a
+// wobbly edge can sit half a square inside the doorway: the wall never
+// opens, the hallway dead-ends into it, and the opening lands in the middle
+// of the floor doing nothing.
+//
+// The flat run is wider than the doorway, because a hallway is wider than
+// its floor: its two walls stand a quarter square beyond the opening on
+// either side. Flattening only the square between them left each hallway
+// wall coming down on outline that was already turning away, so the two met
+// at a fork rather than a right angle. REACH is half the hallway measured
+// wall to wall, plus a little, and is clamped to the room's own footprint so
+// a doorway near a corner does not flatten the corner off.
+const REACH = 0.82;
+function squareAtDoor(poly, r, dx, dy, ox, oy) {
   poly = densify(poly, 0.4);
   const vertical = ox !== dx;                                  // the wall runs north-south
   const wall = vertical ? (ox > dx ? dx + 1 : dx) : (oy > dy ? dy + 1 : dy);
   const out = vertical ? Math.sign(ox - dx) : Math.sign(oy - dy);
-  const lo = vertical ? dy : dx, hi = lo + 1;
+  const mid = (vertical ? dy : dx) + 0.5;
+  const edge0 = vertical ? r.y : r.x, edge1 = edge0 + (vertical ? r.h : r.w);
+  const lo = Math.max(edge0, mid - REACH), hi = Math.min(edge1, mid + REACH);
+  if (hi - lo < 0.6) return poly;                              // no room to lay anything flat
   const perp = (p) => (vertical ? p[0] : p[1]);
   const lat = (p) => (vertical ? p[1] : p[0]);
   const at = (v) => (vertical ? [wall, +v.toFixed(2)] : [+v.toFixed(2), wall]);
@@ -470,7 +482,7 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
     const holds = (poly) => crit.every(([x, y]) => insidePoly(poly, x, y));
     const tryPoly = (poly) => {
       let fixed = repairPoly(poly, r, crit);
-      for (const [dx, dy, ox, oy] of ways) fixed = squareAtDoor(fixed, dx, dy, ox, oy);
+      for (const [dx, dy, ox, oy] of ways) fixed = squareAtDoor(fixed, r, dx, dy, ox, oy);
       return holds(fixed) ? fixed : null;
     };
 

@@ -463,6 +463,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .facing.dm { color: var(--accent); border-color: var(--accent); }
 
 .npc-card {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 8px 10px;
@@ -470,9 +471,24 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   background: var(--bg-panel-75);
 }
 .npc-card p { margin: 4px 0 0; }
-/* The two things you can do with a person, kept off the text above them. */
-.person-actions { gap: 6px; margin-top: 8px; }
+/* The two things you can do with a person, in the corner of their card and
+   out of the way of the writing. The card reserves room for them so a long
+   name wraps before it reaches them rather than running underneath. */
+.person-actions {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  gap: 6px;
+  margin: 0;
+  width: auto;
+}
 .person-actions .btn { flex: 0 0 auto; }
+.npc-card:has(.person-actions) { padding-right: 232px; }
+@media (max-width: 720px) {
+  /* no corner to spare: the buttons go back under the text */
+  .person-actions { position: static; margin-top: 8px; }
+  .npc-card:has(.person-actions) { padding-right: 10px; }
+}
 .link-card { border-color: var(--accent); }
 
 /* Clickable clock segments: fill up to the one you click, click the last
@@ -696,15 +712,16 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .dungeon-map .map-room:hover .map-floor { stroke: var(--accent); stroke-width: 3.2; }
 .dungeon-map .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
+/* No halo behind the number. It was there to lift the label off whatever it
+   sat on, but a label always sits on its own badge, which is already a solid
+   disc: the halo only reached outward far enough to eat notches out of the
+   ring around it. */
 .dungeon-map .map-label {
   fill: var(--map-ink);
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
   text-anchor: middle;
-  paint-order: stroke;
-  stroke: var(--map-floor);
-  stroke-width: 2.5;
   pointer-events: none;
 }
 .dungeon-map .map-eraser { fill: var(--map-floor); }
@@ -768,5 +785,9 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
    swallow the click meant for the room under it. */
 .dungeon-map * { pointer-events: none; }
 .dungeon-map .map-floor { pointer-events: auto; }
+/* What is written up as its own section is clickable like one: the trap and
+   hidden-way glyphs sit out on the passages, clear of any room. */
+.dungeon-map .map-hazard[data-goto] { pointer-events: auto; cursor: pointer; }
+.dungeon-map .map-hazard[data-goto] * { pointer-events: auto; }
 .dungeon-map { --map-water: #3d5661; }
 [data-theme='light'] .dungeon-map { --map-water: #b9cdd2; }

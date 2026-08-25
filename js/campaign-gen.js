@@ -349,15 +349,19 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
 
   // ---- and the passages themselves. The engine decided where; this decides
   // what, so a corridor can be as dangerous as a room.
+  // Each one carries an id the drawn glyph carries too, so clicking the
+  // trap on the map opens the entry that describes it.
   const passages = [];
+  let pn = 0;
   for (const lvl of (map.levels || [map])) {
     for (const f of lvl.corridorFeatures || []) {
+      const pid = `p${++pn}`;
       if (f.t === 'trap') {
         const t = pick(C.passageTraps || []);
-        if (t) passages.push({ kind: 'trap', between: f.between, ...t });
+        if (t) { f.pid = pid; passages.push({ kind: 'trap', between: f.between, ...t, id: pid }); }
       } else {
         const sf = pick((C.secretFeatures || []).filter(x => x.inPassage !== false));
-        if (sf) passages.push({ kind: 'secret', between: f.between, ...sf, holds: pick(C.secretCaches || []) });
+        if (sf) { f.pid = pid; passages.push({ kind: 'secret', between: f.between, ...sf, holds: pick(C.secretCaches || []), id: pid }); }
       }
     }
   }
