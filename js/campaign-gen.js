@@ -303,6 +303,65 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     }
   }
 
+  // ---- what is actually in the rooms. Categories are chosen for the kind of
+  // site and for what the room is for, so a mine gets shoring and ore chutes
+  // where a temple gets fonts and votive candles, and a library room gets
+  // shelves wherever it happens to be. Listed rather than woven into the
+  // read-aloud, so a DM can spend them at whatever pace the table wants.
+  const fixturePool = (node) => {
+    const cats = [
+      ...((C.fixturesByRole || {})[node.role] || []),
+      ...((C.fixturesByKind || {})[kind.id] || []),
+      'clutter',
+    ];
+    const seen = new Set();
+    const out = [];
+    for (const c of cats) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      for (const item of (C.fixtures || {})[c] || []) out.push(item);
+    }
+    return out;
+  };
+  for (const node of nodes) {
+    const pool = fixturePool(node);
+    if (!pool.length) continue;
+    const want = node.role === 'empty' || node.role === 'junction'
+      ? (chance(0.55) ? int(1, 2) : 0)
+      : int(1, 3);
+    const picked = [];
+    for (let i = 0; i < want * 3 && picked.length < want; i++) {
+      const item = pick(pool);
+      if (!picked.includes(item)) picked.push(item);
+    }
+    if (picked.length) node.fixtures = picked;
+  }
+
+  // ---- a few rooms are hiding something. Not a door onto the map, which the
+  // geometry already handles, but a compartment: worth searching for, and
+  // worth having found.
+  for (const node of nodes) {
+    if (node.role === 'threshold' || !chance(0.16)) continue;
+    const f = pick(C.secretFeatures || []);
+    if (!f) break;
+    node.secret = { ...f, holds: pick(C.secretCaches || ['nothing at all, any more']) };
+  }
+
+  // ---- and the passages themselves. The engine decided where; this decides
+  // what, so a corridor can be as dangerous as a room.
+  const passages = [];
+  for (const lvl of (map.levels || [map])) {
+    for (const f of lvl.corridorFeatures || []) {
+      if (f.t === 'trap') {
+        const t = pick(C.passageTraps || []);
+        if (t) passages.push({ kind: 'trap', between: f.between, ...t });
+      } else {
+        const sf = pick((C.secretFeatures || []).filter(x => x.inPassage !== false));
+        if (sf) passages.push({ kind: 'secret', between: f.between, ...sf, holds: pick(C.secretCaches || []) });
+      }
+    }
+  }
+
   // Each stair between levels reads as what it is at both ends.
   for (const st of (map.stairs || [])) {
     const dn = nodes.find(x => x.id === st.down);
@@ -353,6 +412,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     hazard: chance(0.5) ? pick(C.hazards) : null,
     alerts: kind.alerts ? 'Once the site is alerted, surviving occupants regroup at the deepest defensible room and post watches on the approach.' : null,
     wandering,
+    passages,
     map,
     nodes,
   };
@@ -1786,6 +1846,8 @@ export function campaignMarkdown(c) {
         }
         for (const n of el.nodes || []) {
           L.push(`**${n.id}. ${n.roleLabel}** (${n.light}${n.exits.length ? `, exits to ${n.exits.join(', ')}` : ''})`, '', `> ${n.description}${n.dressing ? ` ${n.dressing}` : ''}`, '');
+          if (n.fixtures?.length) L.push(`Also here: ${n.fixtures.join(', ')}.`, '');
+          if (n.secret) L.push(`*Hidden here (DM only)*: ${n.secret.name}, found on ${n.secret.find}; ${n.secret.open}. It holds ${n.secret.holds}.`, '');
           for (const b of n.beats) {
             if (b.kind === 'encounter') L.push(`- *${b.title === 'The final confrontation' ? b.title : 'Encounter'} (${b.difficulty}, ${b.xp.toLocaleString()} adj XP):* ${b.leader ? `Led by ${b.leader.name}${b.leader.statSuggestion ? ` (use ${b.leader.statSuggestion.name}, CR ${b.leader.statSuggestion.cr})` : ''}. ` : ''}${b.creatures.map(x => `${x.count} x ${x.name} (CR ${x.cr})`).join(', ')}. Objective: ${b.objective} Tactics: ${b.tactics} Morale: ${b.morale} If avoided: ${b.ifAvoided}`);
             else if (b.kind === 'trap') L.push(`- *Trap - ${b.name}:* players notice "${b.telegraph}". Detect ${b.detect}, disarm ${b.disarm}. ${b.effect}. ${b.consequence}`);

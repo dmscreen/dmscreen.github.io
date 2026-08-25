@@ -975,14 +975,18 @@
       "A hall with a gallery running around it at half height. Good ground for the things already up there."
     ],
     "puzzle": [
-      "Six {material} pillars, each carved with a different phase of the same event, and a socket in the floor that expects them in an order.",
-      "A door with no handle and a poem cut into it. The last line is missing and there is a chisel on the floor.",
-      "A dry fountain with nine spouts, and a valve wheel for each, and one basin that must fill before the far door unlocks."
+      "A room built to be worked out rather than walked through: the {material} dressed flat, the {motif} repeated at every turn, and something at the centre of it that expects to be handled.",
+      "The chamber is in better repair than anything around it. Whatever it was made to do, the builders meant it to still be doing it.",
+      "A bare room, and deliberately so, so that the one thing standing in it cannot be overlooked.",
+      "Nothing here was made for comfort. Every surface is a working surface, and the {motif} above them reads as instructions to somebody.",
+      "The dust lies thick and undisturbed, except in the few places this room expects to be touched."
     ],
     "trap": [
-      "A corridor of {material} flagstones, three of which sit a finger's width proud of the rest.",
-      "A gallery hung with old chain. Some of it is holding up the ceiling.",
-      "A narrow stair with a scored groove down the centre, worn by something heavy travelling it repeatedly at speed."
+      "A stretch of {material} the builders took more care over than the rooms on either side of it.",
+      "An unremarkable room, which is itself worth remarking on: everything of interest here is at floor and ceiling rather than on the walls.",
+      "There is no wear down the middle of this floor, the way there is everywhere else. Nothing has walked here in a long time.",
+      "A plain chamber with an unusually clear line of sight end to end, and no cover anywhere in it.",
+      "Old scorch, old stains, and a great deal of undisturbed dust. This room has been used, and not for living in."
     ],
     "treasure": [
       "A strongroom, its door already forced. Whoever opened it took the obvious things and missed the rest.",
@@ -1030,6 +1034,94 @@
     "Old bloodstains, scrubbed at, not successfully."
   ],
 
+  "fixtures": {
+    "clutter": ["rubble", "broken furniture", "shattered pottery", "spilled crates", "torn cloth", "a refuse pile", "cobwebs", "discarded weapons", "broken shields", "rusted chains", "empty bottles", "burnt timbers", "collapsed shelving", "abandoned packs", "muddy footprints", "scattered coins", "straw", "food scraps"],
+    "furniture": ["a bed", "a cot", "bunks", "a table", "chairs", "a stool", "a bench", "a desk", "a wardrobe", "a dresser", "a cabinet", "a shelf", "a bookcase", "a rug", "a tapestry", "a folding screen", "a mirror", "a footlocker", "a coat hook", "a sitting cushion"],
+    "storage": ["a chest", "a strongbox", "crates", "a barrel", "a cask", "sacks", "an urn", "an amphora", "clay pots", "baskets", "a coffer", "a weapon rack", "an armour stand", "a cupboard", "a wine rack", "a grain bin", "a tool chest", "an ammunition crate"],
+    "light": ["a guttered torch", "a wall sconce", "a cold brazier", "candle stubs", "a candelabra", "a hooded lantern", "an oil lamp", "a chandelier on a chain", "a fire pit gone to ash", "a glowing crystal", "luminous fungus", "a shaft of moonlight", "faintly glowing runes"],
+    "remains": ["a skeleton", "a corpse", "scattered bones", "a skull pile", "a blood stain", "a blood trail", "a severed limb", "a mummified body", "a rotting carcass", "feeding remains", "a hanging body", "gnawed bones", "grave dust", "a spider husk"],
+    "religious": ["an altar", "a shrine", "an idol", "a defaced statue", "a holy symbol", "a prayer mat", "an offering bowl", "an incense burner", "a font", "a reliquary", "a pulpit", "pews", "a sacrificial slab", "a ritual circle", "an obelisk", "votive candles"],
+    "library": ["a bookshelf", "a scroll rack", "a lectern", "a reading desk", "a map table", "a globe", "a filing cabinet", "a writing desk", "an inkwell", "a ledger", "an archive chest", "a caged shelf of banned books", "an atlas stand", "a tablet rack"],
+    "workshop": ["an anvil", "a cold forge", "bellows", "a quench barrel", "a hammer rack", "a tool bench", "a grindstone", "a vice", "a lathe", "a loom", "a spinning wheel", "a tanning rack", "a potter's wheel", "a lumber pile", "an ore pile", "an ingot rack", "a scrap heap", "a blueprint table"],
+    "kitchen": ["a hearth", "an oven", "a cauldron", "a stew pot", "a spit", "a cutting block", "a larder", "a pantry shelf", "a water barrel", "a spice rack", "a wheel of cheese", "hanging meat", "a dining table", "benches", "tankards", "an ale keg", "a scullery basin"],
+    "prison": ["a cell", "iron bars", "manacles", "shackles", "chains", "stocks", "a pillory", "a rack", "a whipping post", "a brazier of irons", "a cage", "an oubliette", "a guard post", "a key ring", "a slop bucket", "a straw pallet", "a gibbet"],
+    "burial": ["a sarcophagus", "a stone coffin", "burial niches", "an ossuary", "a bone pile", "a gravestone", "a cairn", "a funeral urn", "an effigy", "a death mask", "burial goods", "an embalming table", "a mourning bench", "a broken tomb seal", "a memorial plaque"],
+    "cave": ["stalactites", "stalagmites", "a column formation", "flowstone", "a crevasse", "a ledge", "a narrow squeeze", "a crawlway", "a sinkhole", "a mineral vein", "a crystal cluster", "a guano pile", "a bat roost", "a mushroom grove", "a boulder field", "a fresh rockfall"],
+    "water": ["a pool", "a fountain", "a well", "a cistern", "a drain grate", "a sluice gate", "a sewer channel", "a hot spring", "standing water", "a waterlogged floor", "a dripping ceiling"],
+    "mining": ["a mine cart", "cart rails", "a pickaxe", "a shovel", "a wheelbarrow", "timber shoring", "an air shaft", "an ore chute", "a sluice box", "a slag heap", "a canary cage", "a keg of blasting powder", "survey stakes", "a spoil pile", "a collapsed tunnel"],
+    "nautical": ["an anchor", "a capstan", "coiled hawser", "a fishing net", "a crab pot", "a mooring post", "a rowboat", "a raft", "a gangplank", "a rotted hull plank", "a ship's bell"],
+    "arcane": ["an alchemy table", "an alembic", "a cauldron", "a mortar and pestle", "a reagent shelf", "specimen jars", "a dissection table", "an orrery", "an astrolabe", "a telescope", "a scroll rack", "a spellbook stand", "a crystal ball", "a potion rack", "an arcane focus", "a summoning circle", "a rune stone", "a scrying pool"],
+    "alarms": ["an alarm bell", "a gong", "a signal horn", "a war drum", "a speaking tube", "a message chute", "a carrier pigeon coop", "a tripline bell", "a watch whistle", "a sending stone", "a church bell"],
+    "vegetation": ["moss", "lichen", "vines", "creepers", "roots through the ceiling", "fungus", "a mushroom circle", "glowing mushrooms", "thorn bushes", "brambles", "reeds", "algae", "a carnivorous plant"],
+    "sanitation": ["a privy", "a latrine", "a drain grate", "a gutter", "a sump", "a waste chute", "a laundry tub", "a wash line", "a lye vat", "an ash bin", "a rat trap", "a mop bucket", "a well bucket"],
+    "games": ["a gaming table", "dice", "a card deck", "a chess set", "a dartboard", "a tankard rack", "a small stage", "a drum", "a lute", "a betting board"],
+    "commerce": ["a counter", "scales", "weights", "an abacus", "a cash box", "a ledger book", "a display case", "a price board", "a stack of crates", "a notice board", "a guild seal"],
+    "stables": ["a stall", "a hay bale", "a feed trough", "a watering trough", "a hitching post", "a saddle rack", "tack", "horseshoes", "a kennel", "a cart", "a wagon"],
+    "fortification": ["a guard post", "a parapet", "an arrow slit", "a murder hole", "a portcullis", "a signal fire", "a checkpoint", "a rack of spears", "a barricade of furniture", "a rubble barricade"],
+    "markings": ["graffiti", "a scratched tally", "a warning sign", "an arrow marker", "a chalk mark", "writing in blood", "a carved rune", "a heraldic banner", "a painted crest", "a boundary stone", "a thieves' cant mark", "claw marks", "burn marks", "a dedication plaque"],
+    "treasure": ["a coin pile", "a gem stash", "a jewellery box", "an art object", "a painting", "a sculpture", "a crown", "a chalice", "a censer", "a coin chest", "a trade bar", "silverware", "a scroll case", "deed papers", "a treasure map"],
+    "overhead": ["hanging chains", "hanging cages", "a chandelier", "netting", "a skylight", "an oculus", "spider webs", "roosting bats", "banners", "a hoist beam", "exposed rafters"]
+  },
+  "fixturesByKind": {
+    "tomb": ["burial", "religious", "remains", "markings", "overhead"],
+    "lair": ["remains", "cave", "vegetation", "clutter"],
+    "ruin": ["clutter", "markings", "vegetation", "furniture", "overhead"],
+    "stronghold": ["fortification", "prison", "furniture", "kitchen", "alarms", "storage"],
+    "temple": ["religious", "library", "markings", "overhead", "light"],
+    "mine": ["mining", "cave", "workshop", "sanitation"],
+    "wreck": ["nautical", "storage", "remains", "water"],
+    "planar": ["arcane", "markings", "light", "overhead"],
+    "megadungeon": ["clutter", "markings", "prison", "workshop", "storage", "overhead", "water"]
+  },
+  "fixturesByRole": {
+    "lore": ["library", "arcane", "markings"],
+    "haven": ["furniture", "kitchen", "light"],
+    "treasure": ["treasure", "storage"],
+    "boss": ["religious", "fortification", "overhead"],
+    "threshold": ["markings", "light", "fortification"],
+    "encounter": ["clutter", "remains", "storage"],
+    "junction": ["markings", "light"],
+    "empty": ["clutter", "furniture", "storage"],
+    "shortcut": ["clutter", "markings"]
+  },
+  "secretFeatures": [
+    {"name": "a false wall", "find": "DC 15 Investigation", "inPassage": true, "open": "a shoulder against the left-hand edge swings it"},
+    {"name": "a hidden panel", "find": "DC 14 Investigation", "inPassage": true, "open": "the moulding above it slides aside"},
+    {"name": "a trick flagstone", "find": "DC 13 Perception", "inPassage": true, "open": "it lifts on a hinge once the grout is cut"},
+    {"name": "a hollow pillar", "find": "DC 15 Investigation", "inPassage": true, "open": "one course of stone turns like a cap"},
+    {"name": "a concealed alcove behind the plaster", "find": "DC 12 Perception", "inPassage": true, "open": "the plaster is thin enough to break by hand"},
+    {"name": "a sliding bookcase", "find": "DC 14 Investigation", "inPassage": false, "open": "one volume is a lever"},
+    {"name": "a false-bottomed chest", "find": "DC 15 Investigation", "inPassage": false, "open": "the base lifts out once the lining is cut"},
+    {"name": "a disguised lever behind a sconce", "find": "DC 14 Perception", "inPassage": true, "open": "the sconce turns downward"},
+    {"name": "a camouflaged hatch under the rushes", "find": "DC 13 Perception", "inPassage": true, "open": "it lifts freely once found"},
+    {"name": "a priest hole behind the panelling", "find": "DC 16 Investigation", "inPassage": true, "open": "a catch at ankle height releases it"},
+    {"name": "an illusory wall", "find": "DC 15 Investigation, or a hand passed through it", "inPassage": true, "open": "walk through"},
+    {"name": "a painting with a peephole", "find": "DC 12 Perception", "inPassage": true, "open": "the frame is hinged"}
+  ],
+  "secretCaches": [
+    "a strongbox nobody came back for",
+    "a bundle of letters in a language this place never used",
+    "the previous owner's personal seal, and a forged copy of it",
+    "a body, curled up, with its hands over its ears",
+    "a smuggler's stash: three sacks of contraband and a tally sheet",
+    "a stair going down that appears on no plan of this place",
+    "a shrine to something the rest of the site would not have tolerated",
+    "coin, and a great deal more of it than anyone here should have had",
+    "a weapon wrapped in oiled cloth, maintained until recently",
+    "the tools for a job that was never finished",
+    "a child's things, kept long after the child",
+    "a ledger recording payments out of this place to someone in the nearest town"
+  ],
+  "passageTraps": [
+    {"name": "Tripline and falling block", "telegraph": "a slot in the ceiling running the width of the passage", "detect": "DC 13 Perception", "disarm": "DC 13 Thieves' Tools", "effect": "3d10 bludgeoning, DC 14 Dexterity for half, and the passage is blocked until the block is levered clear"},
+    {"name": "Dart slots", "telegraph": "a row of finger-wide holes at chest height", "detect": "DC 14 Perception", "disarm": "DC 14 Thieves' Tools", "effect": "two darts, +6 to hit, 1d4 piercing plus 2d6 poison each"},
+    {"name": "Covered pit", "telegraph": "the floor rings differently here, and the dust lies flat rather than drifted", "detect": "DC 12 Perception", "disarm": "span it with a plank, or DC 13 Thieves' Tools to pin the lid", "effect": "a 20 ft drop for 2d6 bludgeoning, and the lid shuts overhead"},
+    {"name": "Scything blade in the arch", "telegraph": "a clean groove in both walls at hip height", "detect": "DC 14 Perception", "disarm": "DC 15 Thieves' Tools", "effect": "2d10 slashing, DC 14 Dexterity for half"},
+    {"name": "Alarm wire", "telegraph": "a taut hair-thin wire an inch above the floor", "detect": "DC 15 Perception", "disarm": "DC 12 Thieves' Tools", "effect": "no damage; a bell rings somewhere ahead and the site becomes alert"},
+    {"name": "Flame jet", "telegraph": "soot fanned across the wall opposite a brass nozzle", "detect": "DC 14 Investigation", "disarm": "DC 15 Thieves' Tools, or shut the valve found upstream", "effect": "4d6 fire, DC 14 Dexterity for half, to everything in a 10 ft length of the passage"},
+    {"name": "Collapsing shoring", "telegraph": "props sawn most of the way through", "detect": "DC 13 Investigation", "disarm": "DC 14 Strength to prop it properly first", "effect": "3d6 bludgeoning, DC 13 Dexterity for half, and the passage is closed until it is dug out"},
+    {"name": "Greased slope and spikes", "telegraph": "a floor that shines, and a smell of tallow", "detect": "DC 12 Perception", "disarm": "sand or ash along the length of it", "effect": "DC 13 Dexterity or slide to the bottom for 2d6 piercing"}
+  ],
   "lightLevels": ["dark", "dark", "dark", "dim", "dim", "bright"],
 
   "traps": [

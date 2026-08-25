@@ -519,6 +519,19 @@ export default {
         </g>`;
       }).join('');
 
+      // what waits in the passages, on the DM's copy only: a trap the party
+      // can read off the map is not a trap, and neither is a hidden way in.
+      const passageSvg = player ? '' : (m.corridorFeatures || []).map(f => {
+        const px = (f.x + 0.5) * C, py = (f.y + 0.5) * C;
+        if (f.t === 'trap') {
+          const r2 = C * 0.34;
+          return `<g class="map-hazard"><path d="M${px},${(py - r2).toFixed(1)} L${(px + r2).toFixed(1)},${py} L${px},${(py + r2).toFixed(1)} L${(px - r2).toFixed(1)},${py} Z"/>
+            <circle cx="${px}" cy="${py}" r="1.4"/></g>`;
+        }
+        return `<g class="map-hazard is-secret"><circle cx="${px}" cy="${py}" r="${(C * 0.34).toFixed(1)}"/>
+          <text x="${px}" y="${(py + 3).toFixed(1)}" class="map-secret">S</text></g>`;
+      }).join('');
+
       // the waterway: visible only where it crosses open floor (the room
       // clip does that), with plank bridges where a corridor passes over it
       let waterSvg = '', bridgeSvg = '';
@@ -617,7 +630,7 @@ export default {
           return `<circle cx="${lx}" cy="${ly}" r="${rr}" class="map-badge" ${tint ? `style="stroke:${tint}"` : ''}/>
             <text x="${lx}" y="${(ly + 3).toFixed(1)}" class="map-label">${esc(r.id)}</text>`;
         }).join('')}</g>
-        ${doorsSvg}${bridgeSvg}
+        ${doorsSvg}${bridgeSvg}${passageSvg}
         ${entranceSvg}
       </svg>`;
       };
@@ -790,6 +803,8 @@ export default {
           ${n.beats.map(b => `<span class="pill ${b.kind === 'encounter' ? 'danger' : ''}">${esc(b.kind)}</span>`).join('')}
         </summary>
         ${playerBox(`${esc(n.description)}${n.dressing ? ` ${esc(n.dressing)}` : ''}`)}
+        ${n.fixtures?.length ? `<p class="small"><b>Also here</b> ${n.fixtures.map(esc).join(', ')}</p>` : ''}
+        ${n.secret ? dmBox(`<p class="small"><b>Hidden here</b> ${esc(n.secret.name)}, found on ${esc(n.secret.find)}; ${esc(n.secret.open)}. It holds ${esc(n.secret.holds)}.</p>`) : ''}
         ${exitsHTML(elt, n)}
         ${n.beats.map(beatHTML).join('')}
       </details>`).join('');
@@ -945,11 +960,21 @@ export default {
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
+      const passagesHTML = !elt.passages?.length ? '' : `
+        <h3 class="mt">In the passages</h3>
+        <p class="small muted">Between the keyed rooms, and marked on the DM's map: a diamond for a trap, a circled S for a way that is not obvious.</p>
+        ${elt.passages.map(x => `<div class="beat">
+          <b>${esc(x.name)}</b> <span class="small faint">between ${esc(x.between[0])} and ${esc(x.between[1])}</span>
+          ${x.kind === 'trap'
+            ? `<p class="small">They notice ${esc(x.telegraph)}. <b>Detect</b> ${esc(x.detect)}. <b>Disarm</b> ${esc(x.disarm)}. <b>Effect</b> ${esc(x.effect)}</p>`
+            : `<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`}
+        </div>`).join('')}`;
+
       if (elt.type === 'dungeon') return `${head}
         ${elt.approach ? `<div id="dm-approach">${playerBox(esc(elt.approach), 'Read aloud outside, before they go in')}</div>` : ''}
         ${dungeonMapSVG(elt)}
         ${(elt.map?.rooms?.length || elt.map?.levels?.length) ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
-        ${wanderingHTML}<div class="mt">${nodesHTML(elt)}</div>`;
+        ${wanderingHTML}${passagesHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
         <div class="grid-2 mt">
