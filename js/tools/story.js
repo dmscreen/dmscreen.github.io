@@ -289,6 +289,8 @@ export default {
       const maps = top.levels || [top];
       const multi = maps.length > 1;
       const C = 12; // px per 5-ft square
+      const WALL = 2.6;      // the stroke the rooms are drawn with
+      const PASSAGE = C;     // a passage fills its square, edge to edge
       const roleOf = new Map((elt.nodes || []).map(n => [n.id, n]));
 
       // Each level draws as its own map; def ids carry the level index so
@@ -450,10 +452,13 @@ export default {
         if (pts.length > 1) {
           const doorAt = (cell) => doors.find(dd => dd.outside[0] === cell[0] && dd.outside[1] === cell[1]);
           const first = cells[0], last = cells[cells.length - 1];
+          // Both points of the first and last segment are pinned, not just the
+          // outermost: a crossing is only square if both ends of it are, and
+          // wobbling the second point would tilt the passage in its doorway.
           const dA = doorAt(first);
-          if (dA) { pts.unshift([first[0] + (dA.x - dA.outside[0]), first[1] + (dA.y - dA.outside[1])]); ends.push(0); }
+          if (dA) { pts.unshift([first[0] + (dA.x - dA.outside[0]), first[1] + (dA.y - dA.outside[1])]); ends.push(0, 1); }
           const dB = doorAt(last);
-          if (dB) { pts.push([last[0] + (dB.x - dB.outside[0]), last[1] + (dB.y - dB.outside[1])]); ends.push(pts.length - 1); }
+          if (dB) { pts.push([last[0] + (dB.x - dB.outside[0]), last[1] + (dB.y - dB.outside[1])]); ends.push(pts.length - 1, pts.length - 2); }
         }
 
         // A cave's passages wander, but not through their own doorways: the
@@ -472,10 +477,16 @@ export default {
       // as shading rather than a second border drawn around the rooms.
       const fadeBand = silhouette(1);
 
+      // A passage is exactly one square wide. At 0.95 of one it sat a fraction
+      // inside the grid lines on both sides, so it never lined up with the
+      // squares it runs through nor with the wall it arrives at, and every
+      // opening cut for it had to guess. Its walls carry the same weight the
+      // rooms are drawn with, so the two meet flush at a doorway instead of
+      // stepping.
       const corridorInk = corridors.map(co =>
-        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(PASSAGE + WALL * 2).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
       const corridorFloor = corridors.map(co =>
-        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
 
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
       const featSvg = (r) => (r.features || []).map(f => {
@@ -594,10 +605,16 @@ export default {
         const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
         const along = d.orient === 'h' ? 'v' : 'h';
-        const gap = C * 0.95;          // the width of the passage floor itself
+        // The opening is the passage's own width, so it ends exactly where
+        // the passage's walls begin and takes nothing off them, and it is
+        // only deep enough to lift the room's wall out of the way: it reaches
+        // the edge of the room and stops rather than reaching on down the
+        // hallway.
+        const gap = PASSAGE;
+        const deep = WALL + 1.4;
         const eraser = along === 'h'
-          ? `<rect x="${bx - gap / 2}" y="${by - C * 0.34}" width="${gap}" height="${C * 0.68}" class="map-eraser"/>`
-          : `<rect x="${bx - C * 0.34}" y="${by - gap / 2}" width="${C * 0.68}" height="${gap}" class="map-eraser"/>`;
+          ? `<rect x="${bx - gap / 2}" y="${by - deep / 2}" width="${gap}" height="${deep}" class="map-eraser"/>`
+          : `<rect x="${bx - deep / 2}" y="${by - gap / 2}" width="${deep}" height="${gap}" class="map-eraser"/>`;
         if (d.type === 'arch') return eraser;
         const glyph = along === 'h'
           ? `<rect x="${bx - C * 0.42}" y="${by - C * 0.18}" width="${C * 0.84}" height="${C * 0.36}" class="map-door"/>`
@@ -624,8 +641,8 @@ export default {
       }
       entranceSvg = `
         ${e.orient === 'h'
-          ? `<rect x="${ex - C * 0.5}" y="${ey - C * 0.4}" width="${C}" height="${C * 0.8}" class="map-eraser"/>`
-          : `<rect x="${ex - C * 0.4}" y="${ey - C * 0.5}" width="${C * 0.8}" height="${C}" class="map-eraser"/>`}
+          ? `<rect x="${ex - (WALL + 1.4) / 2}" y="${ey - PASSAGE / 2}" width="${WALL + 1.4}" height="${PASSAGE}" class="map-eraser"/>`
+          : `<rect x="${ex - PASSAGE / 2}" y="${ey - (WALL + 1.4) / 2}" width="${PASSAGE}" height="${WALL + 1.4}" class="map-eraser"/>`}
         <g class="map-entrance">${rungs}</g>`;
       }
 
