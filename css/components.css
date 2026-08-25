@@ -470,6 +470,9 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   background: var(--bg-panel-75);
 }
 .npc-card p { margin: 4px 0 0; }
+/* The two things you can do with a person, kept off the text above them. */
+.person-actions { gap: 6px; margin-top: 8px; }
+.person-actions .btn { flex: 0 0 auto; }
 .link-card { border-color: var(--accent); }
 
 /* Clickable clock segments: fill up to the one you click, click the last

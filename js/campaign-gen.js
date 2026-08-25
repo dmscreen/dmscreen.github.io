@@ -1669,6 +1669,201 @@ export async function rerollCreature(campaign, beatId, slug) {
   return line;
 }
 
+/* ---------- targeted rerolls: people ---------- */
+
+// A name is not only written on the card it came from. By the time a
+// campaign exists it is in other people's connections, in the villain's
+// schedule, in filled-in lines all over the book. Renaming sweeps the whole
+// campaign so nothing goes on naming somebody who no longer exists.
+function renameThroughout(campaign, oldName, newName) {
+  if (!oldName || !newName || oldName === newName) return;
+  const rx = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+  const walk = (node) => {
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        if (typeof node[i] === 'string') node[i] = node[i].replace(rx, newName);
+        else if (node[i] && typeof node[i] === 'object') walk(node[i]);
+      }
+      return;
+    }
+    for (const k of Object.keys(node)) {
+      const v = node[k];
+      if (typeof v === 'string') node[k] = v.replace(rx, newName);
+      else if (v && typeof v === 'object') walk(v);
+    }
+  };
+  walk(campaign);
+}
+
+// One person can sit in more than one place: a settlement roster and the
+// NPC appendix hold the same people, and they are the same objects until a
+// save and reload turns them into separate copies. An edit has to reach
+// every copy carrying the id or the two versions drift apart.
+function eachById(campaign, id, fn) {
+  let hits = 0;
+  const walk = (node) => {
+    if (Array.isArray(node)) { for (const v of node) if (v && typeof v === 'object') walk(v); return; }
+    if (node.id === id) { fn(node); hits++; }
+    for (const k of Object.keys(node)) {
+      const v = node[k];
+      if (v && typeof v === 'object') walk(v);
+    }
+  };
+  walk(campaign);
+  return hits;
+}
+
+// A fresh person in the same seat. The role and the place they are found in
+// stay put, because that is what the rest of the book points at; everything
+// that makes them who they are is rolled again.
+export async function rerollNPC(campaign, npcId) {
+  const [monsters, C, names, npcTable] = await Promise.all([
+    loadMonsters(), loadTables('campaign'), loadTables('names'), loadTables('npc'),
+  ]);
+  const current = campaign.appendices?.npcs?.find(n => n.id === npcId);
+  if (!current) throw new Error('NPC not found.');
+
+  const usedNames = new Set(campaign.appendices.npcs.map(n => n.name));
+  usedNames.add(campaign.villain?.name);
+  (campaign.villain?.lieutenants || []).forEach(l => usedNames.add(l.name));
+  usedNames.delete(current.name);
+
+  const slots = campaign.slots || {};
+  const ctx = { C, names, npcTable, monsters, usedNames, slots };
+  const fresh = makeNPC(ctx, current.roleId, current.where);
+  fresh.id = current.id;
+  fresh.role = current.role;
+  fresh.roleId = current.roleId;
+  fresh.where = current.where;
+  const others = campaign.appendices.npcs.filter(n => n.id !== npcId);
+  fresh.connection = fill(pick(C.npcConnections), {
+    ...slots,
+    npc: others.length ? pick(others).name : (campaign.villain?.name || fresh.name),
+  });
+
+  const oldName = current.name;
+  eachById(campaign, npcId, (n) => Object.assign(n, fresh));
+  renameThroughout(campaign, oldName, fresh.name);
+  return fresh;
+}
+
+// Lieutenants are the villain's, so their brief comes from the villain's own
+// list and their stat block stays strictly under the boss's.
+export async function rerollLieutenant(campaign, ltId) {
+  const [monsters, C, names] = await Promise.all([
+    loadMonsters(), loadTables('campaign'), loadTables('names'),
+  ]);
+  const gen = campaign.gen;
+  if (!gen) throw new Error('This campaign predates rerolling; generate a new one.');
+  const lt = (campaign.villain?.lieutenants || []).find(l => l.id === ltId);
+  if (!lt) throw new Error('Lieutenant not found.');
+
+  const villainKind = C.villainKinds[gen.villainKindId] || pick(Object.values(C.villainKinds));
+  const pools = buildPools(monsters, villainKind, campaign.region.terrain);
+  const usedNames = new Set(campaign.appendices.npcs.map(n => n.name));
+  usedNames.add(campaign.villain.name);
+  campaign.villain.lieutenants.forEach(l => usedNames.add(l.name));
+  usedNames.delete(lt.name);
+
+  const endLevel = campaign.levelRange?.end || 10;
+  const bossSlug = campaign.villain.statSuggestion?.slug;
+  const boss = bossSlug ? monsters.find(m => m.slug === bossSlug) : null;
+  const cap = boss ? boss.cr : endLevel;
+  let band = pools.faction.filter(m => m.cr >= Math.max(1, endLevel / 2) && m.cr < cap);
+  if (!band.length) band = pools.faction.filter(m => m.cr >= 1 && m.cr < cap);
+  const stat = band.length ? pick(band) : null;
+
+  const p = personName(names, null, usedNames);
+  const oldName = lt.name;
+  const fresh = {
+    ...lt,
+    name: p.name,
+    ancestry: p.ancestry,
+    note: fill(pick(villainKind.lieutenants), campaign.slots || {}),
+    statSuggestion: stat ? { slug: stat.slug, name: stat.name, cr: fmtCR(stat.cr) } : null,
+  };
+  eachById(campaign, ltId, (n) => Object.assign(n, fresh));
+  renameThroughout(campaign, oldName, fresh.name);
+  return fresh;
+}
+
+// The antagonist's plan is the campaign; only who they are is rerollable.
+// Their goal, method and schedule are what every chapter was built around,
+// so rolling those would leave a different book behind the same acts.
+export async function renameVillain(campaign) {
+  const names = await loadTables('names');
+  if (!campaign.villain) throw new Error('No antagonist on this campaign.');
+  const usedNames = new Set((campaign.appendices?.npcs || []).map(n => n.name));
+  (campaign.villain.lieutenants || []).forEach(l => usedNames.add(l.name));
+  const oldName = campaign.villain.name;
+  const p = personName(names, null, usedNames);
+  campaign.villain.name = p.name;
+  campaign.villain.ancestry = p.ancestry;
+  renameThroughout(campaign, oldName, p.name);
+  return campaign.villain;
+}
+
+// Swap a stat block for a comparable one everywhere the campaign uses it.
+// The appendix is a derived list, so there is nothing to edit there: the
+// encounters holding it are what change, and the list recomputes.
+export async function rerollAppendixCreature(campaign, slug) {
+  const [monsters, C] = await Promise.all([loadMonsters(), loadTables('campaign')]);
+  const gen = campaign.gen;
+  if (!gen) throw new Error('This campaign predates rerolling; generate a new one.');
+
+  const uses = [];
+  for (const act of campaign.acts) {
+    for (const chapter of act.chapters) {
+      for (const el of chapter.elements) {
+        const beats = [...(el.nodes || []).flatMap(n => n.beats || []), el.climaxEncounter].filter(Boolean);
+        for (const beat of beats) {
+          const line = (beat.creatures || []).find(c => c.slug === slug);
+          if (line) uses.push({ beat, chapter, line });
+        }
+      }
+    }
+  }
+  if (!uses.length) throw new Error('Nothing in the campaign uses that stat block.');
+
+  const villainKind = C.villainKinds[gen.villainKindId] || pick(Object.values(C.villainKinds));
+  const pools = buildPools(monsters, villainKind, campaign.region.terrain);
+  // wilderness legs keep to local wildlife and everything else draws on the
+  // villain's forces, so a block used in both has to suit both
+  const needWild = uses.some(u => u.chapter.role === 'region_leg');
+  const needFaction = uses.some(u => u.chapter.role !== 'region_leg');
+  const wildSet = new Set(pools.wild.map(m => m.slug));
+  const facSet = new Set(pools.faction.map(m => m.slug));
+  const clash = (m) => uses.some(u => u.beat.creatures.some(c => c.slug === m.slug));
+  const eligible = monsters.filter(m => m.slug !== slug && !clash(m)
+    && (!needWild || wildSet.has(m.slug)) && (!needFaction || facSet.has(m.slug)));
+
+  const current = monsters.find(m => m.slug === slug);
+  const targetXP = monsterXP(current) || 100;
+  let band = eligible.filter(m => monsterXP(m) >= targetXP / 2 && monsterXP(m) <= targetXP * 2);
+  if (!band.length) band = eligible.filter(m => monsterXP(m) > 0);
+  if (!band.length) throw new Error('No comparable creature available.');
+  const swap = pick(band);
+  const swapCR = fmtCR(swap.cr);
+
+  const size = Math.min(8, Math.max(1, gen.partySize || 4));
+  for (const { beat, line } of uses) {
+    line.slug = swap.slug;
+    line.name = swap.name;
+    line.cr = swapCR;
+    // a leader named as the old block would be pointing at a creature the
+    // fight no longer contains
+    if (beat.leader?.statSuggestion?.slug === slug) {
+      beat.leader.statSuggestion = { slug: swap.slug, name: swap.name, cr: swapCR };
+    }
+    const raw = beat.creatures.reduce((a, c) =>
+      a + (monsterXP(monsters.find(x => x.slug === c.slug)) || 0) * c.count, 0);
+    const count = beat.creatures.reduce((a, c) => a + c.count, 0);
+    beat.xp = Math.round(raw * encounterMultiplier(count, size));
+  }
+  refreshTotals(campaign);
+  return { from: current?.name || slug, to: swap.name, fights: uses.length };
+}
+
 function findBeat(campaign, beatId) {
   for (const act of campaign.acts) {
     for (const chapter of act.chapters) {
