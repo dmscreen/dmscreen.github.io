@@ -601,31 +601,37 @@ export default {
       const clip = rooms.map(r => `<path d="${roomPath(r)}"/>`).join('');
 
       // doors: erase the wall stroke across the opening, then the glyph
-      const doorsSvg = doors.map(d => {
+      // An opening is cut out of the room's own wall and nothing else. It is
+      // as long as the passage floor is wide, and in depth it reaches inward
+      // far enough to take the wall out and outward only to the wall's outer
+      // edge: it stops at the skin of the room rather than carrying on down
+      // the hallway, where it would blank out the hallway's own walls.
+      const IN = WALL / 2 + 1.2;   // through the wall and a little past it
+      const OUT = 3.2 / 2;         // the wall's outer edge, hover weight included
+      const opening = (cx, cy, along, ndx, ndy) => (along === 'h'
+        ? `<rect x="${cx - PASSAGE / 2}" y="${cy - (ndy > 0 ? OUT : IN)}" width="${PASSAGE}" height="${IN + OUT}" class="map-eraser"/>`
+        : `<rect x="${cx - (ndx > 0 ? OUT : IN)}" y="${cy - PASSAGE / 2}" width="${IN + OUT}" height="${PASSAGE}" class="map-eraser"/>`);
+
+      const doorErasers = doors.map(d => {
         const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
         const along = d.orient === 'h' ? 'v' : 'h';
-        // The opening is the passage's own width, so it ends exactly where
-        // the passage's walls begin and takes nothing off them, and it is
-        // only deep enough to lift the room's wall out of the way: it reaches
-        // the edge of the room and stops rather than reaching on down the
-        // hallway.
-        const gap = PASSAGE;
-        const deep = WALL + 1.4;
-        const eraser = along === 'h'
-          ? `<rect x="${bx - gap / 2}" y="${by - deep / 2}" width="${gap}" height="${deep}" class="map-eraser"/>`
-          : `<rect x="${bx - deep / 2}" y="${by - gap / 2}" width="${deep}" height="${gap}" class="map-eraser"/>`;
-        if (d.type === 'arch') return eraser;
+        return opening(bx, by, along, Math.sign(d.x - d.outside[0]), Math.sign(d.y - d.outside[1]));
+      }).join('');
+
+      const doorGlyphs = doors.filter(d => d.type !== 'arch').map(d => {
+        const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
+        const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
+        const along = d.orient === 'h' ? 'v' : 'h';
         const glyph = along === 'h'
           ? `<rect x="${bx - C * 0.42}" y="${by - C * 0.18}" width="${C * 0.84}" height="${C * 0.36}" class="map-door"/>`
           : `<rect x="${bx - C * 0.18}" y="${by - C * 0.42}" width="${C * 0.36}" height="${C * 0.84}" class="map-door"/>`;
-        const secret = d.type === 'secret' ? `<text x="${bx}" y="${by + 3}" class="map-secret">S</text>` : '';
-        return eraser + glyph + secret;
+        return glyph + (d.type === 'secret' ? `<text x="${bx}" y="${by + 3}" class="map-secret">S</text>` : '');
       }).join('');
 
       // the way in: an opening plus an arrow pointing into the first room
       const e = m.entrance;
-      let entranceSvg = '';
+      let entranceSvg = '', entranceEraser = '';
       if (e && !e.internal) {
       const ex = ((e.x + e.outside[0]) / 2 + 0.5) * C, ey = ((e.y + e.outside[1]) / 2 + 0.5) * C;
       const dx = (e.x - e.outside[0]) * C * 0.9, dy = (e.y - e.outside[1]) * C * 0.9;
@@ -639,11 +645,9 @@ export default {
         const rx0 = ex + ux * t, ry0 = ey + uy * t;
         rungs += `<line x1="${(rx0 - px2 * half).toFixed(1)}" y1="${(ry0 - py2 * half).toFixed(1)}" x2="${(rx0 + px2 * half).toFixed(1)}" y2="${(ry0 + py2 * half).toFixed(1)}"/>`;
       }
-      entranceSvg = `
-        ${e.orient === 'h'
-          ? `<rect x="${ex - (WALL + 1.4) / 2}" y="${ey - PASSAGE / 2}" width="${WALL + 1.4}" height="${PASSAGE}" class="map-eraser"/>`
-          : `<rect x="${ex - PASSAGE / 2}" y="${ey - (WALL + 1.4) / 2}" width="${PASSAGE}" height="${WALL + 1.4}" class="map-eraser"/>`}
-        <g class="map-entrance">${rungs}</g>`;
+      entranceEraser = opening(ex, ey, e.orient === 'h' ? 'v' : 'h',
+        Math.sign(e.x - e.outside[0]), Math.sign(e.y - e.outside[1]));
+      entranceSvg = `<g class="map-entrance">${rungs}</g>`;
       }
 
       return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
@@ -659,6 +663,11 @@ export default {
           <mask id="dmfade${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
             <g filter="url(#dmsoft${li})" fill="#fff">${fadeBand}</g>
           </mask>
+          <!-- everything that is not a room or a room's wall -->
+          <mask id="dmouter${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
+            <rect width="${W}" height="${H}" fill="#fff"/>
+            <g fill="#000" stroke="#000" stroke-width="${WALL}" stroke-linejoin="round">${clip}</g>
+          </mask>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
         <g class="map-crag" fill="url(#dmhatch${li})" mask="url(#dmfade${li})">${crag}</g>
@@ -672,8 +681,13 @@ export default {
           return `<circle cx="${lx}" cy="${ly}" r="${rr}" class="map-badge" ${tint ? `style="stroke:${tint}"` : ''}/>
             <text x="${lx}" y="${(ly + 3).toFixed(1)}" class="map-label">${esc(r.id)}</text>`;
         }).join('')}</g>
-        ${doorsSvg}${bridgeSvg}${passageSvg}
-        ${entranceSvg}
+        ${doorErasers}${entranceEraser}
+        <!-- The hallways draw themselves again, over the openings but masked
+             to what lies outside the rooms, so an opening can only ever take
+             something off the room it belongs to. Whatever it reaches past
+             the room's skin the hallway simply puts back. -->
+        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloor}</g>
+        ${doorGlyphs}${bridgeSvg}${passageSvg}${entranceSvg}
       </svg>`;
       };
 
