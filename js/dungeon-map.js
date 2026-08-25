@@ -96,6 +96,65 @@ function repairPoly(poly, r, crit) {
   return poly;
 }
 
+// A carved outline is free to wander anywhere except across its own
+// doorways. Wherever one is cut, the outline is laid flat along the room's
+// rectangular wall for the width of that one square, so the opening is cut
+// out of a straight piece of wall sitting exactly on the grid line the
+// hallway arrives at. Without this a wobbly edge can sit half a square
+// inside the doorway: the wall never opens, the hallway dead-ends into it,
+// and the opening lands in the middle of the floor doing nothing.
+// A vertex every half square or so. A cave outline is drawn with only a
+// handful of points, and a doorway is one square wide: without this, most
+// doorways fall between two vertices with nothing to lay flat.
+function densify(poly, step) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    out.push(a);
+    const n = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / step);
+    for (let k = 1; k < n; k++) {
+      out.push([+(a[0] + ((b[0] - a[0]) * k) / n).toFixed(2), +(a[1] + ((b[1] - a[1]) * k) / n).toFixed(2)]);
+    }
+  }
+  return out;
+}
+
+function squareAtDoor(poly, dx, dy, ox, oy) {
+  poly = densify(poly, 0.4);
+  const vertical = ox !== dx;                                  // the wall runs north-south
+  const wall = vertical ? (ox > dx ? dx + 1 : dx) : (oy > dy ? dy + 1 : dy);
+  const out = vertical ? Math.sign(ox - dx) : Math.sign(oy - dy);
+  const lo = vertical ? dy : dx, hi = lo + 1;
+  const perp = (p) => (vertical ? p[0] : p[1]);
+  const lat = (p) => (vertical ? p[1] : p[0]);
+  const at = (v) => (vertical ? [wall, +v.toFixed(2)] : [+v.toFixed(2), wall]);
+  // A vertex belongs to this doorway if it stands across the opening and
+  // near the wall being opened. The nearness test is what keeps the far side
+  // of the room, which shares the same span, out of it.
+  const across = (p) => lat(p) > lo - 0.2 && lat(p) < hi + 0.2 && (perp(p) - wall) * out > -1.5;
+
+  const n = poly.length;
+  let start = 0;
+  while (start < n && across(poly[start])) start++;
+  if (start === n) return poly;                                // nothing to anchor to
+
+  const res = [];
+  let i = start, seen = 0, touched = false;
+  while (seen < n) {
+    const here = poly[i];
+    if (!across(here)) { res.push(here); i = (i + 1) % n; seen++; continue; }
+    const before = poly[(i - 1 + n) % n];
+    let j = i, run = 0;
+    while (run < n && across(poly[j % n])) { j++; run++; seen++; }
+    const after = poly[j % n];
+    const forward = lat(after) >= lat(before);
+    res.push(at(forward ? lo : hi), at(forward ? hi : lo));
+    touched = true;
+    i = j % n;
+  }
+  return touched ? res : poly;
+}
+
 // Corners cut on the diagonal: the angled walls the hand-drawn maps use to
 // stop every room reading as the same box.
 function chamferPoly(r, cuts) {
@@ -108,6 +167,31 @@ function chamferPoly(r, cuts) {
   out.push(...(cuts.includes(3) ? [[x1 + k, y2], [x1, y2 - k]] : [[x1, y2]]));
   if (cuts.includes(0)) out.push([x1, y1 + k]);
   return out;
+}
+
+// A rotunda, and its cut-cornered cousin. Both are carried as outlines
+// rather than drawn as an arc at render time, so that they go through the
+// same doorway squaring as every other carved shape: an ellipse only touches
+// its rectangle at four points, which used to leave most of a round room's
+// doorways opening onto nothing.
+function roundPoly(r, points = 28) {
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  const poly = [];
+  for (let i = 0; i < points; i++) {
+    const ang = (i / points) * Math.PI * 2;
+    poly.push([
+      +(cx + Math.cos(ang) * (r.w / 2)).toFixed(2),
+      +(cy + Math.sin(ang) * (r.h / 2)).toFixed(2),
+    ]);
+  }
+  return poly;
+}
+
+function octagonPoly(r) {
+  const x1 = r.x, y1 = r.y, x2 = r.x + r.w, y2 = r.y + r.h;
+  const k = Math.min(r.w, r.h) * 0.28;
+  return [[x1 + k, y1], [x2 - k, y1], [x2, y1 + k], [x2, y2 - k],
+    [x2 - k, y2], [x1 + k, y2], [x1, y2 - k], [x1, y1 + k]];
 }
 
 // A rectangle with one corner taken out of it.
@@ -362,9 +446,12 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
   }
 
   const doorCellsByRoom = new Map();
+  const doorwaysByRoom = new Map();
   for (const d of doors) {
     if (!doorCellsByRoom.has(d.between[0])) doorCellsByRoom.set(d.between[0], []);
     doorCellsByRoom.get(d.between[0]).push([d.x, d.y]);
+    if (!doorwaysByRoom.has(d.between[0])) doorwaysByRoom.set(d.between[0], []);
+    doorwaysByRoom.get(d.between[0]).push([d.x, d.y, d.outside[0], d.outside[1]]);
   }
 
   // ---- shapes. Deliberately after the doors, because a room's drawn outline
@@ -376,9 +463,14 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
   for (const r of rooms) {
     const crit = (doorCellsByRoom.get(r.id) || []).map(([x, y]) => [x + 0.5, y + 0.5]);
     if (entrance && !entrance.internal && entrance.room === r.id) crit.push([entrance.x + 0.5, entrance.y + 0.5]);
+    const ways = (doorwaysByRoom.get(r.id) || []).slice();
+    if (entrance && !entrance.internal && entrance.room === r.id) {
+      ways.push([entrance.x, entrance.y, entrance.outside[0], entrance.outside[1]]);
+    }
     const holds = (poly) => crit.every(([x, y]) => insidePoly(poly, x, y));
     const tryPoly = (poly) => {
-      const fixed = repairPoly(poly, r, crit);
+      let fixed = repairPoly(poly, r, crit);
+      for (const [dx, dy, ox, oy] of ways) fixed = squareAtDoor(fixed, dx, dy, ox, oy);
       return holds(fixed) ? fixed : null;
     };
 
@@ -391,7 +483,9 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
       const roll = Math.random();
       const big = r.w >= 5 && r.h >= 5;
       if (ROUNDABLE.has(r.role) && r.w >= 4 && Math.abs(r.w - r.h) <= 2 && roll < 0.34) {
-        shape = chance(0.5) ? 'round' : 'octagon';
+        const wantRound = chance(0.5);
+        poly = tryPoly(wantRound ? roundPoly(r) : octagonPoly(r));
+        if (poly) shape = wantRound ? 'round' : 'octagon';
       } else if (roll < 0.46) {
         const corners = [0, 1, 2, 3].filter(() => chance(0.55));
         if (corners.length) {
