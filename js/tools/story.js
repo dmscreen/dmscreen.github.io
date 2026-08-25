@@ -284,9 +284,29 @@ export default {
     // The real dungeon map: rooms and corridors as geometry on a 5-ft grid,
     // ink-and-hatch in the style of hand-drawn dungeon maps, themable for
     // light and dark. Rooms are clickable and jump to their key.
+    // Which written entry a drawn passage glyph belongs to. New campaigns
+    // stamp the id on both sides; older saves are paired by position, which
+    // is the order the generator wrote them in.
+    const passageKey = (x, i) => x?.id || `p${i + 1}`;
+
     const dungeonMapSVG = (elt, player = false) => {
       const top = elt.map;
       if (!top || !(top.rooms?.length || top.levels?.length)) return legacyMapSVG(elt);
+      const written = elt.passages || [];
+      const levelOffset = new Map();
+      {
+        let k = 0;
+        for (const mm of (top.levels || [top])) { levelOffset.set(mm, k); k += (mm.corridorFeatures || []).length; }
+      }
+      const passageIdOf = (mm, f, fi) => {
+        if (f.pid) return written.some(x => x.id === f.pid) ? f.pid : null;
+        const at = (levelOffset.get(mm) || 0) + fi;
+        return written[at] ? passageKey(written[at], at) : null;
+      };
+      const passageTitleOf = (pid) => {
+        const x = written.find((w, i) => passageKey(w, i) === pid);
+        return x ? `${x.name} (between ${x.between[0]} and ${x.between[1]})` : '';
+      };
       const maps = top.levels || [top];
       const multi = maps.length > 1;
       const C = 12; // px per 5-ft square
@@ -557,14 +577,20 @@ export default {
 
       // what waits in the passages, on the DM's copy only: a trap the party
       // can read off the map is not a trap, and neither is a hidden way in.
-      const passageSvg = player ? '' : (m.corridorFeatures || []).map(f => {
+      // Each glyph carries the id of the entry that describes it, so it
+      // opens that entry the way a room does.
+      const passageSvg = player ? '' : (m.corridorFeatures || []).map((f, fi) => {
         const px = (f.x + 0.5) * C, py = (f.y + 0.5) * C;
+        const pid = passageIdOf(m, f, fi);
+        const goto = pid ? ` data-goto="${esc(pid)}"` : '';
         if (f.t === 'trap') {
           const r2 = C * 0.34;
-          return `<g class="map-hazard"><path d="M${px},${(py - r2).toFixed(1)} L${(px + r2).toFixed(1)},${py} L${px},${(py + r2).toFixed(1)} L${(px - r2).toFixed(1)},${py} Z"/>
+          return `<g class="map-hazard"${goto}><title>${esc(passageTitleOf(pid) || 'A trap in the passage')}</title>
+            <path d="M${px},${(py - r2).toFixed(1)} L${(px + r2).toFixed(1)},${py} L${px},${(py + r2).toFixed(1)} L${(px - r2).toFixed(1)},${py} Z"/>
             <circle cx="${px}" cy="${py}" r="1.4"/></g>`;
         }
-        return `<g class="map-hazard is-secret"><circle cx="${px}" cy="${py}" r="${(C * 0.34).toFixed(1)}"/>
+        return `<g class="map-hazard is-secret"${goto}><title>${esc(passageTitleOf(pid) || 'A way that is not obvious')}</title>
+          <circle cx="${px}" cy="${py}" r="${(C * 0.34).toFixed(1)}"/>
           <text x="${px}" y="${(py + 3).toFixed(1)}" class="map-secret">S</text></g>`;
       }).join('');
 
@@ -601,23 +627,113 @@ export default {
       for (let gy = 0; gy <= m.bounds.h; gy++) grid += `<line x1="0" y1="${gy * C}" x2="${W}" y2="${gy * C}"/>`;
       const clip = rooms.map(r => `<path d="${roomPath(r)}"/>`).join('');
 
-      // doors: erase the wall stroke across the opening, then the glyph
-      // An opening is cut out of the room's own wall and nothing else. It is
-      // as long as the passage floor is wide, and in depth it reaches inward
-      // far enough to take the wall out and outward only to the wall's outer
-      // edge: it stops at the skin of the room rather than carrying on down
-      // the hallway, where it would blank out the hallway's own walls.
-      const IN = WALL / 2 + 1.2;   // through the wall and a little past it
+      // An opening is cut out of the room's own wall and nothing else, and
+      // it is cut to the shape that wall actually has.
+      //
+      // A rectangle could only ever be right where the wall happened to run
+      // straight and square to the passage. Instead, take the piece of the
+      // room's own outline that spans the passage's inner width -- from the
+      // inside face of one hallway wall to the inside face of the other --
+      // and thicken it into a ribbon as deep as the wall is drawn. Whatever
+      // the wall is doing at that point, the opening is that shape: it can
+      // never bite a corner off the wall beside it, and it stops at the skin
+      // of the room rather than carrying on down the hallway.
+      const IN = WALL / 2 + 0.9;   // through the wall and a shade past it
       const OUT = 3.2 / 2;         // the wall's outer edge, hover weight included
-      const opening = (cx, cy, along, ndx, ndy) => (along === 'h'
-        ? `<rect x="${cx - PASSAGE / 2}" y="${cy - (ndy > 0 ? OUT : IN)}" width="${PASSAGE}" height="${IN + OUT}" class="map-eraser"/>`
-        : `<rect x="${cx - (ndx > 0 ? OUT : IN)}" y="${cy - PASSAGE / 2}" width="${IN + OUT}" height="${PASSAGE}" class="map-eraser"/>`);
+      const roomById = new Map(rooms.map(r => [r.id, r]));
+
+      const outlinePx = (r) => (r.poly
+        ? r.poly.map(([x, y]) => [x * C, y * C])
+        : [[r.x * C, r.y * C], [(r.x + r.w) * C, r.y * C], [(r.x + r.w) * C, (r.y + r.h) * C], [r.x * C, (r.y + r.h) * C]]);
+
+      // The piece of the room's own outline that spans the way through, as
+      // (along the wall, across it) pairs in order.
+      //
+      // It has to be a connected walk of the outline, not every edge that
+      // happens to pass nearby: a room whose far side loops back within a
+      // few pixels of this wall would otherwise contribute its edges too,
+      // and the opening came out as a zigzag across half the room.
+      const wallChain = (r, wall, mid, vert) => {
+        const lo = mid - PASSAGE / 2, hi = mid + PASSAGE / 2;
+        const pts = outlinePx(r);
+        const n = pts.length;
+        const at = (i) => pts[((i % n) + n) % n];
+        const lat = (q) => (vert ? q[1] : q[0]);
+        const per = (q) => (vert ? q[0] : q[1]);
+
+        // the edge carrying the doorway: it spans the middle of the way
+        // through and lies on the wall being opened
+        let seed = -1, best = 4;
+        for (let i = 0; i < n; i++) {
+          const a = at(i), b = at(i + 1);
+          const l0 = lat(a), l1 = lat(b);
+          if (l0 === l1) continue;
+          const t = (mid - l0) / (l1 - l0);
+          if (t < 0 || t > 1) continue;
+          const d = Math.abs(per(a) + (per(b) - per(a)) * t - wall);
+          if (d < best) { best = d; seed = i; }
+        }
+        if (seed < 0) return null;
+
+        // follow the outline out of the doorway in both directions until it
+        // leaves the width of the way through
+        const chain = [at(seed), at(seed + 1)];
+        for (let i = seed + 1; chain.length < n; i++) {
+          const l = lat(chain[chain.length - 1]);
+          if (l <= lo || l >= hi) break;
+          chain.push(at(i + 1));
+        }
+        for (let i = seed; chain.length < n; i--) {
+          const l = lat(chain[0]);
+          if (l <= lo || l >= hi) break;
+          chain.unshift(at(i - 1));
+        }
+        if (chain.length < 2) return null;
+
+        const cut = (a, b, target) => {
+          const l0 = lat(a), l1 = lat(b);
+          if (l0 === l1) return b.slice();
+          const t = (target - l0) / (l1 - l0);
+          return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+        };
+        const trim = (edgeIn, edgeOut) => {
+          const l = lat(edgeIn);
+          if (l < lo) return cut(edgeIn, edgeOut, lo);
+          if (l > hi) return cut(edgeIn, edgeOut, hi);
+          return edgeIn.slice();
+        };
+        chain[0] = trim(chain[0], chain[1]);
+        chain[chain.length - 1] = trim(chain[chain.length - 1], chain[chain.length - 2]);
+
+        // a wall that wanders this far from the doorway is not the wall the
+        // hallway arrives at; better a plain opening than a wild shape
+        if (chain.some(q => Math.abs(per(q) - wall) > 7)) return null;
+        return chain.map(q => [lat(q), per(q)]);
+      };
+
+      const opening = (r, cx, cy, ndx, ndy) => {
+        const vert = ndx !== 0;                  // the wall runs north-south
+        const wall = vert ? cx : cy;             // where the way through crosses it
+        const mid = vert ? cy : cx;              // the middle of the way through
+        const away = -(vert ? ndx : ndy);        // out of the room
+        const chain = r ? wallChain(r, wall, mid, vert) : null;
+        if (!chain) {
+          // no outline to follow: fall back to a square opening on the line
+          return vert
+            ? `<rect x="${cx - (ndx > 0 ? OUT : IN)}" y="${cy - PASSAGE / 2}" width="${IN + OUT}" height="${PASSAGE}" class="map-eraser"/>`
+            : `<rect x="${cx - PASSAGE / 2}" y="${cy - (ndy > 0 ? OUT : IN)}" width="${PASSAGE}" height="${IN + OUT}" class="map-eraser"/>`;
+        }
+        const xy = (l, q) => (vert ? `${q.toFixed(1)},${l.toFixed(1)}` : `${l.toFixed(1)},${q.toFixed(1)}`);
+        const outer = chain.map(([l, q]) => xy(l, q + away * OUT));
+        const inner = chain.map(([l, q]) => xy(l, q - away * IN)).reverse();
+        return `<polygon points="${[...outer, ...inner].join(' ')}" class="map-eraser"/>`;
+      };
 
       const doorErasers = doors.map(d => {
         const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
-        const along = d.orient === 'h' ? 'v' : 'h';
-        return opening(bx, by, along, Math.sign(d.x - d.outside[0]), Math.sign(d.y - d.outside[1]));
+        return opening(roomById.get(d.between[0]), bx, by,
+          Math.sign(d.x - d.outside[0]), Math.sign(d.y - d.outside[1]));
       }).join('');
 
       const doorGlyphs = doors.filter(d => d.type !== 'arch').map(d => {
@@ -646,7 +762,7 @@ export default {
         const rx0 = ex + ux * t, ry0 = ey + uy * t;
         rungs += `<line x1="${(rx0 - px2 * half).toFixed(1)}" y1="${(ry0 - py2 * half).toFixed(1)}" x2="${(rx0 + px2 * half).toFixed(1)}" y2="${(ry0 + py2 * half).toFixed(1)}"/>`;
       }
-      entranceEraser = opening(ex, ey, e.orient === 'h' ? 'v' : 'h',
+      entranceEraser = opening(roomById.get(e.room), ex, ey,
         Math.sign(e.x - e.outside[0]), Math.sign(e.y - e.outside[1]));
       entranceSvg = `<g class="map-entrance">${rungs}</g>`;
       }
@@ -741,36 +857,122 @@ export default {
     const DM_MAP_CSS = `${PLAYER_MAP_CSS}
       .map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }
       .map-label { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9px;
-        font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: var(--map-floor); stroke-width: 2.5; }
+        font-weight: 700; text-anchor: middle; }
       .map-secret { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace;
         font-size: 8px; font-weight: 700; text-anchor: middle; }
       .map-hazard path, .map-hazard circle { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.5; }
       .map-hazard circle:last-of-type { fill: var(--map-ink); stroke: none; }
       .map-hazard.is-secret circle { fill: var(--map-floor); stroke: var(--map-ink); }`;
 
+    // The key. Every entry is drawn with the same markup and the same
+    // classes as the thing it stands for, so a symbol on the key cannot
+    // drift away from the symbol on the map. Which entries appear is read
+    // back off the finished drawing rather than guessed from the data: the
+    // player's copy leaves out everything behind a secret door, so its key
+    // has to leave that out too, and the only thing that knows for certain
+    // what survived is the markup itself.
+    const KEY_ROWS = [
+      { id: 'room', find: (t) => t.includes('class="map-floor"'), label: 'Room or chamber',
+        art: '<rect x="3" y="3" width="18" height="12" class="map-floor"/>' },
+      { id: 'passage', find: (t) => t.includes('<polyline'), label: 'Passage',
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="14"/>'
+           + '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-floor)" stroke-width="10"/>' },
+      { id: 'door', find: (t) => t.includes('class="map-door"'), label: 'Door',
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="2.6"/>'
+           + '<rect x="7" y="5.5" width="10" height="7" class="map-door"/>' },
+      { id: 'secret', dm: true, label: 'Secret door',
+        find: (t) => (t.match(/class="map-secret"/g) || []).length > (t.match(/class="map-hazard is-secret"/g) || []).length,
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="2.6"/>'
+           + '<rect x="7" y="5.5" width="10" height="7" class="map-door"/><text x="12" y="11.6" class="map-secret">S</text>' },
+      { id: 'wayin', find: (t) => t.includes('class="map-entrance"'), label: 'The way in, stairs down',
+        art: `<g class="map-entrance">${[0, 1, 2, 3].map(i2 => {
+          const x = 5 + i2 * 4.6, h = 6.4 - i2 * 1.1;
+          return `<line x1="${x}" y1="${(9 - h).toFixed(1)}" x2="${x}" y2="${(9 + h).toFixed(1)}"/>`;
+        }).join('')}</g>` },
+      { id: 'stair', find: (t) => t.includes('class="map-stair"'), label: 'Stair to another level',
+        art: '<rect x="4" y="3" width="16" height="12" class="map-furn"/>'
+           + '<g class="map-stair"><line x1="8" y1="3" x2="8" y2="15"/><line x1="12" y1="3" x2="12" y2="15"/><line x1="16" y1="3" x2="16" y2="15"/></g>' },
+      { id: 'stream', find: (t) => t.includes('class="map-waterway"') && t.includes('stroke="var(--map-water)"'), label: 'Stream',
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="12"/>'
+           + '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-water)" stroke-width="8.6"/>' },
+      { id: 'chasm', find: (t) => t.includes('class="map-waterway"') && t.includes('stroke="var(--map-page)"'), label: 'Chasm',
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="12"/>'
+           + '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-page)" stroke-width="8.6"/>' },
+      { id: 'bridge', find: (t) => t.includes('class="map-bridge"'), label: 'Plank bridge',
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-floor)" stroke-width="10"/>'
+           + '<g class="map-bridge"><line x1="7" y1="4" x2="7" y2="14"/><line x1="12" y1="4" x2="12" y2="14"/><line x1="17" y1="4" x2="17" y2="14"/></g>' },
+      { id: 'column', find: (t) => t.includes('class="map-column"'), label: 'Column',
+        art: '<circle cx="12" cy="9" r="3.6" class="map-column"/>' },
+      { id: 'furn', find: (t) => t.includes('class="map-furn"'), label: 'Furniture: altar, table, chest or dais',
+        art: '<rect x="5" y="4" width="14" height="10" class="map-furn"/>' },
+      { id: 'pool', find: (t) => t.includes('class="map-pool"'), label: 'Pool or basin',
+        art: '<path d="M4,9 C4,4.5 20,4.5 20,9 C20,13.5 4,13.5 4,9 Z" class="map-pool"/>' },
+      { id: 'rubble', find: (t) => t.includes('class="map-rubble"'), label: 'Rubble and debris',
+        art: [[7, 6, 1.5], [12, 10, 1.9], [17, 7, 1.3], [10, 13, 1.2], [16, 12, 1.6]]
+          .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" class="map-rubble"/>`).join('') },
+      { id: 'badge', dm: true, find: (t) => t.includes('class="map-badge"'), label: 'Room number, keyed in the notes',
+        art: '<circle cx="12" cy="9" r="7" class="map-badge"/><text x="12" y="12.2" class="map-label">a1</text>' },
+      { id: 'trap', dm: true, find: (t) => t.includes('class="map-hazard"'), label: 'Trap in the passage',
+        art: '<g class="map-hazard"><path d="M12,3.4 L17.6,9 L12,14.6 L6.4,9 Z"/><circle cx="12" cy="9" r="1.4"/></g>' },
+      { id: 'hidden', dm: true, find: (t) => t.includes('class="map-hazard is-secret"'), label: 'Way that is not obvious',
+        art: '<g class="map-hazard is-secret"><circle cx="12" cy="9" r="6"/><text x="12" y="12" class="map-secret">S</text></g>' },
+    ];
+
+    const mapKeySVG = (src, W, top, player, gridFt) => {
+      const rows = KEY_ROWS.filter(r => (!r.dm || !player) && r.find(src));
+      const cols = Math.max(1, Math.min(3, Math.floor(W / 210)));
+      const colW = W / cols;
+      const lines = Math.ceil(rows.length / cols);
+      const body = rows.map((r, i) => {
+        const x = 10 + (i % cols) * colW, y = top + 26 + Math.floor(i / cols) * 24;
+        return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${r.art}
+          <text x="32" y="12.5" style="font:400 11px Georgia, serif; fill: var(--map-ink)">${esc(r.label)}</text></g>`;
+      }).join('');
+      const h = 26 + lines * 24 + 12;
+      return {
+        h,
+        svg: `<line x1="10" y1="${top}" x2="${W - 10}" y2="${top}" stroke="var(--map-ink)" stroke-width="0.8" opacity="0.4"/>
+          <text x="10" y="${top + 15}" style="font:600 12px Georgia, serif; fill: var(--map-ink)">Key
+            <tspan style="font:400 11px Georgia, serif" opacity="0.75">&#8212; 1 square = ${gridFt} ft</tspan></text>
+          ${body}`,
+      };
+    };
+
     const downloadMap = (elt, player) => {
       const src = dungeonMapSVG(elt, player);
       const parts = src.match(/<svg[\s\S]*?<\/svg>/g) || [];
+      if (!parts.length) return toast('There is no drawn map to export', 'danger');
       const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2';
       const CSS = player ? PLAYER_MAP_CSS : DM_MAP_CSS;
-      let svg;
-      if (parts.length === 1) {
-        svg = parts[0]
-          .replace('<svg class="dungeon-map', `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map`)
-          .replace('<defs>', `<style>${CSS}</style><defs>`);
-      } else {
-        // levels stack into one sheet, each under its name
-        const dims = parts.map(p2 => { const mm2 = p2.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/); return { w: +mm2[1], h: +mm2[2] }; });
-        const W2 = Math.max(...dims.map(d2 => d2.w));
-        let y2 = 8;
-        const inner = parts.map((p2, i2) => {
-          const label = `<text x="${W2 / 2}" y="${y2 + 14}" text-anchor="middle" style="font:600 13px Georgia, serif; fill: var(--map-ink)">Level ${i2 + 1}</text>`;
-          const placed = p2.replace('<svg ', `<svg x="${((W2 - dims[i2].w) / 2).toFixed(1)}" y="${y2 + 22}" width="${dims[i2].w}" height="${dims[i2].h}" `);
-          y2 += dims[i2].h + 46;
-          return label + placed;
-        }).join('');
-        svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map" viewBox="0 0 ${W2} ${y2}"><style>${CSS}</style><rect width="${W2}" height="${y2}" fill="var(--map-page)"/>${inner}</svg>`;
-      }
+      const dims = parts.map(p2 => {
+        const m2 = p2.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+        return { w: +m2[1], h: +m2[2] };
+      });
+      // wide enough for the key to sit under the drawing without crowding
+      const W2 = Math.max(360, ...dims.map(d2 => d2.w));
+      const multi = parts.length > 1;
+      let y2 = 8;
+      // levels stack into one sheet, each under its name
+      const inner = parts.map((p2, i2) => {
+        let out = '';
+        if (multi) {
+          out += `<text x="${W2 / 2}" y="${y2 + 14}" text-anchor="middle" style="font:600 13px Georgia, serif; fill: var(--map-ink)">Level ${i2 + 1}</text>`;
+          y2 += 22;
+        }
+        out += p2.replace('<svg ', `<svg x="${((W2 - dims[i2].w) / 2).toFixed(1)}" y="${y2}" width="${dims[i2].w}" height="${dims[i2].h}" `);
+        y2 += dims[i2].h + (multi ? 24 : 0);
+        return out;
+      }).join('');
+
+      const grid = (elt.map?.levels?.[0] || elt.map)?.grid || 5;
+      const key = mapKeySVG(src, W2, y2 + 14, player, grid);
+      const H2 = y2 + 14 + key.h;
+      // a real size as well as a viewBox: a file with only a viewBox opens at
+      // whatever default size the viewer feels like
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map"`
+        + ` width="${W2}" height="${H2.toFixed(1)}" viewBox="0 0 ${W2} ${H2.toFixed(1)}">`
+        + `<style>${CSS}</style><rect width="${W2}" height="${H2.toFixed(1)}" fill="var(--map-page)"/>${inner}${key.svg}</svg>`;
+
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -892,7 +1094,7 @@ export default {
       return svg && svg.__cam ? svg.__cam : null;
     };
 
-    const frameRoom = (wrap, target) => {
+    const frameRoom = (wrap, target, minSpan = 0) => {
       const cam = camOf(wrap);
       if (!cam || !target) return;
       let bb;
@@ -901,7 +1103,8 @@ export default {
       // the room should sit in the middle and own a good share of the frame
       const fill = 0.42;
       const ratio = cam.home.w / cam.home.h;
-      let w = Math.max(bb.width / fill, (bb.height / fill) * ratio);
+      const bw = Math.max(bb.width, minSpan), bh = Math.max(bb.height, minSpan);
+      let w = Math.max(bw / fill, (bh / fill) * ratio);
       w = Math.min(cam.home.w, Math.max(cam.home.w / MAX_ZOOM, w));
       cam.to({ x: bb.x + bb.width / 2 - w / 2, y: bb.y + bb.height / 2 - (w / ratio) / 2, w });
     };
@@ -1030,15 +1233,25 @@ export default {
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
+      // What is between the rooms opens and closes like a room does, and is
+      // reached the same way: from its own glyph on the map.
       const passagesHTML = !elt.passages?.length ? '' : `
         <h3 class="mt">In the passages</h3>
-        <p class="small muted">Between the keyed rooms, and marked on the DM's map: a diamond for a trap, a circled S for a way that is not obvious.</p>
-        ${elt.passages.map(x => `<div class="beat">
-          <b>${esc(x.name)}</b> <span class="small faint">between ${esc(x.between[0])} and ${esc(x.between[1])}</span>
-          ${x.kind === 'trap'
-            ? `<p class="small">They notice ${esc(x.telegraph)}. <b>Detect</b> ${esc(x.detect)}. <b>Disarm</b> ${esc(x.disarm)}. <b>Effect</b> ${esc(x.effect)}</p>`
-            : `<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`}
-        </div>`).join('')}`;
+        <p class="small muted">Between the keyed rooms, and marked on the DM's map: a diamond for a trap, a circled S for a way that is not obvious. Click either on the map to open it here.</p>
+        ${elt.passages.map((x, i) => {
+          const pid = passageKey(x, i);
+          const open = openArea && openArea.eltId === elt.id && openArea.nodeId === pid;
+          return `<details class="story-area" id="area-${esc(pid)}" data-elt="${esc(elt.id)}" data-node="${esc(pid)}"${open ? ' open' : ''}>
+            <summary><b>${esc(x.name)}</b>
+              <span class="small faint">between ${esc(x.between[0])} and ${esc(x.between[1])}</span>
+              <span class="pill ${x.kind === 'trap' ? 'danger' : ''}">${esc(x.kind === 'trap' ? 'trap' : 'hidden')}</span>
+            </summary>
+            ${x.kind === 'trap'
+              ? `${playerBox(`They notice ${esc(x.telegraph)}.`, 'Players perceive')}
+                 <p class="small"><b>Detect</b> ${esc(x.detect)}. <b>Disarm</b> ${esc(x.disarm)}.<br><b>Effect</b> ${esc(x.effect)}</p>`
+              : dmBox(`<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`)}
+          </details>`;
+        }).join('')}`;
 
       if (elt.type === 'dungeon') return `${head}
         ${elt.approach ? `<div id="dm-approach">${playerBox(esc(elt.approach), 'Read aloud outside, before they go in')}</div>` : ''}
@@ -1510,9 +1723,10 @@ export default {
         showLevel(t.closest('.map-levels'), +t.dataset.level);
       }));
 
-      // Bring a room's own level to the front and return its shape on the map.
+      // Bring a target's own level to the front and return its shape on the
+      // map. Rooms and passage glyphs alike.
       const revealRoom = (id) => {
-        const g = box.querySelector(`svg.dungeon-map g.map-room[data-goto="${CSS.escape(id)}"]`);
+        const g = box.querySelector(`svg.dungeon-map [data-goto="${CSS.escape(id)}"]`);
         if (!g) return null;
         const pane = g.closest('.map-panel');
         if (pane) showLevel(pane.closest('.map-levels'), +pane.dataset.level);
@@ -1525,7 +1739,9 @@ export default {
         const dest = box.querySelector(`#area-${CSS.escape(id)}`);
         // the drawing follows the walk, across levels if the way out is a stair
         const onMap = revealRoom(id);
-        if (onMap) frameRoom(onMap.closest('.map-wrap'), onMap);
+        // a trap glyph is a few pixels across: frame the passage around it
+        // rather than magnifying until the diamond fills the screen
+        if (onMap) frameRoom(onMap.closest('.map-wrap'), onMap, onMap.classList.contains('map-hazard') ? 58 : 0);
         if (!dest) return;
         dest.open = true;
         dest.scrollIntoView({ behavior: 'smooth', block: 'center' });
