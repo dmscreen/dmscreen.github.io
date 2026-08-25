@@ -437,27 +437,32 @@ export default {
         }
         if (cells.length > 1) pts.push(cells[cells.length - 1]);
 
-        // Carry both ends a cell in under the rooms they serve. A passage
-        // used to stop at the centre of the last cell outside the wall,
-        // which left it a hair short of the doorway and finished it with a
-        // rounded cap, so every entrance read as a stub pointing at a room
-        // rather than an opening into one. Run it under the floor instead
-        // and the room, drawn over the top, ends it exactly at its own wall.
-        // Which way the room lies has to come from the doorway: about a
-        // third of passages turn the moment they leave one, so the line's
-        // own direction is no guide.
+        // Add a step at each end that carries the passage a cell in under
+        // the room it serves, so the room, drawn over the top, ends it
+        // exactly at its own wall rather than a hair short of the doorway.
+        //
+        // Added, not substituted for the cell outside the wall: that cell is
+        // what makes the passage leave the doorway square-on, and about a
+        // third of them turn immediately, so dropping it sent those across
+        // the wall at an angle while the opening cut for them stayed square,
+        // which is what left the junctions looking hacked about.
+        const ends = [];
         if (pts.length > 1) {
-          const carry = (i, cell) => {
-            const d = doors.find(dd => dd.outside[0] === cell[0] && dd.outside[1] === cell[1]);
-            if (d) pts[i] = [cell[0] + (d.x - d.outside[0]), cell[1] + (d.y - d.outside[1])];
-          };
-          carry(0, cells[0]);
-          carry(pts.length - 1, cells[cells.length - 1]);
+          const doorAt = (cell) => doors.find(dd => dd.outside[0] === cell[0] && dd.outside[1] === cell[1]);
+          const first = cells[0], last = cells[cells.length - 1];
+          const dA = doorAt(first);
+          if (dA) { pts.unshift([first[0] + (dA.x - dA.outside[0]), first[1] + (dA.y - dA.outside[1])]); ends.push(0); }
+          const dB = doorAt(last);
+          if (dB) { pts.push([last[0] + (dB.x - dB.outside[0]), last[1] + (dB.y - dB.outside[1])]); ends.push(pts.length - 1); }
         }
 
-        return pts.map(([x, y]) => {
-          const wob = cave ? (jig(x, y) - 0.5) * 0.5 : 0;
-          return `${((x + 0.5 + wob) * C).toFixed(1)},${((y + 0.5 + (cave ? (jig(y, x, 7) - 0.5) * 0.5 : 0)) * C).toFixed(1)}`;
+        // A cave's passages wander, but not through their own doorways: the
+        // two structural ends stay put so the crossing keeps its right angle.
+        return pts.map(([x, y], i) => {
+          const wobble = cave && !ends.includes(i);
+          const wx = wobble ? (jig(x, y) - 0.5) * 0.5 : 0;
+          const wy = wobble ? (jig(y, x, 7) - 0.5) * 0.5 : 0;
+          return `${((x + 0.5 + wx) * C).toFixed(1)},${((y + 0.5 + wy) * C).toFixed(1)}`;
         }).join(' ');
       };
 
@@ -589,9 +594,10 @@ export default {
         const bx = ((d.x + d.outside[0]) / 2 + 0.5) * C;
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
         const along = d.orient === 'h' ? 'v' : 'h';
+        const gap = C * 0.95;          // the width of the passage floor itself
         const eraser = along === 'h'
-          ? `<rect x="${bx - C * 0.5}" y="${by - C * 0.34}" width="${C}" height="${C * 0.68}" class="map-eraser"/>`
-          : `<rect x="${bx - C * 0.34}" y="${by - C * 0.5}" width="${C * 0.68}" height="${C}" class="map-eraser"/>`;
+          ? `<rect x="${bx - gap / 2}" y="${by - C * 0.34}" width="${gap}" height="${C * 0.68}" class="map-eraser"/>`
+          : `<rect x="${bx - C * 0.34}" y="${by - gap / 2}" width="${C * 0.68}" height="${gap}" class="map-eraser"/>`;
         if (d.type === 'arch') return eraser;
         const glyph = along === 'h'
           ? `<rect x="${bx - C * 0.42}" y="${by - C * 0.18}" width="${C * 0.84}" height="${C * 0.36}" class="map-door"/>`
