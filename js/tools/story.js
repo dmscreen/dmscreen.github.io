@@ -436,6 +436,25 @@ export default {
           if ((bx - ax) !== (cx2 - bx) || (by - ay) !== (cy2 - by)) pts.push(cells[i]);
         }
         if (cells.length > 1) pts.push(cells[cells.length - 1]);
+
+        // Carry both ends a cell in under the rooms they serve. A passage
+        // used to stop at the centre of the last cell outside the wall,
+        // which left it a hair short of the doorway and finished it with a
+        // rounded cap, so every entrance read as a stub pointing at a room
+        // rather than an opening into one. Run it under the floor instead
+        // and the room, drawn over the top, ends it exactly at its own wall.
+        // Which way the room lies has to come from the doorway: about a
+        // third of passages turn the moment they leave one, so the line's
+        // own direction is no guide.
+        if (pts.length > 1) {
+          const carry = (i, cell) => {
+            const d = doors.find(dd => dd.outside[0] === cell[0] && dd.outside[1] === cell[1]);
+            if (d) pts[i] = [cell[0] + (d.x - d.outside[0]), cell[1] + (d.y - d.outside[1])];
+          };
+          carry(0, cells[0]);
+          carry(pts.length - 1, cells[cells.length - 1]);
+        }
+
         return pts.map(([x, y]) => {
           const wob = cave ? (jig(x, y) - 0.5) * 0.5 : 0;
           return `${((x + 0.5 + wob) * C).toFixed(1)},${((y + 0.5 + (cave ? (jig(y, x, 7) - 0.5) * 0.5 : 0)) * C).toFixed(1)}`;
@@ -449,9 +468,9 @@ export default {
       const fadeBand = silhouette(1);
 
       const corridorInk = corridors.map(co =>
-        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(C * 0.95 + 4).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
       const corridorFloor = corridors.map(co =>
-        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${(C * 0.95).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
 
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
       const featSvg = (r) => (r.features || []).map(f => {
@@ -571,8 +590,8 @@ export default {
         const by = ((d.y + d.outside[1]) / 2 + 0.5) * C;
         const along = d.orient === 'h' ? 'v' : 'h';
         const eraser = along === 'h'
-          ? `<rect x="${bx - C * 0.55}" y="${by - C * 0.34}" width="${C * 1.1}" height="${C * 0.68}" class="map-eraser"/>`
-          : `<rect x="${bx - C * 0.34}" y="${by - C * 0.55}" width="${C * 0.68}" height="${C * 1.1}" class="map-eraser"/>`;
+          ? `<rect x="${bx - C * 0.5}" y="${by - C * 0.34}" width="${C}" height="${C * 0.68}" class="map-eraser"/>`
+          : `<rect x="${bx - C * 0.34}" y="${by - C * 0.5}" width="${C * 0.68}" height="${C}" class="map-eraser"/>`;
         if (d.type === 'arch') return eraser;
         const glyph = along === 'h'
           ? `<rect x="${bx - C * 0.42}" y="${by - C * 0.18}" width="${C * 0.84}" height="${C * 0.36}" class="map-door"/>`
