@@ -32,6 +32,48 @@ export async function launchCombat(monsterEntries) {
   location.hash = '#/initiative';
 }
 
+// Join whatever is already on the tracker rather than starting over: an NPC
+// who walks into a fight joins it, and launchCombat's replace-everything is
+// the wrong move for one person. An empty tracker gets the party first, so
+// the DM lands on something they can run instead of a lone combatant.
+//
+// entries: [{ monster, count, name }] - monster is optional, so somebody
+// with no suggested stat block still gets a row to roll initiative on.
+export async function addToCombat(entries) {
+  const state = (await getState('combat')) || { combatants: [], round: 0, turnIndex: 0, started: false };
+  state.combatants ||= [];
+  if (!state.combatants.length) {
+    for (const pc of await getParty()) {
+      state.combatants.push({
+        id: crypto.randomUUID(), type: 'pc', name: pc.name, ac: pc.ac,
+        hp: pc.maxHp, maxHp: pc.maxHp, initMod: pc.initMod, init: null,
+        conditions: [], concentration: false, deathSaves: { s: 0, f: 0 },
+      });
+    }
+  }
+  let added = 0;
+  for (const { monster, count = 1, name } of entries) {
+    const m = monster || {};
+    const label = name || m.name || 'Combatant';
+    const initMod = monster ? abilityMod(m.dex) : 0;
+    for (let i = 0; i < Math.max(1, count); i++) {
+      // number them off whatever is on the tracker already, so a second
+      // wave of guards carries on from the first rather than restarting
+      const same = state.combatants.filter(c => c.name === label || String(c.name).startsWith(`${label} `)).length;
+      state.combatants.push({
+        id: crypto.randomUUID(), type: 'monster', slug: m.slug,
+        name: same ? `${label} ${same + 1}` : label,
+        ac: m.ac ?? 12, hp: m.hp ?? 20, maxHp: m.hp ?? 20, initMod,
+        init: roll(`1d20${initMod >= 0 ? '+' : ''}${initMod}`).total,
+        conditions: [], concentration: false,
+      });
+      added++;
+    }
+  }
+  await setState('combat', state);
+  return added;
+}
+
 export function difficultyFor(party, adjustedXP) {
   // party: [{level}] - returns {label, thresholds:[e,m,h,d], totalXP}
   const t = [0, 0, 0, 0];

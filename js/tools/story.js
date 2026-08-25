@@ -4,9 +4,10 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
-import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature, endingOutlook } from '../campaign-gen.js';
+import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
+  rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
-import { launchCombat } from './encounters.js';
+import { launchCombat, addToCombat } from './encounters.js';
 import { getParty } from './party.js';
 
 const PATTERNS = [
@@ -735,15 +736,28 @@ export default {
       .map-pool { fill: var(--map-water); stroke: var(--map-ink); stroke-width: 1.3; }
       .map-bridge line { stroke: var(--map-ink); stroke-width: 1.7; stroke-linecap: round; }
       .map-stair line { stroke: var(--map-ink); stroke-width: 1.5; }`;
-    const downloadPlayerMap = (elt) => {
-      const src = dungeonMapSVG(elt, true);
+    // The DM's copy carries everything the player's leaves off, so it needs
+    // the ink for the parts that only exist on this one.
+    const DM_MAP_CSS = `${PLAYER_MAP_CSS}
+      .map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }
+      .map-label { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9px;
+        font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: var(--map-floor); stroke-width: 2.5; }
+      .map-secret { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 8px; font-weight: 700; text-anchor: middle; }
+      .map-hazard path, .map-hazard circle { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.5; }
+      .map-hazard circle:last-of-type { fill: var(--map-ink); stroke: none; }
+      .map-hazard.is-secret circle { fill: var(--map-floor); stroke: var(--map-ink); }`;
+
+    const downloadMap = (elt, player) => {
+      const src = dungeonMapSVG(elt, player);
       const parts = src.match(/<svg[\s\S]*?<\/svg>/g) || [];
       const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2';
+      const CSS = player ? PLAYER_MAP_CSS : DM_MAP_CSS;
       let svg;
       if (parts.length === 1) {
         svg = parts[0]
           .replace('<svg class="dungeon-map', `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map`)
-          .replace('<defs>', `<style>${PLAYER_MAP_CSS}</style><defs>`);
+          .replace('<defs>', `<style>${CSS}</style><defs>`);
       } else {
         // levels stack into one sheet, each under its name
         const dims = parts.map(p2 => { const mm2 = p2.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/); return { w: +mm2[1], h: +mm2[2] }; });
@@ -755,15 +769,15 @@ export default {
           y2 += dims[i2].h + 46;
           return label + placed;
         }).join('');
-        svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map" viewBox="0 0 ${W2} ${y2}"><style>${PLAYER_MAP_CSS}</style><rect width="${W2}" height="${y2}" fill="var(--map-page)"/>${inner}</svg>`;
+        svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" class="dungeon-map" viewBox="0 0 ${W2} ${y2}"><style>${CSS}</style><rect width="${W2}" height="${y2}" fill="var(--map-page)"/>${inner}</svg>`;
       }
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${elt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-player-map.svg`;
+      a.download = `${elt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${player ? 'player' : 'dm'}-map.svg`;
       a.click();
       URL.revokeObjectURL(a.href);
-      toast('Player map downloaded; safe to share as-is');
+      toast(player ? 'Player map downloaded; safe to share as-is' : 'DM map downloaded; keys, secrets and traps included');
     };
 
     // The old dot-graph plan, kept for campaigns saved before rooms had
@@ -1029,7 +1043,10 @@ export default {
       if (elt.type === 'dungeon') return `${head}
         ${elt.approach ? `<div id="dm-approach">${playerBox(esc(elt.approach), 'Read aloud outside, before they go in')}</div>` : ''}
         ${dungeonMapSVG(elt)}
-        ${(elt.map?.rooms?.length || elt.map?.levels?.length) ? `<div class="row"><button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button></div>` : ''}
+        ${(elt.map?.rooms?.length || elt.map?.levels?.length) ? `<div class="row">
+          <button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button>
+          <button class="btn small" id="dm-dmmap" title="The same drawing as on screen: room numbers, secret doors, traps and furniture, as a standalone file">DM map (SVG)</button>
+        </div>` : ''}
         ${wanderingHTML}${passagesHTML}<div class="mt">${nodesHTML(elt)}</div>`;
 
       if (elt.type === 'settlement') return `${head}
@@ -1098,6 +1115,14 @@ export default {
       return head;
     };
 
+    // Two buttons every person on the page carries: drop them into the fight
+    // that is running, or roll a different person into the same seat.
+    const personActions = (kind, id, { reroll = true, rerollLabel = 'Reroll', rerollTip = '' } = {}) => `
+      <div class="row person-actions">
+        <button class="btn small" data-add-init="${esc(kind)}|${esc(id)}" title="Add them to the initiative tracker without disturbing the fight already on it">Add to initiative</button>
+        ${reroll ? `<button class="btn small" data-person-reroll="${esc(kind)}|${esc(id)}" title="${esc(rerollTip)}">${esc(rerollLabel)}</button>` : ''}
+      </div>`;
+
     // Top half is safe on a shared screen; the fenced block is where the role
     // tag lives too, since "Betrayer" next to a name is itself a spoiler.
     const npcCardHTML = (n) => `<div class="npc-card">
@@ -1106,7 +1131,26 @@ export default {
       <p class="small">${esc(n.personality)}; ${esc(n.quirk)}.</p>
       ${dmBox(`<p class="small"><span class="pill">${esc(n.role)}</span><br>
         <b>Wants</b> ${esc(n.wants)}<br>
-        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}</div>`;
+        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}
+      ${personActions('npc', n.id, { rerollTip: 'Roll a different person into the same seat: new name, ancestry, wants and secret. Their role and where they are found stay put, and the new name replaces the old one everywhere the campaign mentions it.' })}</div>`;
+
+    // The antagonist and their lieutenants belong on the cast list too: they
+    // are the people the party spends the campaign chasing.
+    const villainCardHTML = (v) => `<div class="npc-card">
+      <b>${esc(v.name)}</b>, ${esc(v.title)}
+      <span class="small faint">${esc(v.ancestry)} ${esc(v.kind)}${v.where ? `, ${esc(v.where)}` : ''}</span>
+      <p class="small"><span class="pill danger">Antagonist</span></p>
+      ${dmBox(`<p class="small"><b>Goal</b> ${esc(v.goal)}<br>
+        <b>Method</b> ${esc(v.method)}<br>
+        <b>Weakness</b> ${esc(v.weakness)}${v.statSuggestion ? `<br><b>Run them with</b> <a href="javascript:void 0" data-mon="${esc(v.statSuggestion.slug)}">${esc(v.statSuggestion.name)}</a> (CR ${esc(v.statSuggestion.cr)})` : ''}</p>`)}
+      ${personActions('villain', v.id || 'villain', { rerollLabel: 'Reroll name', rerollTip: 'A new name and ancestry, changed everywhere the campaign names them. Their goal, method and schedule are what every chapter was built around, so those stay.' })}</div>`;
+
+    const lieutenantCardHTML = (l) => `<div class="npc-card">
+      <b>${esc(l.name)}</b>
+      <span class="small faint">${esc(l.ancestry)}${l.where ? `, ${esc(l.where)}` : ''}</span>
+      <p class="small"><span class="pill">Lieutenant</span></p>
+      ${dmBox(`<p class="small">${esc(l.note)}${l.statSuggestion ? `<br><b>Run them with</b> <a href="javascript:void 0" data-mon="${esc(l.statSuggestion.slug)}">${esc(l.statSuggestion.name)}</a> (CR ${esc(l.statSuggestion.cr)})` : ''}</p>`)}
+      ${personActions('lieutenant', l.id, { rerollTip: 'A different lieutenant in the same post: new name, brief and stat block, renamed everywhere the campaign mentions them.' })}</div>`;
 
     // Walk the story in order without going back to the tree.
     const chapterNavHTML = (ch) => {
@@ -1401,9 +1445,22 @@ export default {
         case 'act': html = actHTML(selection.ref); break;
         case 'chapter': html = chapterHTML(selection.ref); break;
         case 'element': html = elementHTML(selection.ref); break;
-        case 'npcs': html = `<h2>NPCs</h2>${c.appendices.npcs.map(npcCardHTML).join('')}`; break;
-        case 'creatures': html = `<h2>Creatures used</h2><p class="small muted">Every stat block the generated encounters reference.</p>
-          <p>${c.appendices.creatures.map(m => `<a href="javascript:void 0" data-mon="${esc(m.slug)}">${esc(m.name)}</a> <span class="small faint">CR ${esc(m.cr)}</span>`).join(' &middot; ')}</p>`; break;
+        case 'npcs': html = `<h2>NPCs</h2>
+          <h3>The opposition</h3>
+          <p class="small muted">Who the party is up against. Rerolling one of them renames them everywhere the campaign mentions them, so nothing is left pointing at somebody who no longer exists.</p>
+          ${c.villain ? villainCardHTML(c.villain) : ''}
+          ${(c.villain?.lieutenants || []).map(lieutenantCardHTML).join('')}
+          <h3 class="mt">The roster</h3>
+          <p class="small muted">${c.appendices.npcs.length} people the chapters seated somewhere.</p>
+          ${c.appendices.npcs.map(n => npcCardHTML(n)).join('')}`; break;
+        case 'creatures': html = `<h2>Creatures used</h2>
+          <p class="small muted">Every stat block the generated encounters reference. Rerolling one swaps it for a creature of comparable weight in every fight that uses it, and rebudgets those fights.</p>
+          ${c.appendices.creatures.map(m => `<div class="row" style="align-items:center;padding:3px 0">
+            <a href="javascript:void 0" data-mon="${esc(m.slug)}">${esc(m.name)}</a>
+            <span class="pill">CR ${esc(m.cr)}</span>
+            <span style="margin-left:auto;white-space:nowrap">
+              <button class="btn small" data-crea-reroll="${esc(m.slug)}" title="Swap this stat block for a comparable one wherever the campaign uses it">Reroll</button>
+            </span></div>`).join('')}`; break;
         case 'items': html = `<h2>Treasure &amp; magic items</h2>
           ${c.treasure ? `<p class="small muted">${c.treasure.gp.toLocaleString()} gp in placed coin and valuables${Object.keys(c.treasure.rarities || {}).length ? `, plus ${Object.entries(c.treasure.rarities).map(([r, n]) => `${n} ${r}`).join(', ')} magic items` : ''}.</p>` : ''}
           ${c.appendices.magicItems.length
@@ -1423,7 +1480,8 @@ export default {
       box.innerHTML = html;
 
       // The player's copy of the dungeon map, exported as a standalone file.
-      box.querySelector('#dm-playermap')?.addEventListener('click', () => downloadPlayerMap(selection.ref));
+      box.querySelector('#dm-playermap')?.addEventListener('click', () => downloadMap(selection.ref, true));
+      box.querySelector('#dm-dmmap')?.addEventListener('click', () => downloadMap(selection.ref, false));
 
       // One room open at a time. Opening a second closes the first, and the
       // choice is remembered so a reroll does not throw you back to the top.
@@ -1568,6 +1626,58 @@ export default {
           b.disabled = false;
         }
       }));
+      // Everyone on the cast list can be found again from their id alone,
+      // wherever the card that carries them happens to be drawn.
+      const findPerson = (kind, id) => {
+        if (kind === 'villain') return campaign.villain;
+        if (kind === 'lieutenant') return (campaign.villain?.lieutenants || []).find(l => l.id === id);
+        return campaign.appendices.npcs.find(n => n.id === id)
+          || campaign.acts.flatMap(a => a.chapters).flatMap(ch => ch.npcs || []).find(n => n.id === id);
+      };
+
+      box.querySelectorAll('[data-add-init]').forEach(b => b.addEventListener('click', async () => {
+        const [kind, id] = b.dataset.addInit.split('|');
+        const who = findPerson(kind, id);
+        if (!who) return toast('That person is no longer in the campaign', 'danger');
+        const monster = who.statSuggestion ? bySlug.get(who.statSuggestion.slug) : null;
+        await addToCombat([{ monster, name: who.name }]);
+        toast(monster
+          ? `${who.name} joins the fight as ${monster.name}`
+          : `${who.name} joins the fight; no stat block suggested, so set their AC and HP`);
+      }));
+
+      box.querySelectorAll('[data-person-reroll]').forEach(b => b.addEventListener('click', async () => {
+        const [kind, id] = b.dataset.personReroll.split('|');
+        const was = findPerson(kind, id)?.name;
+        b.disabled = true;
+        try {
+          const fresh = kind === 'villain' ? await renameVillain(campaign)
+            : kind === 'lieutenant' ? await rerollLieutenant(campaign, id)
+              : await rerollNPC(campaign, id);
+          await persistRecord();
+          drawTree();
+          redrawInPlace();
+          toast(`${was} is now ${fresh.name}`);
+        } catch (err) {
+          toast(err.message, 'danger');
+          b.disabled = false;
+        }
+      }));
+
+      box.querySelectorAll('[data-crea-reroll]').forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        try {
+          const out = await rerollAppendixCreature(campaign, b.dataset.creaReroll);
+          await persistRecord();
+          drawTree();
+          redrawInPlace();
+          toast(`${out.from} swapped for ${out.to} in ${out.fights} ${out.fights === 1 ? 'fight' : 'fights'}`);
+        } catch (err) {
+          toast(err.message, 'danger');
+          b.disabled = false;
+        }
+      }));
+
       box.querySelectorAll('[data-swap]').forEach(b => b.addEventListener('click', async () => {
         const [beatId, slug] = b.dataset.swap.split('|');
         b.disabled = true;
