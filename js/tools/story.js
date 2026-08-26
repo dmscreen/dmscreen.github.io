@@ -535,31 +535,25 @@ export default {
         return { loops, inside: insideGrid };
       };
 
-      // The rock outside the walls, drawn the way a hand draws it: short
-      // strokes square to the wall, packed close, of uneven length, so the
-      // edge reads as broken stone. The old band was a 45-degree pattern
-      // clipped to a blurred copy of the outline, which gave every wall the
-      // same diagonal shading whichever way it ran and read as a second
-      // border drawn around the rooms rather than as rock.
-      // The rock outside the walls, in two layers the way a hand does it: a
-      // nearly solid ink rind hugging the wall line itself, and patches of
-      // angled hatching growing out of the rind, each patch leaning the
-      // opposite way from the last so the sets cross, all of it giving out
-      // into the page. Solid at the wall, broken at the far edge.
+      // Dyson hatching. The atom is a cluster of three strokes of slightly
+      // different lengths (sometimes four), gently curved, ends ragged, and
+      // the clusters are laid along the wall in a chain: each one turned 35
+      // to 60 degrees off the one before it so their ends mesh, with a
+      // second rank sitting in the first rank's gaps. Nothing is scattered
+      // beyond the band, and the coverage stays even the whole way round.
+      // All the randomness comes from jig(), so the DM's copy and the
+      // player's export of the same level hatch identically.
       const hatchMarks = (loops, inside) => {
         const STEP = 1.0;                 // px between boundary samples
-        const SMOOTH = 4;                 // samples either side, for the tangent
-        const PATCH = 18;                 // samples per patch of hatching
+        const SMOOTH = 5;                 // samples either side, for the tangent
         const marks = [];
-        const put = (x, y, dx, dy) => marks.push(`M${x.toFixed(1)},${y.toFixed(1)}l${dx.toFixed(1)},${dy.toFixed(1)}`);
         loops.forEach((loop, li2) => {
           if (loop.length < 4) return;
 
           // Walk the outline at a fixed spacing first. The outline is a
           // staircase of whole cells, so taking the direction from a single
-          // edge would give every stroke one of four angles and a diagonal
-          // wall would grow a comb of alternating ticks. Sampling evenly and
-          // then reading the direction across several samples turns the
+          // edge would give every stroke one of four angles; sampling evenly
+          // and reading the direction across several samples turns the
           // staircase back into the line it stands for.
           const pts = [];
           let carry = 0;
@@ -573,8 +567,6 @@ export default {
           }
           const n = pts.length;
           if (n < SMOOTH * 2 + 2) return;
-
-          // outward normal at every sample, smoothed across the staircase
           const norms = [];
           for (let i = 0; i < n; i++) {
             const a = pts[(i - SMOOTH + n) % n], b = pts[(i + SMOOTH) % n];
@@ -585,36 +577,37 @@ export default {
             norms.push([nx, ny]);
           }
 
-          // the stroke, leaned off the normal and cut short of any floor on
-          // the far side of a narrow gap
-          const stroke = (i, ang, off, L) => {
-            const [px2, py2] = pts[i], [nx, ny] = norms[i];
-            const cs2 = Math.cos(ang), sn = Math.sin(ang);
-            const ex = nx * cs2 - ny * sn, ey = nx * sn + ny * cs2;
-            for (let q = Math.max(3, off); q < off + L + 4; q += 1.4) {
-              if (inside(px2 + ex * q, py2 + ey * q)) { L = q - off - 4.2; break; }
-            }
-            if (L < 1.6) return;
-            put(px2 + ex * off, py2 + ey * off, ex * L, ey * L);
+          // the chain: each cluster's angle is the last one's, pushed 35-60
+          // degrees round, so neighbouring clusters mesh instead of matching
+          let ang = jig(li2, 1) * Math.PI;
+          const turn = (x) => {
+            ang += (jig(x, li2, 2) < 0.5 ? 1 : -1) * (Math.PI * 0.19 + jig(x, li2, 3) * Math.PI * 0.14);
           };
 
-          // the rind: tight overlapping ticks on the wall line itself, so
-          // the edge reads nearly solid before the hatching takes over
-          for (let i = 0; i < n; i++) {
-            stroke(i, (jig(i, li2 + 1) - 0.5) * 0.5, 0, 2.2 + jig(i, li2 + 2) * 1.6);
-          }
-
-          // patches of directional hatching growing out of the rind, the
-          // lean alternating patch by patch
-          for (let start2 = 0; start2 < n; start2 += Math.floor(PATCH * 0.75)) {
-            const pi = Math.floor((start2 / PATCH) * 1.33);
-            const ang = (pi % 2 ? 1 : -1) * (0.42 + jig(pi, li2 + 3) * 0.3);
-            for (let k = 0; k < PATCH; k += 2.1) {
-              const i = Math.floor(start2 + k) % n;
-              stroke(i, ang, 1.6 + jig(i, li2 + 4) * 1.4,
-                (6 + jig(pi, li2 + 5) * 8) * (0.7 + jig(i, li2 + 6) * 0.5));
+          const cluster = (i, dist, len, seed) => {
+            const [px2, py2] = pts[i], [nx, ny] = norms[i];
+            const cx = px2 + nx * dist, cy = py2 + ny * dist;
+            // a cluster whose heart is on someone's floor would poke out the
+            // far side of it; drop it and let the band carry on
+            if (inside(cx, cy)) return;
+            const dx = Math.cos(ang), dy = Math.sin(ang);
+            const qx = -dy, qy = dx;
+            const nl = jig(i, li2, seed) < 0.15 ? 4 : 3;
+            for (let k = 0; k < nl; k++) {
+              const off = (k - (nl - 1) / 2) * 2.4 + (jig(i + k, li2, seed + 1) - 0.5) * 0.5;
+              const L = len * (0.8 + jig(i, k + li2, seed + 2) * 0.28);
+              const slide = (jig(k, i, seed + 3) - 0.5) * 0.24 * len;
+              const x0 = cx + qx * off - dx * (L / 2 - slide);
+              const y0 = cy + qy * off - dy * (L / 2 - slide);
+              const bend = (jig(i, k, seed + 4) - 0.5) * 0.14 * L;
+              const mx = x0 + dx * L / 2 + qx * bend, my = y0 + dy * L / 2 + qy * bend;
+              marks.push(`M${x0.toFixed(1)},${y0.toFixed(1)}Q${mx.toFixed(1)},${my.toFixed(1)} ${(x0 + dx * L).toFixed(1)},${(y0 + dy * L).toFixed(1)}`);
             }
-          }
+          };
+
+          for (let i = 0; i < n; i += 9) { turn(i); cluster(i, 5.5, 13, 10); }
+          ang += Math.PI / 3;
+          for (let i = 4; i < n; i += 9) { turn(i + 7919); cluster(i, 11.5, 12, 20); }
         });
         return `<path d="${marks.join('')}"/>`;
       };
@@ -1087,7 +1080,7 @@ export default {
     // theme, styles inlined so it opens anywhere, nothing on it a player
     // should not see.
     const PLAYER_MAP_CSS = `
-      .map-crag path { fill: none; stroke: var(--map-hatch); stroke-width: 1.05; stroke-linecap: round; }
+      .map-crag path { fill: none; stroke: var(--map-hatch); stroke-width: 1.2; stroke-linecap: round; }
       .map-floor { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 2.6; stroke-linejoin: round; }
       .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
       .is-cave .map-grid line { stroke-width: 0.6; }
