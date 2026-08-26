@@ -861,8 +861,6 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .wander-panel h3 { margin-top: 0; }
 /* the town sits on the same paper as the dungeons, capped a little shorter */
 .dungeon-map.is-town { max-height: 420px; cursor: default; }
-/* a town has no camera, but its key hangs in the same corner as a level's */
-.town-wrap { position: relative; }
 .town-legend { margin: 6px 0 0; padding-left: 22px; }
 .town-legend li { margin: 1px 0; }
 .map-tab.is-active { border-color: var(--accent); color: var(--accent); }
