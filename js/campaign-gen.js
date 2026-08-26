@@ -206,7 +206,22 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   const kind = C.dungeonKinds.find(k => k.id === kindId) || pick(C.dungeonKinds);
   const material = pick(kind.materials);
   const motif = pick(kind.motifs);
-  const count = Math.max(4, Math.round(int(kind.size[0], kind.size[1]) * sizeScale));
+  // How big this one is, on top of what its kind and its place in the story
+  // already ask for. A campaign of identically sized sites reads as one site
+  // drawn nine times, so some are a handful of rooms and some sprawl.
+  const SPREAD = [
+    { id: 'cramped', label: 'cramped', rooms: 0.62, floor: 0.86, weight: 3 },
+    { id: 'ordinary', label: 'ordinary', rooms: 1, floor: 1, weight: 5 },
+    { id: 'large', label: 'large', rooms: 1.45, floor: 1.12, weight: 3 },
+    { id: 'sprawling', label: 'sprawling', rooms: 2.05, floor: 1.24, weight: 2 },
+  ];
+  const spread = (() => {
+    const total = SPREAD.reduce((a, x) => a + x.weight, 0);
+    let n = Math.random() * total;
+    for (const x of SPREAD) { n -= x.weight; if (n < 0) return x; }
+    return SPREAD[1];
+  })();
+  const count = Math.max(4, Math.round(int(kind.size[0], kind.size[1]) * sizeScale * spread.rooms));
 
   const roles = C.nodeRoles.filter(r => r.weight > 0);
   const nodes = [];
@@ -241,7 +256,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
     for (let i = 0; i < nodes.length; i += perLevel) groups.push(nodes.slice(i, i + perLevel));
     const stairs = [];
     const levels = groups.map((g, i) => {
-      const lopts = {};
+      const lopts = { roomScale: spread.floor };
       if (i > 0) lopts.stairUp = g[0].id;
       if (i < groups.length - 1) {
         lopts.stairDown = g[g.length - 1].id;
@@ -259,7 +274,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
       map.adjacency[st.up] = [st.down, ...(map.adjacency[st.up] || [])];
     }
   } else {
-    map = generateDungeonMap(nodes, kind.id);
+    map = generateDungeonMap(nodes, kind.id, { roomScale: spread.floor });
   }
 
   // A junction the geometry could not give three ways out is not a junction;
@@ -349,6 +364,21 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
 
   // ---- and the passages themselves. The engine decided where; this decides
   // what, so a corridor can be as dangerous as a room.
+  // What a hallway is, not only where it runs. The engine lays the passages
+  // out; this decides which of them are pillared, flooded, bone-lined or
+  // part collapsed, so walking between two rooms is something to narrate.
+  // Restricted to what suits the site: no sewer under a barrow.
+  const hallKinds = (C.hallwayTypes || []).filter(t => !t.kinds || t.kinds.includes(kind.id));
+  let hn = 0;
+  for (const lvl of (map.levels || [map])) {
+    for (const co of lvl.corridors || []) {
+      if (co.cells.length < 5 || !hallKinds.length || !chance(0.55)) continue;
+      const t = pick(hallKinds);
+      const hid = `h${++hn}`;
+      co.character = { id: hid, type: t.id, name: t.name, draw: t.draw || '' };
+    }
+  }
+
   // Each one carries an id the drawn glyph carries too, so clicking the
   // trap on the map opens the entry that describes it.
   const passages = [];
@@ -363,6 +393,15 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
         const sf = pick((C.secretFeatures || []).filter(x => x.inPassage !== false));
         if (sf) { f.pid = pid; passages.push({ kind: 'secret', between: f.between, ...sf, holds: pick(C.secretCaches || []), id: pid }); }
       }
+    }
+  }
+
+  for (const lvl of (map.levels || [map])) {
+    for (const co of lvl.corridors || []) {
+      if (!co.character) continue;
+      const t = hallKinds.find(x => x.id === co.character.type);
+      passages.push({ id: co.character.id, kind: 'hallway', between: [co.a, co.b],
+        name: co.character.name, desc: t ? t.desc : '' });
     }
   }
 

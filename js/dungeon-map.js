@@ -21,17 +21,17 @@ const chance = (p) => Math.random() < p;
 // floor space; a junction is deliberately small because the corridors are
 // the point of it.
 const SIZES = {
-  threshold: [[4, 6], [3, 5]],
-  junction: [[2, 3], [2, 3]],
-  encounter: [[4, 8], [4, 7]],
-  puzzle: [[4, 6], [4, 6]],
-  trap: [[2, 3], [7, 12]],        // a corridor that is a room
-  treasure: [[3, 5], [3, 5]],
-  lore: [[3, 6], [3, 5]],
-  empty: [[3, 6], [3, 6]],
-  haven: [[3, 5], [3, 5]],
-  shortcut: [[2, 3], [2, 4]],
-  boss: [[8, 12], [7, 10]],
+  threshold: [[4, 7], [3, 6]],
+  junction: [[2, 4], [2, 4]],
+  encounter: [[4, 10], [4, 9]],
+  puzzle: [[4, 8], [4, 7]],
+  trap: [[2, 3], [7, 14]],        // a corridor that is a room
+  treasure: [[3, 6], [3, 6]],
+  lore: [[3, 7], [3, 6]],
+  empty: [[3, 8], [3, 7]],
+  haven: [[3, 6], [3, 6]],
+  shortcut: [[2, 4], [2, 5]],
+  boss: [[8, 14], [7, 12]],
 };
 
 // Which dungeon kinds are dug rather than built.
@@ -287,13 +287,22 @@ export function generateDungeonMap(nodes, kindId, opts = {}) {
   const cave = CAVE_KINDS.has(kindId);
   const rooms = [];
 
+  // Two sites of the same kind should not come out the same size. One
+  // multiplier sets how grand this particular place is, and a second, rolled
+  // per room, decides which of its chambers are the big ones: without that,
+  // scaling a dungeon up only made every room uniformly larger.
+  const grand = opts.roomScale || 1;
+
   // ---- placement: anchored sprawl. Each room goes near an earlier one, in
   // a random direction with a corridor-sized gap, so the map branches the
   // way hand-drawn ones do instead of marching in a line.
   for (let i = 0; i < nodes.length; i++) {
     const role = nodes[i].role;
     const [[w0, w1], [h0, h1]] = SIZES[role] || SIZES.empty;
-    let w = int(w0, w1), h = int(h0, h1);
+    // most rooms near the middle of their band, a few well outside it
+    const swell = grand * (chance(0.14) ? 1.45 + Math.random() * 0.5 : 0.86 + Math.random() * 0.42);
+    const fit = (v, lo) => Math.max(lo, Math.round(v * swell));
+    let w = fit(int(w0, w1), 2), h = fit(int(h0, h1), 2);
     if (role === 'trap' && chance(0.5)) [w, h] = [h, w]; // long corridors run either way
 
     if (i === 0) {

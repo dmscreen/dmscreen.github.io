@@ -373,6 +373,9 @@ export default {
       };
 
       const silhouette = (grow = 2) => {
+        // returns { d, loops, has }: the path to draw with, the loops as
+        // points, and a test for whether a cell is floor. The hatching needs
+        // all three, because a stroke has to know which way is out.
         const cells = new Set();
         const mark = (x, y) => cells.add(x + ',' + y);
         for (const r of rooms) {
@@ -439,19 +442,86 @@ export default {
           }
         }
         // drop collinear runs, then jitter what remains
-        const d = loops.map(loop => {
+        const jittered = loops.map(loop => {
           const slim = loop.filter((pt, i) => {
             const prev = loop[(i - 1 + loop.length) % loop.length], next = loop[(i + 1) % loop.length];
             return (prev[0] - pt[0]) * (next[1] - pt[1]) !== (prev[1] - pt[1]) * (next[0] - pt[0]);
           });
-          return 'M' + slim.map(([x, y]) =>
-            `${((x + (jig(x, y) - 0.5) * 0.55) * C).toFixed(1)},${((y + (jig(y, x, 5) - 0.5) * 0.55) * C).toFixed(1)}`
-          ).join('L') + 'Z';
-        }).join(' ');
-        return `<path d="${d}" fill-rule="evenodd"/>`;
+          return slim.map(([x, y]) => [
+            +((x + (jig(x, y) - 0.5) * 0.55) * C).toFixed(1),
+            +((y + (jig(y, x, 5) - 0.5) * 0.55) * C).toFixed(1),
+          ]);
+        });
+        const d = jittered.map(loop =>
+          'M' + loop.map(([x, y]) => `${x},${y}`).join('L') + 'Z').join(' ');
+        return { d: `<path d="${d}" fill-rule="evenodd"/>`, loops: jittered, has };
       };
 
-      const corridorPts = (cells) => {
+      // The rock outside the walls, drawn the way a hand draws it: short
+      // strokes square to the wall, packed close, of uneven length, so the
+      // edge reads as broken stone. The old band was a 45-degree pattern
+      // clipped to a blurred copy of the outline, which gave every wall the
+      // same diagonal shading whichever way it ran and read as a second
+      // border drawn around the rooms rather than as rock.
+      const hatchMarks = (loops, has) => {
+        const STEP = 2.3;                 // px between one stroke and the next
+        const SMOOTH = 4;                 // samples either side, for the tangent
+        const marks = [];
+        loops.forEach((loop, li2) => {
+          if (loop.length < 4) return;
+
+          // Walk the outline at a fixed spacing first. The outline is a
+          // staircase of whole cells, so taking the direction from a single
+          // edge would give every stroke one of four angles and a diagonal
+          // wall would grow a comb of alternating ticks. Sampling evenly and
+          // then reading the direction across several samples turns the
+          // staircase back into the line it stands for.
+          const pts = [];
+          let carry = 0;
+          for (let i = 0; i < loop.length; i++) {
+            const a = loop[i], b = loop[(i + 1) % loop.length];
+            const dx = b[0] - a[0], dy = b[1] - a[1];
+            const len = Math.hypot(dx, dy);
+            if (len < 0.001) continue;
+            for (let t = carry; t < len; t += STEP) pts.push([a[0] + (dx / len) * t, a[1] + (dy / len) * t]);
+            carry = (carry + Math.ceil((len - carry) / STEP) * STEP) - len;
+          }
+          const n = pts.length;
+          if (n < SMOOTH * 2 + 2) return;
+
+          for (let i = 0; i < n; i++) {
+            const a = pts[(i - SMOOTH + n) % n], b = pts[(i + SMOOTH) % n];
+            const tx = b[0] - a[0], ty = b[1] - a[1];
+            const tl = Math.hypot(tx, ty) || 1;
+            let nx = -ty / tl, ny = tx / tl;
+            const [px2, py2] = pts[i];
+            // out is whichever side of the wall is not floor
+            if (has(Math.floor(px2 / C + nx * 0.55), Math.floor(py2 / C + ny * 0.55))) { nx = -nx; ny = -ny; }
+
+            // length runs in streaks rather than at random, which is what
+            // makes the edge read as chiselled rather than as fur
+            const seed = Math.floor(i / 5);
+            const run = jig(seed, li2 + 1) * 0.6 + jig(Math.floor(i / 17), li2 + 9) * 0.4;
+            const spike = jig(i * 3 + 1, li2 + 2) > 0.88 ? 1.75 : 1;
+            let L = (4.6 + run * 9.5) * spike;
+            // stop short of anything on the other side of a narrow gap
+            for (let q = 3; q < L + 4; q += 1.4) {
+              if (has(Math.floor((px2 + nx * q) / C), Math.floor((py2 + ny * q) / C))) { L = q - 4.2; break; }
+            }
+            if (L < 2.2) continue;
+            // a touch of splay, so the strokes are not a perfect comb
+            const sp = (jig(i * 7 + 3, li2 + 5) - 0.5) * 0.3;
+            const cs2 = Math.cos(sp), sn = Math.sin(sp);
+            const ex = nx * cs2 - ny * sn, ey = nx * sn + ny * cs2;
+            // start just clear of the wall's own line rather than under it
+            const sx = px2 + ex * 1.5, sy = py2 + ey * 1.5;
+            marks.push(`M${sx.toFixed(1)},${sy.toFixed(1)}l${(ex * L).toFixed(1)},${(ey * L).toFixed(1)}`);
+          }
+        });
+        return `<path d="${marks.join('')}"/>`;
+      };
+
+      const corridorPts = (cells, carry = true) => {
         // simplify the cell path to bend points, then optionally wobble
         const pts = [cells[0]];
         for (let i = 1; i < cells.length - 1; i++) {
@@ -470,7 +540,7 @@ export default {
         // the wall at an angle while the opening cut for them stayed square,
         // which is what left the junctions looking hacked about.
         const ends = [];
-        if (pts.length > 1) {
+        if (carry && pts.length > 1) {
           const doorAt = (cell) => doors.find(dd => dd.outside[0] === cell[0] && dd.outside[1] === cell[1]);
           const first = cells[0], last = cells[cells.length - 1];
           // Both points of the first and last segment are pinned, not just the
@@ -492,11 +562,10 @@ export default {
         }).join(' ');
       };
 
-      const crag = silhouette(2);
-      // The hatching is strongest against the wall and gives out into the
-      // page: a blurred copy of the inner band masks it, so the rock reads
-      // as shading rather than a second border drawn around the rooms.
-      const fadeBand = silhouette(1);
+      // The hatching grows from the edge of the floor itself, so it starts
+      // against the wall the way it does on a drawn map.
+      const edge = silhouette(0);
+      const crag = hatchMarks(edge.loops, edge.has);
 
       // A passage is exactly one square wide. At 0.95 of one it sat a fraction
       // inside the grid lines on both sides, so it never lined up with the
@@ -506,8 +575,67 @@ export default {
       // stepping.
       const corridorInk = corridors.map(co =>
         `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-ink)" stroke-width="${(PASSAGE + WALL * 2).toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
-      const corridorFloor = corridors.map(co =>
-        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`).join('');
+      // Two copies of the floor, because the hallways are drawn twice: once
+      // under the rooms and again over the openings, masked to what lies
+      // outside them. Only the second copy is the one anyone sees out on the
+      // passages, so that is the one that carries the click target and the
+      // hover tint; the first stays plain.
+      const floorLine = (co) =>
+        `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-floor)" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/>`;
+      const corridorFloor = corridors.map(floorLine).join('');
+      const corridorFloorTop = corridors.map(co => {
+        // a hallway that is something in particular opens its own entry
+        const ch = !player && co.character ? co.character : null;
+        if (!ch) return floorLine(co);
+        // The glow is both the hover tint and the click target, and it stops
+        // at the doorways: the drawn floor runs a cell in under each room it
+        // serves, and a masked group is still hit-tested where it is masked
+        // out, so a hallway drawn that way would take the clicks meant for
+        // the two rooms it joins.
+        return `<g class="map-hall" data-goto="${esc(ch.id)}"><title>${esc(ch.name)} (between ${esc(co.a)} and ${esc(co.b)})</title>
+          ${floorLine(co)}
+          <polyline class="map-hall-glow" points="${corridorPts(co.cells, false)}" fill="none" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round"/></g>`;
+      }).join('');
+
+      // What lines a hallway, drawn along the run of it. Only the treatments
+      // a plan view can actually show: the rest are for the DM to read out.
+      const hallDressing = player ? '' : corridors.map(co => {
+        const kind2 = co.character?.draw;
+        if (!kind2) return '';
+        const cells = co.cells;
+        let out = '';
+        for (let i = 1; i < cells.length - 1; i++) {
+          const [x, y] = cells[i];
+          const [ax, ay] = cells[i - 1], [bx, by] = cells[i + 1];
+          const dx = bx - ax, dy = by - ay;
+          if (dx && dy) continue;                       // a turn: leave the corner clear
+          const ux = dx ? Math.sign(dx) : 0, uy = dy ? Math.sign(dy) : 0;
+          const nx = -uy, ny = ux;                      // across the passage
+          const cx3 = (x + 0.5) * C, cy3 = (y + 0.5) * C;
+          const side = (t) => [cx3 + nx * t, cy3 + ny * t];
+          const both = (t, mk) => mk(...side(t)) + mk(...side(-t));
+          if (kind2 === 'pillars') out += both(3.9, (px2, py2) => `<circle cx="${px2.toFixed(1)}" cy="${py2.toFixed(1)}" r="1.7" class="map-column"/>`);
+          else if (kind2 === 'statues') out += (i % 2 ? both(3.8, (px2, py2) => `<circle cx="${px2.toFixed(1)}" cy="${py2.toFixed(1)}" r="2.1" class="map-furn"/>`) : '');
+          else if (['bones', 'niches', 'shelves', 'racks', 'cells', 'crates'].includes(kind2)) {
+            out += both(4.1, (px2, py2) => `<rect x="${(px2 - 1.8).toFixed(1)}" y="${(py2 - 1.8).toFixed(1)}" width="3.6" height="3.6" class="map-furn"/>`);
+          } else if (kind2 === 'sconces') {
+            if (i % 2) out += both(5.4, (px2, py2) => `<circle cx="${px2.toFixed(1)}" cy="${py2.toFixed(1)}" r="1.2" class="map-column"/>`);
+          } else if (kind2 === 'grate') {
+            const [g1x, g1y] = side(5), [g2x, g2y] = side(-5);
+            out += `<line x1="${g1x.toFixed(1)}" y1="${g1y.toFixed(1)}" x2="${g2x.toFixed(1)}" y2="${g2y.toFixed(1)}" class="map-furn-line"/>`;
+          } else if (kind2 === 'rubble' || kind2 === 'roots' || kind2 === 'fungus') {
+            for (let k = 0; k < 3; k++) {
+              const t = (jig(x + k, y, k + 2) - 0.5) * 9, u = (jig(y, x + k, k + 5) - 0.5) * 8;
+              const px2 = cx3 + nx * t + ux * u, py2 = cy3 + ny * t + uy * u;
+              out += `<circle cx="${px2.toFixed(1)}" cy="${py2.toFixed(1)}" r="${(0.9 + jig(k, x) * 0.8).toFixed(1)}" class="${kind2 === 'rubble' ? 'map-rubble' : 'map-stipple'}"/>`;
+            }
+          }
+        }
+        if (kind2 === 'water') {
+          out += `<polyline points="${corridorPts(co.cells)}" fill="none" stroke="var(--map-water)" stroke-width="9" stroke-linecap="butt" stroke-linejoin="round" opacity="0.5"/>`;
+        }
+        return out;
+      }).join('');
 
       const ROLE_TINT = { encounter: 'var(--danger)', boss: 'var(--accent)', treasure: 'var(--success)', trap: 'var(--info)', puzzle: 'var(--info)', threshold: 'var(--map-ink)' };
       const featSvg = (r) => (r.features || []).map(f => {
@@ -769,17 +897,7 @@ export default {
 
       return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
         <defs>
-          <pattern id="dmhatch${li}" width="7" height="7" patternTransform="rotate(-42)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="1" x2="7" y2="1" stroke="var(--map-hatch)" stroke-width="1.1"/>
-            <line x1="0" y1="4.6" x2="4.4" y2="4.6" stroke="var(--map-hatch)" stroke-width="0.9"/>
-          </pattern>
           <clipPath id="dmrooms${li}">${clip}</clipPath>
-          <filter id="dmsoft${li}" x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur stdDeviation="${(C * 0.62).toFixed(1)}"/>
-          </filter>
-          <mask id="dmfade${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
-            <g filter="url(#dmsoft${li})" fill="#fff">${fadeBand}</g>
-          </mask>
           <!-- everything that is not a room or a room's wall -->
           <mask id="dmouter${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
             <rect width="${W}" height="${H}" fill="#fff"/>
@@ -787,7 +905,7 @@ export default {
           </mask>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
-        <g class="map-crag" fill="url(#dmhatch${li})" mask="url(#dmfade${li})">${crag}</g>
+        <g class="map-crag">${crag}</g>
         ${corridorInk}${corridorFloor}
         ${roomsSvg}${waterSvg}
         <g clip-path="url(#dmrooms${li})" class="map-grid">${grid}</g>
@@ -803,7 +921,8 @@ export default {
              to what lies outside the rooms, so an opening can only ever take
              something off the room it belongs to. Whatever it reaches past
              the room's skin the hallway simply puts back. -->
-        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloor}</g>
+        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloorTop}</g>
+        ${hallDressing}
         ${doorGlyphs}${bridgeSvg}${passageSvg}${entranceSvg}
       </svg>`;
       };
@@ -814,16 +933,21 @@ export default {
       // The player's sheet stacks the levels, since paper has no tabs.
       if (player) return maps.map((mm, li) => renderLevel(mm, li)).join('');
 
-      const panels = maps.map((mm, li) => `
-        <div class="map-panel" data-level="${li}"${li ? ' hidden' : ''}>
-          <div class="map-wrap">${renderLevel(mm, li)}
-            <div class="map-zoom">
-              <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
-              <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
-              <button class="btn small" data-zoom="reset" title="Fit the whole level" aria-label="Fit the whole level">Fit</button>
+      const panels = maps.map((mm, li) => {
+        const drawn = renderLevel(mm, li);
+        return `<div class="map-panel" data-level="${li}"${li ? ' hidden' : ''}>
+          <div class="map-wrap">${drawn}
+            <div class="map-side">
+              ${mapKeyPanel(drawn, mm.grid || 5)}
+              <div class="map-zoom">
+                <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+                <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+                <button class="btn small" data-zoom="reset" title="Fit the whole level" aria-label="Fit the whole level">Fit</button>
+              </div>
             </div>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
       // One level at a time, starting at the top. Walking a stair switches
       // the tab for you, so the map keeps up with where the party is.
@@ -837,7 +961,7 @@ export default {
     // theme, styles inlined so it opens anywhere, nothing on it a player
     // should not see.
     const PLAYER_MAP_CSS = `
-      .map-crag path { stroke: none; }
+      .map-crag path { fill: none; stroke: var(--map-hatch); stroke-width: 1.05; stroke-linecap: round; }
       .map-floor { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 2.6; stroke-linejoin: round; }
       .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
       .is-cave .map-grid line { stroke-width: 0.6; }
@@ -918,22 +1042,39 @@ export default {
         art: '<g class="map-hazard is-secret"><circle cx="12" cy="9" r="6"/><text x="12" y="12" class="map-secret">S</text></g>' },
     ];
 
+    // The same key, beside the drawing rather than under it. Read off the
+    // level actually on show, so a two-level site does not claim a stair on
+    // the level that has none.
+    const mapKeyPanel = (src, gridFt) => {
+      const rows = KEY_ROWS.filter(r => r.find(src));
+      if (!rows.length) return '';
+      return `<details class="map-key" open>
+        <summary>Key <span class="faint">1 sq = ${gridFt} ft</span></summary>
+        <div class="map-key-rows">${rows.map(r => `<div class="map-key-row">
+          <svg class="dungeon-map map-swatch" viewBox="0 0 24 18" width="24" height="18" aria-hidden="true">${r.art}</svg>
+          <span>${esc(r.label)}</span></div>`).join('')}</div>
+      </details>`;
+    };
+
     const mapKeySVG = (src, W, top, player, gridFt) => {
       const rows = KEY_ROWS.filter(r => (!r.dm || !player) && r.find(src));
-      const cols = Math.max(1, Math.min(3, Math.floor(W / 210)));
+      // small: the key is a reference, not the point of the sheet
+      const SC = 0.66, ROW = 16;
+      const cols = Math.max(1, Math.min(4, Math.floor(W / 156)));
       const colW = W / cols;
       const lines = Math.ceil(rows.length / cols);
       const body = rows.map((r, i) => {
-        const x = 10 + (i % cols) * colW, y = top + 26 + Math.floor(i / cols) * 24;
-        return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${r.art}
-          <text x="32" y="12.5" style="font:400 11px Georgia, serif; fill: var(--map-ink)">${esc(r.label)}</text></g>`;
+        const x = 9 + (i % cols) * colW, y = top + 19 + Math.floor(i / cols) * ROW;
+        return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+          <g transform="scale(${SC})">${r.art}</g>
+          <text x="${(24 * SC + 5).toFixed(1)}" y="${(9 * SC + 3).toFixed(1)}" style="font:400 8.5px Georgia, serif; fill: var(--map-ink)">${esc(r.label)}</text></g>`;
       }).join('');
-      const h = 26 + lines * 24 + 12;
+      const h = 19 + lines * ROW + 9;
       return {
         h,
-        svg: `<line x1="10" y1="${top}" x2="${W - 10}" y2="${top}" stroke="var(--map-ink)" stroke-width="0.8" opacity="0.4"/>
-          <text x="10" y="${top + 15}" style="font:600 12px Georgia, serif; fill: var(--map-ink)">Key
-            <tspan style="font:400 11px Georgia, serif" opacity="0.75">&#8212; 1 square = ${gridFt} ft</tspan></text>
+        svg: `<line x1="9" y1="${top}" x2="${W - 9}" y2="${top}" stroke="var(--map-ink)" stroke-width="0.7" opacity="0.4"/>
+          <text x="9" y="${top + 12}" style="font:600 9.5px Georgia, serif; fill: var(--map-ink)">Key
+            <tspan style="font:400 8.5px Georgia, serif" opacity="0.75">&#8212; 1 square = ${gridFt} ft</tspan></text>
           ${body}`,
       };
     };
@@ -1237,19 +1378,21 @@ export default {
       // reached the same way: from its own glyph on the map.
       const passagesHTML = !elt.passages?.length ? '' : `
         <h3 class="mt">In the passages</h3>
-        <p class="small muted">Between the keyed rooms, and marked on the DM's map: a diamond for a trap, a circled S for a way that is not obvious. Click either on the map to open it here.</p>
+        <p class="small muted">Between the keyed rooms: what the passages themselves are, and what waits in them. On the DM's map a diamond is a trap and a circled S is a way that is not obvious; a hallway with a character of its own can be clicked along its length. Click any of them to open it here.</p>
         ${elt.passages.map((x, i) => {
           const pid = passageKey(x, i);
           const open = openArea && openArea.eltId === elt.id && openArea.nodeId === pid;
           return `<details class="story-area" id="area-${esc(pid)}" data-elt="${esc(elt.id)}" data-node="${esc(pid)}"${open ? ' open' : ''}>
             <summary><b>${esc(x.name)}</b>
               <span class="small faint">between ${esc(x.between[0])} and ${esc(x.between[1])}</span>
-              <span class="pill ${x.kind === 'trap' ? 'danger' : ''}">${esc(x.kind === 'trap' ? 'trap' : 'hidden')}</span>
+              <span class="pill ${x.kind === 'trap' ? 'danger' : ''}">${esc(x.kind === 'trap' ? 'trap' : x.kind === 'hallway' ? 'passage' : 'hidden')}</span>
             </summary>
             ${x.kind === 'trap'
               ? `${playerBox(`They notice ${esc(x.telegraph)}.`, 'Players perceive')}
                  <p class="small"><b>Detect</b> ${esc(x.detect)}. <b>Disarm</b> ${esc(x.disarm)}.<br><b>Effect</b> ${esc(x.effect)}</p>`
-              : dmBox(`<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`)}
+              : x.kind === 'hallway'
+                ? playerBox(esc(x.desc), 'Read aloud as they walk it')
+                : dmBox(`<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`)}
           </details>`;
         }).join('')}`;
 
@@ -1672,6 +1815,7 @@ export default {
             <a href="javascript:void 0" data-mon="${esc(m.slug)}">${esc(m.name)}</a>
             <span class="pill">CR ${esc(m.cr)}</span>
             <span style="margin-left:auto;white-space:nowrap">
+              <button class="btn small" data-crea-init="${esc(m.slug)}" title="Add one to the initiative tracker without disturbing the fight already on it">Add to initiative</button>
               <button class="btn small" data-crea-reroll="${esc(m.slug)}" title="Swap this stat block for a comparable one wherever the campaign uses it">Reroll</button>
             </span></div>`).join('')}`; break;
         case 'items': html = `<h2>Treasure &amp; magic items</h2>
@@ -1707,6 +1851,10 @@ export default {
         for (const other of box.querySelectorAll('details.story-area[open]')) {
           if (other !== d) other.open = false;
         }
+        // the drawing follows the reading: opening a room, a trap or a
+        // hallway brings that part of the map into view
+        const onMap = revealRoom(d.dataset.node);
+        if (onMap) frameRoom(onMap.closest('.map-wrap'), onMap, onMap.classList.contains('map-hazard') ? 58 : 0);
       }));
 
       // Switching which level is on show, by tab or by walking a stair.
@@ -1878,6 +2026,13 @@ export default {
           toast(err.message, 'danger');
           b.disabled = false;
         }
+      }));
+
+      box.querySelectorAll('[data-crea-init]').forEach(b => b.addEventListener('click', async () => {
+        const m = bySlug.get(b.dataset.creaInit);
+        if (!m) return toast('Stat block not found', 'danger');
+        await addToCombat([{ monster: m }]);
+        toast(`${m.name} joins the fight`);
       }));
 
       box.querySelectorAll('[data-crea-reroll]').forEach(b => b.addEventListener('click', async () => {
