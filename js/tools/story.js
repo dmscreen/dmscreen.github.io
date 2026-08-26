@@ -941,7 +941,10 @@ export default {
         }).join('');
       }
 
-      // grid inside rooms only
+      // The grid covers every square anyone can stand on: the rooms and the
+      // passages between them. It is masked rather than clipped because a
+      // hallway is a stroked line, and a clip path only ever uses the shape
+      // its children fill.
       let grid = '';
       for (let gx = 0; gx <= m.bounds.w; gx++) grid += `<line x1="${gx * C}" y1="0" x2="${gx * C}" y2="${H}"/>`;
       for (let gy = 0; gy <= m.bounds.h; gy++) grid += `<line x1="0" y1="${gy * C}" x2="${W}" y2="${gy * C}"/>`;
@@ -1095,12 +1098,27 @@ export default {
             <rect width="${W}" height="${H}" fill="#fff"/>
             <g fill="#000" stroke="#000" stroke-width="${WALL}" stroke-linejoin="round">${clip}</g>
           </mask>
+          <!-- every square anyone can stand on: room floors and passage floors -->
+          <mask id="dmfloor${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
+            <rect width="${W}" height="${H}" fill="#000"/>
+            <g fill="#fff">${clip}</g>
+            <g fill="none" stroke="#fff" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round">${
+              corridors.map(co => `<polyline points="${corridorPts(co.cells)}"/>`).join('')}</g>
+          </mask>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
         <g class="map-crag">${crag}</g>
         ${corridorInk}${corridorFloor}
         ${roomsSvg}${waterSvg}
-        <g clip-path="url(#dmrooms${li})" class="map-grid">${grid}</g>
+        ${doorErasers}${entranceEraser}
+        <!-- The hallways draw themselves again, over the openings but masked
+             to what lies outside the rooms, so an opening can only ever take
+             something off the room it belongs to. Whatever it reaches past
+             the room's skin the hallway simply puts back. -->
+        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloorTop}</g>
+        <!-- the squares last of the floor work, so the second pass at the
+             hallways cannot paint over the ones out on the passages -->
+        <g mask="url(#dmfloor${li})" class="map-grid">${grid}</g>
         <g class="map-labels-over">${player ? '' : rooms.map(r => {
           const tint = ROLE_TINT[r.role];
           const lx = (r.x + r.w / 2) * C, ly = (r.y + r.h / 2) * C;
@@ -1108,12 +1126,6 @@ export default {
           return `<circle cx="${lx}" cy="${ly}" r="${rr}" class="map-badge" ${tint ? `style="stroke:${tint}"` : ''}/>
             <text x="${lx}" y="${(ly + 3).toFixed(1)}" class="map-label">${esc(r.id)}</text>`;
         }).join('')}</g>
-        ${doorErasers}${entranceEraser}
-        <!-- The hallways draw themselves again, over the openings but masked
-             to what lies outside the rooms, so an opening can only ever take
-             something off the room it belongs to. Whatever it reaches past
-             the room's skin the hallway simply puts back. -->
-        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloorTop}</g>
         ${hallDressing}
         ${doorGlyphs}${bridgeSvg}${passageSvg}${entranceSvg}
       </svg>`;
@@ -1271,8 +1283,10 @@ export default {
       </details>`;
     };
 
-    const mapKeySVG = (src, W, top, player, gridFt) => {
-      const rows = KEY_ROWS.filter(r => (!r.dm || !player) && r.find(src));
+    // The key as it goes on an exported sheet: rows of the symbol itself
+    // beside its name, under a rule. Dungeons and towns both use it.
+    const keyBlock = (rows, W, top, note) => {
+      if (!rows.length) return { h: 0, svg: '' };
       // small: the key is a reference, not the point of the sheet
       const SC = 0.66, ROW = 16;
       const cols = Math.max(1, Math.min(4, Math.floor(W / 156)));
@@ -1288,11 +1302,14 @@ export default {
       return {
         h,
         svg: `<line x1="9" y1="${top}" x2="${W - 9}" y2="${top}" stroke="var(--map-ink)" stroke-width="0.7" opacity="0.4"/>
-          <text x="9" y="${top + 12}" style="font:600 9.5px Georgia, serif; fill: var(--map-ink)">Key
-            <tspan style="font:400 8.5px Georgia, serif" opacity="0.75">&#8212; 1 square = ${gridFt} ft</tspan></text>
+          <text x="9" y="${top + 12}" style="font:600 9.5px Georgia, serif; fill: var(--map-ink)">Key${
+            note ? `<tspan style="font:400 8.5px Georgia, serif" opacity="0.75"> &#8212; ${esc(note)}</tspan>` : ''}</text>
           ${body}`,
       };
     };
+
+    const mapKeySVG = (src, W, top, player, gridFt) =>
+      keyBlock(KEY_ROWS.filter(r => (!r.dm || !player) && r.find(src)), W, top, `1 square = ${gridFt} ft`);
 
     const downloadMap = (elt, player) => {
       const src = dungeonMapSVG(elt, player);
@@ -1303,7 +1320,13 @@ export default {
       // invalid XML.
       const parts = (src.match(/<svg[\s\S]*?<\/svg>/g) || []).filter(p2 => !p2.includes('map-swatch'));
       if (!parts.length) return toast('There is no drawn map to export', 'danger');
-      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2';
+      // The badge rings are tinted by what the room is for, and the tint is
+      // written as one of the app's own colour variables. A sheet that
+      // carried only the --map-* ones left those declarations invalid, so
+      // every fight, lair, treasure and trap room lost its ring entirely
+      // while the plain rooms kept theirs. The sheet carries them too.
+      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2'
+        + ';--danger:#a33d2f;--accent:#a06d1f;--success:#5a7a3a;--info:#3f6c86';
       const CSS = player ? PLAYER_MAP_CSS : DM_MAP_CSS;
       const dims = parts.map(p2 => {
         const m2 = p2.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
@@ -1341,6 +1364,78 @@ export default {
       a.click();
       URL.revokeObjectURL(a.href);
       toast(player ? 'Player map downloaded; safe to share as-is' : 'DM map downloaded; keys, secrets and traps included');
+    };
+
+    // The town's key. A town is drawn from plain shapes with no classes on
+    // them, so which entries appear is read off the town itself rather than
+    // off the markup; the art is the same ink, fill and weight the map uses,
+    // so a symbol on the key cannot drift from the symbol on the map. The
+    // predicates take v1 and v2 towns alike: the older ones kept the gates
+    // beside the wall rather than on it.
+    const TOWN_KEY_ROWS = [
+      { id: 'road', label: 'Road or street',
+        has: (t) => (t.roads?.length || t.streets?.length),
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="7.6" stroke-linecap="round"/>'
+           + '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-floor)" stroke-width="5" stroke-linecap="round"/>' },
+      { id: 'plaza', label: 'Market square',
+        has: (t) => !!t.plaza,
+        art: '<polygon points="3,3.5 21,2.5 22,15 4,14.5" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.3"/>' },
+      { id: 'house', label: 'Building',
+        has: (t) => t.buildings?.length,
+        art: '<polygon points="2.5,4 11,3.6 11.4,14 3,14.4" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.15"/>'
+           + '<polygon points="13.5,4.4 21.5,4 21.8,13.6 13.8,14" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.15"/>' },
+      { id: 'bighouse', label: 'Notable building: inn, temple or hall',
+        has: (t) => t.buildings?.some(b => b.big),
+        art: '<polygon points="3,3.5 21,3 21.4,14.6 3.4,15" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.9"/>' },
+      { id: 'wall', label: 'Town wall',
+        has: (t) => !!t.wall,
+        art: '<polyline points="1,15 1,5 23,5" fill="none" stroke="var(--map-ink)" stroke-width="3.4" stroke-linejoin="round"/>' },
+      { id: 'tower', label: 'Wall tower',
+        has: (t) => t.wall?.towers?.length,
+        art: '<line x1="0" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="3.4"/>'
+           + '<rect x="9.2" y="6.2" width="5.6" height="5.6" fill="var(--map-ink)"/>' },
+      { id: 'gate', label: 'Gate',
+        has: (t) => (t.wall?.gates?.length || t.gates?.length),
+        art: '<line x1="0" y1="9" x2="8" y2="9" stroke="var(--map-ink)" stroke-width="3.4"/>'
+           + '<line x1="16" y1="9" x2="24" y2="9" stroke="var(--map-ink)" stroke-width="3.4"/>'
+           + '<rect x="8" y="5" width="8" height="8" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.6"/>' },
+      { id: 'castle', label: 'Keep or citadel',
+        has: (t) => !!t.castle,
+        art: '<polyline points="3,16 3,4 21,4 21,16" fill="none" stroke="var(--map-ink)" stroke-width="2.2" stroke-linejoin="round"/>' },
+      { id: 'farm', label: 'Ploughed field',
+        has: (t) => t.farms?.length,
+        art: '<rect x="2" y="3" width="20" height="12" fill="var(--map-floor)" stroke="var(--map-hatch)" stroke-width="0.9"/>'
+           + `<g stroke="var(--map-hatch)" stroke-width="0.7" opacity="0.7">${
+             [5.5, 8, 10.5, 13].map(y => `<line x1="3" y1="${y}" x2="21" y2="${y}"/>`).join('')}</g>` },
+      { id: 'green', label: 'Green or orchard',
+        has: (t) => t.greens?.length,
+        art: '<rect x="2" y="3" width="20" height="12" fill="var(--map-floor)" stroke="var(--map-hatch)" stroke-width="0.9"/>'
+           + `<g fill="none" stroke="var(--map-hatch)" stroke-width="1">${
+             [[7, 7], [13, 6], [17, 10], [9, 12]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.7"/>`).join('')}</g>` },
+      { id: 'trees', label: 'Trees and woodland',
+        has: (t) => t.trees?.length,
+        art: `<g fill="none" stroke="var(--map-hatch)" stroke-width="1">${
+          [[6, 8, 3.2], [13, 6, 2.4], [17, 11, 3.6], [9, 13, 2.2]]
+            .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>` },
+      { id: 'water', label: 'Water',
+        has: (t) => !!t.water,
+        art: '<polygon points="0,5 24,8 24,18 0,18" fill="var(--map-water)" opacity="0.5"/>'
+           + '<polyline points="0,5 24,8" fill="none" stroke="var(--map-ink)" stroke-width="1.6"/>' },
+      { id: 'spot', dm: true, label: 'Numbered spot, listed below',
+        has: (t) => t.spots?.length,
+        art: '<circle cx="12" cy="9" r="7" class="map-badge"/><text x="12" y="12.2" class="map-label">1</text>' },
+    ];
+    const townKeyRows = (t, player) => TOWN_KEY_ROWS.filter(r => (!r.dm || !player) && r.has(t));
+
+    const townKeyPanel = (t, player) => {
+      const rows = townKeyRows(t, player);
+      if (!rows.length) return '';
+      return `<details class="map-key" open>
+        <summary>Key</summary>
+        <div class="map-key-rows">${rows.map(r => `<div class="map-key-row">
+          <svg class="dungeon-map map-swatch" viewBox="0 0 24 18" width="24" height="18" aria-hidden="true">${r.art}</svg>
+          <span>${esc(r.label)}</span></div>`).join('')}</div>
+      </details>`;
     };
 
     // The town on paper: the same page, ink and floor as the dungeon maps,
@@ -1387,15 +1482,18 @@ export default {
       const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-water:#b9cdd2';
       const legendRows = player ? [] : (elt.townSpots || []);
       const legendH = legendRows.length ? 22 + legendRows.length * 15 : 0;
-      const W2 = Math.max(t.w, 340), H2 = t.h + legendH;
+      const W2 = Math.max(t.w, 340);
       const legend = legendRows.map((x, i) =>
         `<text x="12" y="${t.h + 18 + i * 15}" style="font:400 11px Georgia, serif; fill: var(--map-ink)">${i + 1}. ${esc(x)}</text>`).join('');
+      // what everything on the drawing is, under the numbered spots
+      const key = keyBlock(townKeyRows(t, player), W2, t.h + legendH + 6, '');
+      const H2 = t.h + legendH + 6 + key.h;
       const inner = svgOnly.replace('<svg class="dungeon-map is-town"',
         `<svg x="${((W2 - t.w) / 2).toFixed(1)}" width="${t.w}" height="${t.h}"`);
       const CSS = '.map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }'
         + '.map-label { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9px; font-weight: 700; text-anchor: middle; }';
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" width="${W2}" height="${H2}" viewBox="0 0 ${W2} ${H2}">`
-        + `<style>${CSS}</style><rect width="${W2}" height="${H2}" fill="var(--map-page)"/>${inner}${legend}</svg>`;
+        + `<style>${CSS}</style><rect width="${W2}" height="${H2}" fill="var(--map-page)"/>${inner}${legend}${key.svg}</svg>`;
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -1489,10 +1587,12 @@ export default {
 
     // Which room is open survives a redraw, so rerolling a fight inside a
     // room leaves you looking at that room rather than back at the top.
+    // Nothing is open to begin with: a dungeon opens on the whole map, fitted,
+    // rather than already zoomed in on room 1.
     const nodesHTML = (elt) => {
       const remembered = openArea && openArea.eltId === elt.id ? openArea.nodeId : null;
-      return (elt.nodes || []).map((n, i) => `
-      <details class="story-area" id="area-${esc(n.id)}" data-elt="${esc(elt.id)}" data-node="${esc(n.id)}" ${(remembered ? n.id === remembered : i === 0) ? 'open' : ''}>
+      return (elt.nodes || []).map((n) => `
+      <details class="story-area" id="area-${esc(n.id)}" data-elt="${esc(elt.id)}" data-node="${esc(n.id)}" ${n.id === remembered ? 'open' : ''}>
         <summary><b>${esc(n.id)}</b> ${esc(n.roleLabel)}
           <span class="small faint">${esc(n.light)}${n.exits.length ? ` &middot; ${n.exits.length} way${n.exits.length === 1 ? '' : 's'} out: ${esc(n.exits.join(', '))}` : ' &middot; dead end'}</span>
           ${n.beats.map(b => `<span class="pill ${b.kind === 'encounter' ? 'danger' : ''}">${esc(b.kind)}</span>`).join('')}
@@ -1689,7 +1789,9 @@ export default {
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}${passagesHTML}</div>`;
 
       if (elt.type === 'settlement') return `${head}
-        ${elt.townMap ? `${townMapSVG(elt)}
+        ${elt.townMap ? `<div class="town-wrap">${townMapSVG(elt)}
+          <div class="map-side">${townKeyPanel(elt.townMap, false)}</div>
+        </div>
         <div class="row"><button class="btn small" id="tm-playermap" title="The town with no numbered spots; safe to put in front of players">Player map (SVG)</button>
         <button class="btn small" id="tm-dmmap" title="The town with every campaign location numbered and keyed">DM map (SVG)</button></div>` : ''}
         <div class="grid-2 mt">
