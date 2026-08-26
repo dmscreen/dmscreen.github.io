@@ -703,7 +703,13 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   --map-hatch: #2b2214;
   --map-grid: rgba(25, 19, 9, 0.13);
 }
-.dungeon-map .map-crag path { stroke: none; }
+/* The rock is strokes now, not a filled band with a pattern in it. */
+.dungeon-map .map-crag path {
+  fill: none;
+  stroke: var(--map-hatch);
+  stroke-width: 1.05;
+  stroke-linecap: round;
+}
 .dungeon-map .map-floor {
   fill: var(--map-floor);
   stroke: var(--map-ink);
@@ -771,11 +777,37 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
    it too. */
 .map-wrap.is-dragging .dungeon-map,
 .map-wrap.is-dragging .dungeon-map .map-floor { cursor: grabbing; }
-.map-zoom {
+/* The key and the camera share the top right corner, in one column. */
+.map-side {
   position: absolute; top: 8px; right: 8px;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  max-height: calc(100% - 16px);
 }
+.map-zoom { display: flex; flex-direction: column; gap: 4px; }
 .map-zoom .btn { justify-content: center; }
+.map-key {
+  background: var(--bg-panel-75);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  max-width: 208px;
+  overflow: auto;
+  backdrop-filter: blur(2px);
+}
+.map-key summary { cursor: pointer; padding: 3px 8px; font-weight: 600; }
+.map-key summary .faint { font-weight: 400; }
+.map-key-rows { padding: 0 8px 6px; display: grid; gap: 2px; }
+.map-key-row { display: flex; align-items: center; gap: 6px; line-height: 1.2; }
+/* a swatch is the real symbol at postage-stamp size, not a second drawing
+   of it, so it cannot drift from what the map shows */
+.dungeon-map.map-swatch {
+  width: 24px; height: 18px;
+  max-height: none; border: 0; border-radius: 0; margin: 0;
+  flex: 0 0 auto;
+}
+@media (max-width: 720px) {
+  .map-key { display: none; }
+}
 .exit-link.is-outside { border-style: dashed; }
 .map-tabs { display: flex; gap: 4px; margin: 0 0 6px; }
 .map-tab.is-active { border-color: var(--accent); color: var(--accent); }
@@ -785,9 +817,17 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
    swallow the click meant for the room under it. */
 .dungeon-map * { pointer-events: none; }
 .dungeon-map .map-floor { pointer-events: auto; }
-/* What is written up as its own section is clickable like one: the trap and
-   hidden-way glyphs sit out on the passages, clear of any room. */
+/* Everything with a section of its own is clickable, and shows it the same
+   way a room does: the trap and hidden-way glyphs out on the passages, and
+   a hallway that is something in particular along its whole length. */
 .dungeon-map .map-hazard[data-goto] { pointer-events: auto; cursor: pointer; }
 .dungeon-map .map-hazard[data-goto] * { pointer-events: auto; }
+/* only the glow takes the click, because only it stops at the doorways */
+.dungeon-map .map-hall { pointer-events: none; }
+.dungeon-map .map-hall .map-hall-glow { pointer-events: auto; cursor: pointer; }
+.dungeon-map .map-hazard[data-goto]:hover path,
+.dungeon-map .map-hazard[data-goto]:hover circle { stroke: var(--accent); stroke-width: 2.4; }
+.dungeon-map .map-hall-glow { fill: none; stroke: transparent; }
+.dungeon-map .map-hall:hover .map-hall-glow { stroke: var(--accent); opacity: 0.3; }
 .dungeon-map { --map-water: #3d5661; }
 [data-theme='light'] .dungeon-map { --map-water: #b9cdd2; }
