@@ -294,6 +294,7 @@ export default {
     // kept. Rerolling a chapter replaces its elements under new ids, which
     // simply leaves the old entries behind.
     const mapCache = new Map();
+    const levelCache = new Map();
     const dungeonMapSVG = (elt, player = false) => {
       const key = `${campaign?.id}|${elt.id}|${player ? 'p' : 'dm'}`;
       let html = mapCache.get(key);
@@ -303,28 +304,45 @@ export default {
       }
       return html;
     };
+    // build just one level of one element into the level cache: the unit of
+    // background work, small enough that yielding between units keeps the
+    // page responsive
+    const warmLevel = (elt, li) => buildDungeonMapSVG(elt, false, li);
 
     // Drawing every dungeon takes long enough to feel, so the moment a
     // campaign is on screen the rest of its maps render quietly in the
-    // background, one per idle beat: by the time the sidebar is clicked the
-    // drawing is already in the cache. A newly shown campaign abandons the
-    // previous campaign's queue.
+    // background: by the time the sidebar is clicked the drawing is already
+    // in the cache. The work is chunked one LEVEL at a time and each chunk
+    // waits for the browser to report itself idle, so opening the tab paints
+    // first and nothing the user does has to queue behind a map. A newly
+    // shown campaign abandons the previous campaign's queue.
     let preloadToken = 0;
-    const preloadMaps = () => {
+    const idle = () => new Promise(res => {
+      if (window.requestIdleCallback) requestIdleCallback(() => res(), { timeout: 2000 });
+      else setTimeout(res, 120);
+    });
+    const preloadMaps = async () => {
       const token = ++preloadToken;
       if (!campaign) return;
       const elts = campaign.acts.flatMap(a => a.chapters).flatMap(ch => ch.elements)
         .filter(e => e.type === 'dungeon' && (e.map?.rooms?.length || e.map?.levels?.length));
-      let i = 0;
-      const next = () => {
-        if (token !== preloadToken || i >= elts.length) return;
-        dungeonMapSVG(elts[i++]);
-        setTimeout(next, 40);
-      };
-      setTimeout(next, 80);
+      // two frames first, so the tab switch is on screen before any work;
+      // raced with a timer because a hidden tab paints no frames at all
+      await new Promise(r => { requestAnimationFrame(() => requestAnimationFrame(r)); setTimeout(r, 300); });
+      for (const elt of elts) {
+        const n = (elt.map.levels || [elt.map]).length;
+        for (let li = 0; li < n; li++) {
+          await idle();
+          if (token !== preloadToken) return;
+          warmLevel(elt, li);
+        }
+        await idle();
+        if (token !== preloadToken) return;
+        dungeonMapSVG(elt);        // assembly over cached levels: cheap
+      }
     };
 
-    const buildDungeonMapSVG = (elt, player = false) => {
+    const buildDungeonMapSVG = (elt, player = false, onlyLevel = null) => {
       const top = elt.map;
       if (!top || !(top.rooms?.length || top.levels?.length)) return legacyMapSVG(elt);
       const written = elt.passages || [];
@@ -1005,14 +1023,24 @@ export default {
       </svg>`;
       };
 
+      // a level renders once per campaign, wherever it is first wanted:
+      // background warm-up, DM view and player export all share the copy
+      const levelHTML = (mm, li) => {
+        const k = `${campaign?.id}|${elt.id}|${li}|${player ? 'p' : 'dm'}`;
+        let h = levelCache.get(k);
+        if (h === undefined) { h = renderLevel(mm, li); levelCache.set(k, h); }
+        return h;
+      };
+      if (onlyLevel != null) { if (maps[onlyLevel]) levelHTML(maps[onlyLevel], onlyLevel); return ''; }
+
       const lvlName = (li) => `Level ${li + 1}`;
       const wtr = maps.find(mm => mm.water)?.water;
       const legend = player ? '' : `<p class="small faint">1 square = ${maps[0].grid} ft. The stairs are the way in; S is a secret door. Click a room to jump to its key. Badge rings: red = fight, gold = the lair, green = treasure, blue = trap or puzzle.${wtr ? (wtr.kind === 'stream' ? ' The shaded band is a stream; planks mark bridges.' : ' The dark crack is a chasm; planks mark bridges.') : ''}${multi ? ' The boxed stair on each level is the same stair: down on one, up on the other.' : ''}</p>`;
       // The player's sheet stacks the levels, since paper has no tabs.
-      if (player) return maps.map((mm, li) => renderLevel(mm, li)).join('');
+      if (player) return maps.map((mm, li) => levelHTML(mm, li)).join('');
 
       const panels = maps.map((mm, li) => {
-        const drawn = renderLevel(mm, li);
+        const drawn = levelHTML(mm, li);
         return `<div class="map-panel" data-level="${li}"${li ? ' hidden' : ''}>
           <div class="map-wrap">${drawn}
             <div class="map-side">
