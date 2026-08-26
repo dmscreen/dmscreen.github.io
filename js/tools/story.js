@@ -532,34 +532,63 @@ export default {
         }
         // exact where it matters, O(1) where it is called in bulk
         const insideGrid = (px, py) => has(Math.floor(px / step), Math.floor(py / step));
-        return { loops, inside: insideGrid };
+        // clearance: how far a point stands from the nearest drawn floor, in
+        // px, by chamfer flood over the same fine grid. The hatching's fill
+        // pass uses it to know what counts as band and what is open page.
+        const dfArr = new Float32Array(gw * gh).fill(1e9);
+        {
+          const q = [];
+          for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+            if (grid[j * gw + i]) { dfArr[j * gw + i] = 0; q.push(i, j); }
+          }
+          for (let h2 = 0; h2 < q.length; h2 += 2) {
+            const i = q[h2], j = q[h2 + 1], base = dfArr[j * gw + i];
+            for (const [di, dj, c] of [[1, 0, 3], [-1, 0, 3], [0, 1, 3], [0, -1, 3], [1, 1, 4.24], [1, -1, 4.24], [-1, 1, 4.24], [-1, -1, 4.24]]) {
+              const ni = i + di, nj = j + dj;
+              if (ni < 0 || nj < 0 || ni >= gw || nj >= gh) continue;
+              if (dfArr[nj * gw + ni] > base + c + 0.001) { dfArr[nj * gw + ni] = base + c; q.push(ni, nj); }
+            }
+          }
+        }
+        const clear = (px, py) => {
+          const i = Math.max(0, Math.min(gw - 1, Math.floor(px / step)));
+          const j = Math.max(0, Math.min(gh - 1, Math.floor(py / step)));
+          return dfArr[j * gw + i];
+        };
+        return { loops, inside: insideGrid, clear, w: gw * step, h: gh * step };
       };
 
-      // The rock outside the walls, drawn the way a hand draws it: short
-      // strokes square to the wall, packed close, of uneven length, so the
-      // edge reads as broken stone. The old band was a 45-degree pattern
-      // clipped to a blurred copy of the outline, which gave every wall the
-      // same diagonal shading whichever way it ran and read as a second
-      // border drawn around the rooms rather than as rock.
-      // The rock outside the walls, in two layers the way a hand does it: a
-      // nearly solid ink rind hugging the wall line itself, and patches of
-      // angled hatching growing out of the rind, each patch leaning the
-      // opposite way from the last so the sets cross, all of it giving out
-      // into the page. Solid at the wall, broken at the far edge.
-      const hatchMarks = (loops, inside) => {
+      // Dyson hatching. The atom is a cluster of three strokes of slightly
+      // different lengths (sometimes four), gently curved, ends ragged, and
+      // the clusters are laid along the wall in a chain: each one turned 35
+      // to 60 degrees off the one before it so their ends mesh, with a
+      // second rank sitting in the first rank's gaps.
+      //
+      // Two additions keep a flat wall's density everywhere else. The chain
+      // runs through an occupancy cap, one cluster per 7px cell, so where
+      // several walls share a pocket or an inside corner folds the band over
+      // itself, the extras simply do not land. And a fill pass then walks
+      // the whole band - everywhere within a hatch's reach of a floor - and
+      // drops a cluster into any bare patch the chain missed, which is what
+      // an outside corner's fanned-open gap is. All the randomness comes
+      // from jig(), so the DM's copy and the player's export of the same
+      // level hatch identically.
+      const hatchMarks = (loops, inside, clear, w, h) => {
         const STEP = 1.0;                 // px between boundary samples
-        const SMOOTH = 4;                 // samples either side, for the tangent
-        const PATCH = 18;                 // samples per patch of hatching
-        const marks = [];
-        const put = (x, y, dx, dy) => marks.push(`M${x.toFixed(1)},${y.toFixed(1)}l${dx.toFixed(1)},${dy.toFixed(1)}`);
+        const SMOOTH = 5;                 // samples either side, for the tangent
+        const CELL = 7;                   // occupancy: one cluster per cell
+        const clusters = [];
+        const cells = new Set();
+        const ckey = (x, y) => Math.floor(x / CELL) + ',' + Math.floor(y / CELL);
+        const allSamples = [];
+
         loops.forEach((loop, li2) => {
           if (loop.length < 4) return;
 
           // Walk the outline at a fixed spacing first. The outline is a
           // staircase of whole cells, so taking the direction from a single
-          // edge would give every stroke one of four angles and a diagonal
-          // wall would grow a comb of alternating ticks. Sampling evenly and
-          // then reading the direction across several samples turns the
+          // edge would give every stroke one of four angles; sampling evenly
+          // and reading the direction across several samples turns the
           // staircase back into the line it stands for.
           const pts = [];
           let carry = 0;
@@ -573,8 +602,6 @@ export default {
           }
           const n = pts.length;
           if (n < SMOOTH * 2 + 2) return;
-
-          // outward normal at every sample, smoothed across the staircase
           const norms = [];
           for (let i = 0; i < n; i++) {
             const a = pts[(i - SMOOTH + n) % n], b = pts[(i + SMOOTH) % n];
@@ -583,39 +610,101 @@ export default {
             let nx = -ty / tl, ny = tx / tl;
             if (inside(pts[i][0] + nx * 3, pts[i][1] + ny * 3)) { nx = -nx; ny = -ny; }
             norms.push([nx, ny]);
+            if (i % 4 === 0) allSamples.push({ x: pts[i][0], y: pts[i][1], tx: tx / tl, ty: ty / tl });
           }
 
-          // the stroke, leaned off the normal and cut short of any floor on
-          // the far side of a narrow gap
-          const stroke = (i, ang, off, L) => {
-            const [px2, py2] = pts[i], [nx, ny] = norms[i];
-            const cs2 = Math.cos(ang), sn = Math.sin(ang);
-            const ex = nx * cs2 - ny * sn, ey = nx * sn + ny * cs2;
-            for (let q = Math.max(3, off); q < off + L + 4; q += 1.4) {
-              if (inside(px2 + ex * q, py2 + ey * q)) { L = q - off - 4.2; break; }
-            }
-            if (L < 1.6) return;
-            put(px2 + ex * off, py2 + ey * off, ex * L, ey * L);
+          // the chain: each cluster's angle is the last one's, pushed 35-60
+          // degrees round, so neighbouring clusters mesh instead of matching
+          let ang = jig(li2, 1) * Math.PI;
+          const turn = (x) => {
+            ang += (jig(x, li2, 2) < 0.5 ? 1 : -1) * (Math.PI * 0.19 + jig(x, li2, 3) * Math.PI * 0.14);
           };
+          const cluster = (i, dist, len, seed) => {
+            const [px2, py2] = pts[i], [nx, ny] = norms[i];
+            const cx = px2 + nx * dist, cy = py2 + ny * dist;
+            // a cluster whose heart is on someone's floor would poke out the
+            // far side of it, and one in a taken cell is a pile-up
+            if (inside(cx, cy)) return;
+            const k = ckey(cx, cy);
+            if (cells.has(k)) return;
+            cells.add(k);
+            clusters.push({ x: cx, y: cy, a: ang, len, li: li2, i, seed });
+          };
+          for (let i = 0; i < n; i += 9) { turn(i); cluster(i, 5.5, 13, 10); }
+          ang += Math.PI / 3;
+          for (let i = 4; i < n; i += 9) { turn(i + 7919); cluster(i, 11.5, 12, 20); }
+        });
 
-          // the rind: tight overlapping ticks on the wall line itself, so
-          // the edge reads nearly solid before the hatching takes over
-          for (let i = 0; i < n; i++) {
-            stroke(i, (jig(i, li2 + 1) - 0.5) * 0.5, 0, 2.2 + jig(i, li2 + 2) * 1.6);
-          }
-
-          // patches of directional hatching growing out of the rind, the
-          // lean alternating patch by patch
-          for (let start2 = 0; start2 < n; start2 += Math.floor(PATCH * 0.75)) {
-            const pi = Math.floor((start2 / PATCH) * 1.33);
-            const ang = (pi % 2 ? 1 : -1) * (0.42 + jig(pi, li2 + 3) * 0.3);
-            for (let k = 0; k < PATCH; k += 2.1) {
-              const i = Math.floor(start2 + k) % n;
-              stroke(i, ang, 1.6 + jig(i, li2 + 4) * 1.4,
-                (6 + jig(pi, li2 + 5) * 8) * (0.7 + jig(i, li2 + 6) * 0.5));
+        // the fill: any bare patch of band gets the cluster the chain never
+        // brought there, leaning off the nearest wall's own direction
+        const bw = Math.max(1, Math.ceil((w || 600) / 24)), bh = Math.max(1, Math.ceil((h || 600) / 24));
+        const buckets = new Map();
+        for (const sm of allSamples) {
+          const bkey = Math.floor(sm.x / 24) + ',' + Math.floor(sm.y / 24);
+          if (!buckets.has(bkey)) buckets.set(bkey, []);
+          buckets.get(bkey).push(sm);
+        }
+        const nearestTangent = (x, y) => {
+          let best = null, bd = 1e9;
+          const bx = Math.floor(x / 24), by = Math.floor(y / 24);
+          for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+            for (const sm of (buckets.get((bx + di) + ',' + (by + dj)) || [])) {
+              const d2 = (sm.x - x) ** 2 + (sm.y - y) ** 2;
+              if (d2 < bd) { bd = d2; best = sm; }
             }
           }
-        });
+          return best;
+        };
+        const cbuckets = new Map();
+        const cput = (c) => {
+          const k = Math.floor(c.x / 12) + ',' + Math.floor(c.y / 12);
+          if (!cbuckets.has(k)) cbuckets.set(k, []);
+          cbuckets.get(k).push(c);
+        };
+        for (const c of clusters) cput(c);
+        const crowded = (x, y) => {
+          const bx = Math.floor(x / 12), by = Math.floor(y / 12);
+          for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+            for (const c of (cbuckets.get((bx + di) + ',' + (by + dj)) || [])) {
+              if ((c.x - x) ** 2 + (c.y - y) ** 2 < 72) return true;
+            }
+          }
+          return false;
+        };
+        for (let y = 4; y < (h || 600); y += 5) {
+          for (let x = 4; x < (w || 600); x += 5) {
+            const cl = clear(x, y);
+            if (cl < 4 || cl > 14) continue;
+            const k = ckey(x, y);
+            if (cells.has(k) || crowded(x, y)) continue;
+            const sm = nearestTangent(x, y);
+            if (!sm) continue;
+            const wall = Math.atan2(sm.ty, sm.tx);
+            const lean = (jig(x, y, 46) < 0.5 ? 1 : -1) * (0.55 + jig(x, y, 47) * 0.5);
+            const c = { x, y, a: wall + lean, len: 12, li: 999, i: Math.round(x + y * 7), seed: 50 };
+            cells.add(k);
+            clusters.push(c);
+            cput(c);
+          }
+        }
+
+        // ink at last: the same cluster of three whichever pass placed it
+        const marks = [];
+        for (const c of clusters) {
+          const dx = Math.cos(c.a), dy = Math.sin(c.a);
+          const qx = -dy, qy = dx;
+          const nl = jig(c.i, c.li, c.seed) < 0.15 ? 4 : 3;
+          for (let k = 0; k < nl; k++) {
+            const off = (k - (nl - 1) / 2) * 2.4 + (jig(c.i + k, c.li, c.seed + 1) - 0.5) * 0.5;
+            const L = c.len * (0.8 + jig(c.i, k + c.li, c.seed + 2) * 0.28);
+            const slide = (jig(k, c.i, c.seed + 3) - 0.5) * 0.24 * c.len;
+            const x0 = c.x + qx * off - dx * (L / 2 - slide);
+            const y0 = c.y + qy * off - dy * (L / 2 - slide);
+            const bend = (jig(c.i, k, c.seed + 4) - 0.5) * 0.14 * L;
+            const mx = x0 + dx * L / 2 + qx * bend, my = y0 + dy * L / 2 + qy * bend;
+            marks.push(`M${x0.toFixed(1)},${y0.toFixed(1)}Q${mx.toFixed(1)},${my.toFixed(1)} ${(x0 + dx * L).toFixed(1)},${(y0 + dy * L).toFixed(1)}`);
+          }
+        }
         return `<path d="${marks.join('')}"/>`;
       };
 
@@ -668,7 +757,7 @@ export default {
       // The hatching grows from the walls as they are actually drawn, so it
       // starts against the wall the way it does on a drawn map.
       const edge = drawnEdge();
-      const crag = hatchMarks(edge.loops, edge.inside);
+      const crag = hatchMarks(edge.loops, edge.inside, edge.clear, edge.w, edge.h);
 
       // A passage is exactly one square wide. At 0.95 of one it sat a fraction
       // inside the grid lines on both sides, so it never lined up with the
@@ -1087,7 +1176,7 @@ export default {
     // theme, styles inlined so it opens anywhere, nothing on it a player
     // should not see.
     const PLAYER_MAP_CSS = `
-      .map-crag path { fill: none; stroke: var(--map-hatch); stroke-width: 1.05; stroke-linecap: round; }
+      .map-crag path { fill: none; stroke: var(--map-hatch); stroke-width: 1.2; stroke-linecap: round; }
       .map-floor { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 2.6; stroke-linejoin: round; }
       .map-grid line { stroke: var(--map-grid); stroke-width: 1; }
       .is-cave .map-grid line { stroke-width: 0.6; }
