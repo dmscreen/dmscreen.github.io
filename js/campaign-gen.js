@@ -6,6 +6,7 @@
 import { loadMonsters, loadItems, loadTables, XP_THRESHOLDS, encounterMultiplier, monsterXP, fmtCR } from './srd.js';
 import { pick, roll } from './dice.js';
 import { generateDungeonMap } from './dungeon-map.js';
+import { generateTownMap } from './town-map.js';
 
 const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 8)}`;
 const int = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
@@ -230,7 +231,7 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
       : (boss && i === count - 1) ? C.nodeRoles.find(r => r.id === 'boss')
         : weightedRole(kind.trapHeavy ? roles : roles.filter(r => r.id !== 'trap' || chance(0.5)));
     const node = {
-      id: `${String.fromCharCode(97 + Math.floor(i / 26))}${i + 1}`,
+      id: `${i + 1}`,
       role: roleDef.id,
       roleLabel: roleDef.label,
       description: '',   // written once the exits are known
@@ -508,7 +509,12 @@ function makeBeat(ctx, kindId, { level, pool, boss, items }) {
 
 function makeSettlement(ctx, { title, level, isHub }) {
   const { C, names, shops } = ctx;
-  const size = isHub ? pick(C.settlement.sizes.slice(1, 3)) : pick(C.settlement.sizes.slice(0, 2));
+  // The hub is the campaign's home and earns a real town or a small city;
+  // the places the road passes through run the whole gamut, weighted toward
+  // villages, so the storyline's settlements come in every size.
+  const size = isHub
+    ? pick(C.settlement.sizes.slice(2))
+    : C.settlement.sizes[[0, 1, 1, 1, 2, 2, 3][int(0, 6)]];
   const roster = [];
   const roleIds = isHub
     ? ['patron', 'authority', 'quartermaster', 'broker', 'specialist', 'betrayer']
@@ -523,6 +529,19 @@ function makeSettlement(ctx, { title, level, isHub }) {
   const shopTypes = Object.keys(shops.types);
   const services = some(shopTypes, Math.min(size.services, shopTypes.length));
 
+  const tavern = `The ${pick(names.tavern.adjectives)} ${pick(names.tavern.nouns)}`;
+  const locations = some(C.settlement.locations, 4);
+  const event = fill(pick(C.settlement.events), ctx.slots);
+  // The drawn town. The campaign's own locations become numbered spots on
+  // it: the tavern first, because the spot-picker seats spot 1 nearest the
+  // plaza, then the event, then the locations of interest around the town.
+  const townSpots = [`${tavern} (the tavern)`, `While they are here: ${event}`, ...locations];
+  const townMap = generateTownMap({
+    size: size.label, spots: townSpots.length,
+    // a settlement in a coastal region can sit on the water
+    coast: (ctx.region?.terrain || []).includes('coast') ? 'maybe' : 'no',
+  });
+
   return {
     id: uid('el'),
     type: 'settlement',
@@ -531,10 +550,12 @@ function makeSettlement(ctx, { title, level, isHub }) {
     summary: `A ${size.label} where ${fill(pick(C.settlement.problems), ctx.slots)}.`,
     ruler: `${roster.find(n => n.roleId === 'authority').name}, ${roster.find(n => n.roleId === 'authority').occupation}`,
     services,
-    tavern: `The ${pick(names.tavern.adjectives)} ${pick(names.tavern.nouns)}`,
+    tavern,
     roster,
-    locations: some(C.settlement.locations, 4),
-    event: fill(pick(C.settlement.events), ctx.slots),
+    locations,
+    event,
+    townMap,
+    townSpots,
     rumors: [
       ...some(C.settlement.rumorsTrue, 3).map(t => ({ true: true, text: fill(t, ctx.slots) })),
       ...some(C.settlement.rumorsFalse, 2).map(t => ({ true: false, text: fill(t, ctx.slots) })),
@@ -628,6 +649,7 @@ const CHAPTER_ROLES = {
   settlement_siege: { label: 'Siege', build: 'siege' },
   heist_job: { label: 'Heist', build: 'heist' },
   climax_dungeon: { label: 'Climax', build: 'climax' },
+  dungeon_floor: { label: 'Floor', build: 'floor' },
 };
 
 function makeChapter(ctx, { roleId, level, index }) {
@@ -638,12 +660,31 @@ function makeChapter(ctx, { roleId, level, index }) {
     role: roleId,
     roleLabel: roleDef.label,
     levelGate: level,
-    mandatory: ['opening_ambush', 'opening_arrival', 'hub_town', 'climax_dungeon', 'reconverge_event'].includes(roleId),
+    // a floor of a mode campaign is always on the spine: descending IS the
+    // milestone, one level per floor
+    mandatory: ['opening_ambush', 'opening_arrival', 'hub_town', 'climax_dungeon', 'reconverge_event', 'dungeon_floor'].includes(roleId),
     elements: [],
     npcs: [],
   };
 
   switch (roleDef.build) {
+    case 'floor': {
+      // One floor of the campaign's single dungeon. ctx.mega carries the
+      // place's name and how deep it goes; the chapter index is the depth.
+      const mg = ctx.mega;
+      const floor = index;
+      const last = floor >= mg.floors;
+      chapter.title = `Floor ${floor}: ${siteName(C, false, ctx.usedPlaces)}`;
+      chapter.summary = last
+        ? `The bottom of ${mg.name}. ${ctx.slots.villain} is here, and there is nowhere further down to run.`
+        : `Floor ${floor} of ${mg.floors} in ${mg.name}. The way down is somewhere on this floor, and the party is a level stronger for reaching it.`;
+      chapter.floor = floor;
+      chapter.elements.push(makeDungeon(ctx, {
+        kindId: mg.kindId, level, title: `${mg.name}, Floor ${floor}`,
+        pool: pools.faction, boss: last, sizeScale: mg.sizeScale,
+      }));
+      break;
+    }
     case 'ambush': {
       const place = siteName(C, true, ctx.usedPlaces);
       chapter.title = `Trouble on the ${place} Road`;
@@ -1013,7 +1054,11 @@ export async function generateCampaign(opts = {}) {
     loadTables('names'), loadTables('npc'), loadTables('shops'),
   ]);
 
-  const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
+  // "Surprise me" never deals a mode premise: a twenty-floor descent is a
+  // different commitment from a campaign, so the structural premises come
+  // only when asked for by name.
+  const ordinary = C.premises.filter(p => !p.mode);
+  const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(ordinary) : pick(ordinary);
   // A one-shot is a length, but it dictates the skeleton too: no six-chapter
   // shape fits in one sitting, so it overrides whatever shape was chosen.
   // The verb decides the shape of the campaign: recovering scattered things,
@@ -1036,8 +1081,9 @@ export async function generateCampaign(opts = {}) {
   // encounter budget in the campaign is computed against this party.
   const length = opts.length || 'standard';
   const span = oneShot ? 0 : length === 'short' ? 4 : length === 'epic' ? 14 : 9;
-  const startLevel = Math.min(20, Math.max(1, Number(opts.startLevel) || 1));
-  const endLevel = Math.min(20, startLevel + span);
+  let startLevel = Math.min(20, Math.max(1, Number(opts.startLevel) || 1));
+  let endLevel = Math.min(20, startLevel + span);
+  if (premise.mode === 'world') { startLevel = 1; endLevel = 20; }
   const partySize = Math.min(8, Math.max(1, Number(opts.partySize) || 4));
 
   const usedNames = new Set();
@@ -1105,27 +1151,75 @@ export async function generateCampaign(opts = {}) {
     items: [],
   };
 
-  // Build the spine.
+  // Build the spine. A mode premise does not follow a pattern: the whole
+  // campaign is one dungeon, and the chapters are its floors.
+  //
+  // World Dungeon is the fixed twenty-floor descent, one character level per
+  // floor: floor 5 is built for 5th-level characters, floor 12 for 12th. The
+  // start-level and length options do not apply, because the floors ARE the
+  // levels. Mega Dungeon keeps the chosen length and levels and simply sets
+  // the entire campaign inside one many-floored place.
+  const mode = premise.mode || null;
   const acts = [];
   const allChapters = [];
+  let totalChapters = 0;   // the stats block reads this after either branch
   let level = startLevel;
-  const totalChapters = pattern.acts.reduce((a, act) => a + act.chapters.length, 0);
-  const step = Math.max(1, Math.round((endLevel - startLevel) / Math.max(1, totalChapters - 1)));
-
-  for (const actDef of pattern.acts) {
-    const act = { id: uid('act'), title: actDef.title, levelGate: level, chapters: [] };
-    for (const roleId of actDef.chapters) {
-      const ch = makeChapter(ctx, { roleId, level, index: allChapters.length + 1 });
-      act.chapters.push(ch);
-      allChapters.push(ch);
-      level = Math.min(endLevel, level + step);
+  if (mode) {
+    const floors = mode === 'world' ? 20 : Math.max(4, endLevel - startLevel + 1);
+    const megaName = siteName(C, false, usedPlaces);
+    ctx.mega = {
+      name: megaName, floors, kindId: 'megadungeon',
+      // twenty floors would swamp the book if each were full-sized
+      sizeScale: mode === 'world' ? 0.45 : 0.75,
+    };
+    ctx.climaxName = megaName;
+    slots.next = megaName;
+    if (mode === 'world') { level = 1; }
+    const bands = mode === 'world'
+      ? [['The Upper Halls', 5], ['The Deep Halls', 5], ['The Lower Dark', 5], ['The Root of the World', 5]]
+      : [['The Upper Works', Math.ceil(floors / 3)], ['The Middle Depths', Math.ceil(floors / 3)],
+        ['The Inner Sanctum', floors - 2 * Math.ceil(floors / 3)]];
+    for (const [title, n] of bands) {
+      if (n < 1) continue;
+      const act = { id: uid('act'), title, levelGate: level, chapters: [] };
+      for (let k = 0; k < n; k++) {
+        const ch = makeChapter(ctx, { roleId: 'dungeon_floor', level, index: allChapters.length + 1 });
+        act.chapters.push(ch);
+        allChapters.push(ch);
+        // the party levels with the descent: exactly one per floor in a
+        // World Dungeon, the usual spread otherwise
+        level = mode === 'world'
+          ? Math.min(20, allChapters.length + 1)
+          : Math.min(endLevel, startLevel + Math.round(((endLevel - startLevel) * allChapters.length) / Math.max(1, floors - 1)));
+      }
+      acts.push(act);
     }
-    acts.push(act);
+    totalChapters = allChapters.length;
+    // the stairs are the journey: no overland travel between floors
+    allChapters.forEach((ch, i) => {
+      ch.travel = i === 0
+        ? `Down the entrance shaft of ${megaName}.`
+        : `Down the stair from Floor ${i}, sealed behind them once used.`;
+    });
+  } else {
+    totalChapters = pattern.acts.reduce((a, act) => a + act.chapters.length, 0);
+    const step = Math.max(1, Math.round((endLevel - startLevel) / Math.max(1, totalChapters - 1)));
+
+    for (const actDef of pattern.acts) {
+      const act = { id: uid('act'), title: actDef.title, levelGate: level, chapters: [] };
+      for (const roleId of actDef.chapters) {
+        const ch = makeChapter(ctx, { roleId, level, index: allChapters.length + 1 });
+        act.chapters.push(ch);
+        allChapters.push(ch);
+        level = Math.min(endLevel, level + step);
+      }
+      acts.push(act);
+    }
   }
 
   chainChapters(ctx, allChapters);
   assignMilestones(allChapters);
-  allChapters.forEach((ch, i) => assignTravel(ctx, ch, i));
+  if (!mode) allChapters.forEach((ch, i) => assignTravel(ctx, ch, i));
 
   // Scatter the campaign objects across non-hub chapters, back to front, so
   // the last one is always in the climax. Each is a real object at the
@@ -1420,7 +1514,9 @@ export async function generateCampaign(opts = {}) {
     premiseId: premise.id,
     tone: premise.tone,
     themes: premise.themes,
-    pattern: { id: patternId, label: pattern.label, note: pattern.note },
+    pattern: mode
+      ? { id: premise.id, label: premise.title, note: premise.logline }
+      : { id: patternId, label: pattern.label, note: pattern.note },
     levelRange: { start: startLevel, end: endLevel },
     sessions: oneShot ? '1' : `${totalChapters * 2}-${totalChapters * 4}`,
     region: { name: regionName, kind: premise.regionKind, label: region.label, features: some(region.features, 3), terrain: region.terrain },
@@ -1454,6 +1550,8 @@ export async function generateCampaign(opts = {}) {
     gen: {
       premiseId: premise.id,
       patternId,
+      mode,
+      mega: ctx.mega ? { name: ctx.mega.name, floors: ctx.mega.floors, kindId: ctx.mega.kindId, sizeScale: ctx.mega.sizeScale } : null,
       villainKindId: Object.keys(C.villainKinds).find(k => C.villainKinds[k] === villainKind),
       length, startLevel, endLevel, partySize,
     },
@@ -1494,6 +1592,7 @@ export async function rerollChapter(campaign, chapterId) {
 
   const ctx = { C, names, npcTable, shops, items, monsters, pools, region, slots, usedNames, usedPlaces, partySize: gen.partySize || 4 };
   ctx.recurringPatron = campaign.appendices.npcs.find(n => n.roleId === 'patron') || null;
+  if (gen.mega) ctx.mega = gen.mega;
   // the climax keeps its name: half the campaign's lore already points at it
   if (isClimax) ctx.climaxName = old.title;
   // travel legs are numbered by position, so a reroll keeps its own title

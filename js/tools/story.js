@@ -1,9 +1,10 @@
 // Story: one-button campaign generator plus a browser for what it produced.
 // The left column is the whole campaign at a glance; the right column is
 // whatever the DM drilled into.
-import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState } from '../store.js';
+import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState, getPrefs, setPref } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
+import { renderTownSVG } from '../town-map.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
   rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
@@ -242,6 +243,12 @@ export default {
 
     const drawTree = () => {
       const box = out.querySelector('#sg-tree');
+      // the collapsed rail shows the one step you are on
+      const where = out.querySelector('#sg-tree-where');
+      if (where) {
+        const cur = treeRows().find(sameSelection);
+        where.textContent = cur ? cur.label : 'Overview';
+      }
       box.innerHTML = '';
       for (const row of treeRows()) {
         const node = el(`<button class="story-node d${row.depth} ${sameSelection(row) ? 'active' : ''} ${row.done ? 'done' : ''}">
@@ -1055,12 +1062,25 @@ export default {
         </div>`;
       }).join('');
 
+      // The wandering table rides along as one more tab: it belongs to the
+      // dungeon the way a level does, and the tab row is where the eye
+      // already looks for what the map has to say.
+      const wanderPanel = !elt.wandering ? '' : `
+        <div class="map-panel" data-level="${maps.length}" hidden>
+          <div class="wander-panel">
+            <h3>Wandering (d6, each half hour of dawdling or after loud noise)</h3>
+            <table class="data"><tbody>${elt.wandering.map(r =>
+              `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>
+          </div>
+        </div>`;
+
       // One level at a time, starting at the top. Walking a stair switches
       // the tab for you, so the map keeps up with where the party is.
-      const tabs = multi ? `<div class="map-tabs" role="tablist">${maps.map((mm, li) =>
-        `<button class="btn small map-tab${li ? '' : ' is-active'}" data-level="${li}" role="tab" aria-selected="${li ? 'false' : 'true'}">${lvlName(li)}</button>`).join('')}</div>` : '';
+      const tabs = (multi || elt.wandering) ? `<div class="map-tabs" role="tablist">${maps.map((mm, li) =>
+        `<button class="btn small map-tab${li ? '' : ' is-active'}" data-level="${li}" role="tab" aria-selected="${li ? 'false' : 'true'}">${lvlName(li)}</button>`).join('')}${
+        elt.wandering ? `<button class="btn small map-tab" data-level="${maps.length}" role="tab" aria-selected="false">Wandering</button>` : ''}</div>` : '';
 
-      return `<div class="map-levels">${tabs}${panels}</div>${legend}`;
+      return `<div class="map-levels">${tabs}${panels}${wanderPanel}</div>${legend}`;
     };
 
     // The player's copy as a standalone file: parchment ink whatever the app
@@ -1141,7 +1161,7 @@ export default {
         art: [[7, 6, 1.5], [12, 10, 1.9], [17, 7, 1.3], [10, 13, 1.2], [16, 12, 1.6]]
           .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" class="map-rubble"/>`).join('') },
       { id: 'badge', dm: true, find: (t) => t.includes('class="map-badge"'), label: 'Room number, keyed in the notes',
-        art: '<circle cx="12" cy="9" r="7" class="map-badge"/><text x="12" y="12.2" class="map-label">a1</text>' },
+        art: '<circle cx="12" cy="9" r="7" class="map-badge"/><text x="12" y="12.2" class="map-label">1</text>' },
       { id: 'trap', dm: true, find: (t) => t.includes('class="map-hazard"'), label: 'Trap in the passage',
         art: '<g class="map-hazard"><path d="M12,3.4 L17.6,9 L12,14.6 L6.4,9 Z"/><circle cx="12" cy="9" r="1.4"/></g>' },
       { id: 'hidden', dm: true, find: (t) => t.includes('class="map-hazard is-secret"'), label: 'Way that is not obvious',
@@ -1232,6 +1252,68 @@ export default {
       a.click();
       URL.revokeObjectURL(a.href);
       toast(player ? 'Player map downloaded; safe to share as-is' : 'DM map downloaded; keys, secrets and traps included');
+    };
+
+    // The town on paper: the same page, ink and floor as the dungeon maps,
+    // so a campaign's sites read as one hand's work. The DM's copy numbers
+    // the spots where the campaign's own locations live; the player's shows
+    // the town and nothing it should not.
+    const townMapSVG = (elt, player = false) => {
+      const t = elt.townMap;
+      if (!t) return '';
+      // v2 towns come from the shared renderer in town-map.js, so the app
+      // and the exports can never disagree; the v1 path below stays for the
+      // campaigns saved while towns were still rings and rays.
+      if (t.v === 2) {
+        const legend2 = player || !elt.townSpots?.length ? '' : `<ol class="small town-legend">${
+          elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
+        return renderTownSVG(t, { player }) + legend2;
+      }
+      const poly = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
+      const roads = t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-ink)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
+        + t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-floor)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      const plaza = `<polygon points="${poly(t.plaza)}" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.6"/>`;
+      const houses = t.buildings.map(b =>
+        `<polygon points="${poly(b.pts)}" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.4"/>`).join('');
+      const wall = !t.wall ? '' : `<polygon points="${poly(t.wall)}" fill="none" stroke="var(--map-ink)" stroke-width="3.6" stroke-linejoin="round"/>`
+        + t.gates.map(([gx, gy]) => `<rect x="${gx - 4.5}" y="${gy - 4.5}" width="9" height="9" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="1.6"/>`).join('');
+      const trees = t.trees.map(([tx, ty, tr]) =>
+        `<circle cx="${tx}" cy="${ty}" r="${tr}" fill="none" stroke="var(--map-hatch)" stroke-width="1.1"/>`).join('');
+      const spots = player ? '' : (t.spots || []).map(sp =>
+        `<g><circle cx="${sp.x}" cy="${sp.y}" r="7" class="map-badge"/><text x="${sp.x}" y="${sp.y + 3}" class="map-label">${sp.n}</text></g>`).join('');
+      const svg = `<svg class="dungeon-map is-town" viewBox="0 0 ${t.w} ${t.h}" role="img" aria-label="Town map">
+        <rect width="${t.w}" height="${t.h}" fill="var(--map-page)"/>
+        ${trees}${roads}${plaza}${wall}${houses}${spots}
+      </svg>`;
+      const legend = player || !elt.townSpots?.length ? '' : `<ol class="small town-legend">${
+        elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
+      return svg + legend;
+    };
+
+    const downloadTownMap = (elt, player) => {
+      const t = elt.townMap;
+      if (!t) return toast('This settlement predates town maps; generate a new campaign for one', 'danger');
+      const body = townMapSVG(elt, player);
+      const svgOnly = (body.match(/<svg[\s\S]*?<\/svg>/) || [''])[0];
+      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-water:#b9cdd2';
+      const legendRows = player ? [] : (elt.townSpots || []);
+      const legendH = legendRows.length ? 22 + legendRows.length * 15 : 0;
+      const W2 = Math.max(t.w, 340), H2 = t.h + legendH;
+      const legend = legendRows.map((x, i) =>
+        `<text x="12" y="${t.h + 18 + i * 15}" style="font:400 11px Georgia, serif; fill: var(--map-ink)">${i + 1}. ${esc(x)}</text>`).join('');
+      const inner = svgOnly.replace('<svg class="dungeon-map is-town"',
+        `<svg x="${((W2 - t.w) / 2).toFixed(1)}" width="${t.w}" height="${t.h}"`);
+      const CSS = '.map-badge { fill: var(--map-floor); stroke: var(--map-ink); stroke-width: 1.4; }'
+        + '.map-label { fill: var(--map-ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9px; font-weight: 700; text-anchor: middle; }';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" style="${VARS}" width="${W2}" height="${H2}" viewBox="0 0 ${W2} ${H2}">`
+        + `<style>${CSS}</style><rect width="${W2}" height="${H2}" fill="var(--map-page)"/>${inner}${legend}</svg>`;
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${elt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${player ? 'player' : 'dm'}-town.svg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast(player ? 'Player town map downloaded; safe to share as-is' : 'DM town map downloaded; numbered spots included');
     };
 
     // The old dot-graph plan, kept for campaigns saved before rooms had
@@ -1480,21 +1562,22 @@ export default {
         ${elt.objectiveNote?.length ? `<p class="small"><b>Holds</b> ${elt.objectiveNote.map(esc).join(' / ')}</p>` : ''}
         ${elt.freeClues?.length ? `<p class="small"><b>Clues placed here</b> ${elt.freeClues.map(esc).join(' / ')}</p>` : ''}`;
 
-      const wanderingHTML = !elt.wandering ? '' : `
+      // Wandering lives in a tab on the map for drawn dungeons; only the
+      // old dot-plan campaigns still get it as a section of its own.
+      const wanderingHTML = (elt.map?.rooms?.length || elt.map?.levels?.length) || !elt.wandering ? '' : `
         <h3 class="mt">Wandering (d6, each half hour of dawdling or after loud noise)</h3>
         <table class="data"><tbody>${elt.wandering.map(r =>
           `<tr><td>${esc(r.range)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table>`;
 
       // What is between the rooms opens and closes like a room does, and is
-      // reached the same way: from its own glyph on the map.
+      // reached the same way: from its own glyph or run on the map. No
+      // header over them: each entry announces itself as a passage instead.
       const passagesHTML = !elt.passages?.length ? '' : `
-        <h3 class="mt">In the passages</h3>
-        <p class="small muted">Between the keyed rooms: what the passages themselves are, and what waits in them. On the DM's map a diamond is a trap and a circled S is a way that is not obvious; a hallway with a character of its own can be clicked along its length. Click any of them to open it here.</p>
         ${elt.passages.map((x, i) => {
           const pid = passageKey(x, i);
           const open = openArea && openArea.eltId === elt.id && openArea.nodeId === pid;
           return `<details class="story-area" id="area-${esc(pid)}" data-elt="${esc(elt.id)}" data-node="${esc(pid)}"${open ? ' open' : ''}>
-            <summary><b>${esc(x.name)}</b>
+            <summary><b>Passage: ${esc(x.name)}</b>
               <span class="small faint">between ${esc(x.between[0])} and ${esc(x.between[1])}</span>
               <span class="pill ${x.kind === 'trap' ? 'danger' : ''}">${esc(x.kind === 'trap' ? 'trap' : x.kind === 'hallway' ? 'passage' : 'hidden')}</span>
             </summary>
@@ -1514,9 +1597,12 @@ export default {
           <button class="btn small" id="dm-playermap" title="A standalone image with no keys or badges; secret doors and everything behind them are left off">Player map (SVG)</button>
           <button class="btn small" id="dm-dmmap" title="The same drawing as on screen: room numbers, secret doors, traps and furniture, as a standalone file">DM map (SVG)</button>
         </div>` : ''}
-        ${wanderingHTML}${passagesHTML}<div class="mt">${nodesHTML(elt)}</div>`;
+        ${wanderingHTML}<div class="mt">${nodesHTML(elt)}${passagesHTML}</div>`;
 
       if (elt.type === 'settlement') return `${head}
+        ${elt.townMap ? `${townMapSVG(elt)}
+        <div class="row"><button class="btn small" id="tm-playermap" title="The town with no numbered spots; safe to put in front of players">Player map (SVG)</button>
+        <button class="btn small" id="tm-dmmap" title="The town with every campaign location numbered and keyed">DM map (SVG)</button></div>` : ''}
         <div class="grid-2 mt">
           <div><h3>Who runs it</h3><p class="small">${esc(elt.ruler)}</p>
             <h3>Services</h3><p class="small">${elt.services.map(esc).join(', ')}. The tavern is ${esc(elt.tavern)}.</p>
@@ -1950,6 +2036,8 @@ export default {
       // The player's copy of the dungeon map, exported as a standalone file.
       box.querySelector('#dm-playermap')?.addEventListener('click', () => downloadMap(selection.ref, true));
       box.querySelector('#dm-dmmap')?.addEventListener('click', () => downloadMap(selection.ref, false));
+      box.querySelector('#tm-playermap')?.addEventListener('click', () => downloadTownMap(selection.ref, true));
+      box.querySelector('#tm-dmmap')?.addEventListener('click', () => downloadTownMap(selection.ref, false));
 
       // One room open at a time. Opening a second closes the first, and the
       // choice is remembered so a reroll does not throw you back to the top.
@@ -2215,10 +2303,22 @@ export default {
           <button class="btn small" id="sg-handout" title="Only player-facing text: the pitch, hooks, and rumours with the true/false stripped">Player handout</button>
           <button class="btn small" id="sg-export">Export .md</button>
         </div>
-        <div class="story-layout">
-          <div class="story-tree" id="sg-tree"></div>
+        <div class="story-layout${getPrefs().sgTreeCollapsed ? ' tree-collapsed' : ''}" id="sg-layout">
+          <div class="story-tree" id="sg-tree-wrap">
+            <button class="tree-collapse" id="sg-tree-toggle" title="Collapse or expand the campaign outline">
+              <span class="tc-arrow">&lsaquo;</span><span class="tc-where" id="sg-tree-where"></span>
+            </button>
+            <div id="sg-tree"></div>
+          </div>
           <div class="story-detail card" id="sg-detail"></div>
         </div>`;
+      // Collapsed, the outline folds to a slim rail that still says where in
+      // the campaign you are; the choice is remembered like the app nav's.
+      out.querySelector('#sg-tree-toggle').addEventListener('click', () => {
+        const lay = out.querySelector('#sg-layout');
+        lay.classList.toggle('tree-collapsed');
+        setPref('sgTreeCollapsed', lay.classList.contains('tree-collapsed'));
+      });
       out.querySelector('#sg-export').addEventListener('click', () => downloadMarkdown(c));
       out.querySelector('#sg-handout').addEventListener('click', () => {
         const blob = new Blob([playerHandoutMarkdown(c)], { type: 'text/markdown' });
