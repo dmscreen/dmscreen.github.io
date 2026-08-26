@@ -1,6 +1,6 @@
 // Monster Reference: SRD bestiary browser.
 import { loadMonsters, fmtCR, monsterXP, sourceTag } from '../srd.js';
-import { el, esc, showStatBlock, searchInput, cap } from '../components/ui.js';
+import { el, esc, showStatBlock, searchInput, randomButton, cap } from '../components/ui.js';
 
 const TYPES = ['aberration', 'beast', 'celestial', 'construct', 'dragon', 'elemental', 'fey', 'fiend', 'giant', 'humanoid', 'monstrosity', 'ooze', 'plant', 'undead'];
 const SIZES = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
@@ -18,6 +18,7 @@ export default {
       <div class="card">
         <div class="row">
           <div class="grow" id="m-search"></div>
+          <span id="m-random"></span>
           <label class="field"><span>Type</span><select id="f-type"><option value="">Any</option>${TYPES.map(t => `<option>${t}</option>`).join('')}</select></label>
           <label class="field"><span>Size</span><select id="f-size"><option value="">Any</option>${SIZES.map(t => `<option>${t}</option>`).join('')}</select></label>
           <label class="field"><span>Environment</span><select id="f-env"><option value="">Any</option>${envs.map(e => `<option>${esc(e)}</option>`).join('')}</select></label>
@@ -31,6 +32,9 @@ export default {
       </table></div>`;
 
     let query = '';
+    // The filtered list as the draw sees it, so Random picks from what is on
+    // screen rather than from the whole bestiary.
+    let filteredNow = [];
     const draw = () => {
       const type = container.querySelector('#f-type').value;
       const size = container.querySelector('#f-size').value;
@@ -45,6 +49,7 @@ export default {
         (!env || m.environments.includes(env)) &&
         (!source || m.source === source)
       ).sort((a, b) => a.name.localeCompare(b.name));
+      filteredNow = filtered;
 
       const CAP = 400;
       container.querySelector('#m-count').textContent = filtered.length > CAP
@@ -64,6 +69,7 @@ export default {
     };
 
     container.querySelector('#m-search').append(searchInput('Search monsters...', q => { query = q; draw(); }));
+    container.querySelector('#m-random').append(randomButton(() => filteredNow, showStatBlock, 'monsters'));
     container.querySelectorAll('select').forEach(s => s.addEventListener('change', draw));
     draw();
   },

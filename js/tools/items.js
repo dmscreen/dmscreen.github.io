@@ -1,6 +1,6 @@
 // Item Reference: everyday gear through legendary magic items, all sources.
 import { loadItems } from '../srd.js';
-import { el, esc, md, modal, searchInput, cap } from '../components/ui.js';
+import { el, esc, md, modal, searchInput, randomButton, cap } from '../components/ui.js';
 
 export function itemDetail(i) {
   const meta = [];
@@ -34,6 +34,7 @@ export default {
       <div class="card">
         <div class="row">
           <div class="grow" id="it-search"></div>
+          <span id="it-random"></span>
           <label class="field"><span>Kind</span><select id="f-kind">
             <option value="">All</option><option value="gear">Mundane gear</option><option value="magic">Magic items</option>
           </select></label>
@@ -49,6 +50,7 @@ export default {
       </table></div>`;
 
     let query = '';
+    let filteredNow = [];      // what is on screen, for the Random button
     const draw = () => {
       const kind = container.querySelector('#f-kind').value;
       const cat = container.querySelector('#f-cat').value;
@@ -61,6 +63,7 @@ export default {
         (!rarity || i.rarity === rarity) &&
         (!source || i.source === source)
       );
+      filteredNow = filtered;
 
       const shown = filtered.slice(0, 500);
       container.querySelector('#it-count').textContent =
@@ -78,6 +81,7 @@ export default {
     };
 
     container.querySelector('#it-search').append(searchInput('Search 2,000+ items...', q => { query = q; draw(); }));
+    container.querySelector('#it-random').append(randomButton(() => filteredNow, itemDetail, 'items'));
     container.querySelectorAll('select').forEach(s => s.addEventListener('change', draw));
     draw();
   },
