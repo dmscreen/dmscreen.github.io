@@ -15,7 +15,10 @@
 }
 .btn:hover { background: var(--bg-hover); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
-.btn.primary:hover { filter: brightness(1.1); }
+/* A colour shift, not a filter: filter promotes the button to its own
+   compositing layer, and on fractional zoom levels the promotion rounds the
+   page's paint offset, which read as the screen nudging a pixel on hover. */
+.btn.primary:hover { background: color-mix(in srgb, var(--accent) 86%, white); border-color: color-mix(in srgb, var(--accent) 86%, white); }
 .btn.danger { color: var(--danger); border-color: var(--danger); background: none; }
 .btn.danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .btn.small { padding: 3px 9px; font-size: 0.8rem; }
@@ -356,6 +359,50 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   overflow-y: auto;
   position: sticky;
   top: 8px;
+}
+/* The outline folds to a rail: the chevron flips, the rows hide, and the
+   rail carries the current step's name sideways so the DM still knows where
+   they are. Same gesture as the app's own nav collapse. */
+.tree-collapse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px 6px;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.tree-collapse:hover { color: var(--text); }
+.tree-collapse .tc-arrow { font-size: 1.1rem; line-height: 1; }
+.tree-collapse .tc-where { display: none; }
+.story-layout.tree-collapsed { grid-template-columns: 34px 1fr; }
+.story-layout.tree-collapsed .story-tree { padding: 4px 2px; overflow: hidden; }
+.story-layout.tree-collapsed #sg-tree { display: none; }
+.story-layout.tree-collapsed .tree-collapse {
+  flex-direction: column;
+  padding: 4px 0;
+  height: 100%;
+  justify-content: flex-start;
+}
+.story-layout.tree-collapsed .tc-arrow { transform: rotate(180deg); }
+.story-layout.tree-collapsed .tc-where {
+  display: block;
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 60vh;
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  /* stacked on mobile there is no column to reclaim */
+  .story-layout.tree-collapsed { grid-template-columns: 1fr; }
+  .story-layout.tree-collapsed #sg-tree { display: block; }
+  .tree-collapse { display: none; }
 }
 /* Stacked on mobile the outline sits above the detail, so cap it and let it
    scroll rather than pushing the content the DM just tapped off the screen. */
@@ -809,7 +856,13 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   .map-key { display: none; }
 }
 .exit-link.is-outside { border-style: dashed; }
-.map-tabs { display: flex; gap: 4px; margin: 0 0 6px; }
+.map-tabs { display: flex; gap: 4px; margin: 0 0 6px; flex-wrap: wrap; }
+.wander-panel { padding: 4px 2px; }
+.wander-panel h3 { margin-top: 0; }
+/* the town sits on the same paper as the dungeons, capped a little shorter */
+.dungeon-map.is-town { max-height: 420px; cursor: default; }
+.town-legend { margin: 6px 0 0; padding-left: 22px; }
+.town-legend li { margin: 1px 0; }
 .map-tab.is-active { border-color: var(--accent); color: var(--accent); }
 /* Only the floors are targets. Everything else drawn on a level -- the grid,
    the door glyphs, labels, furniture, the hatching -- sits on top of the
