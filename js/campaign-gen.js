@@ -246,11 +246,17 @@ function makeDungeon(ctx, { kindId, level, title, boss = false, pool, sizeScale 
   // Real geometry: the engine places every room on a 5-ft grid and routes
   // corridors between them, and adjacency is read off what it drew, so the
   // map and the room tiles can never disagree about what connects to what.
-  // Big sites go down as well as across: around nine rooms to a level, up
-  // to three levels, each level its own map joined to the next by a stair.
-  // Exits and text treat the stair like any other way on.
+  // Big sites go down as well as across: up to around eighteen rooms to a
+  // level, up to three levels, each level its own map joined to the next by
+  // a stair. Exits and text treat the stair like any other way on.
+  //
+  // A floor used to be capped near nine, which cut every large site into
+  // thin slices and lost the sprawl a big dungeon is for. Rounding rather
+  // than ceiling to the target keeps a site on one floor until it really has
+  // two floors' worth of rooms.
+  const PER_LEVEL = 18;
   let map;
-  const nLevels = Math.min(3, Math.ceil(nodes.length / 9));
+  const nLevels = Math.min(3, Math.max(1, Math.round(nodes.length / PER_LEVEL)));
   if (nLevels > 1) {
     const perLevel = Math.ceil(nodes.length / nLevels);
     const groups = [];

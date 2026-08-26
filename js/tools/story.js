@@ -1448,11 +1448,7 @@ export default {
       // v2 towns come from the shared renderer in town-map.js, so the app
       // and the exports can never disagree; the v1 path below stays for the
       // campaigns saved while towns were still rings and rays.
-      if (t.v === 2) {
-        const legend2 = player || !elt.townSpots?.length ? '' : `<ol class="small town-legend">${
-          elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
-        return renderTownSVG(t, { player }) + legend2;
-      }
+      if (t.v === 2) return renderTownSVG(t, { player });
       const poly = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
       const roads = t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-ink)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
         + t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-floor)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -1469,10 +1465,13 @@ export default {
         <rect width="${t.w}" height="${t.h}" fill="var(--map-page)"/>
         ${trees}${roads}${plaza}${wall}${houses}${spots}
       </svg>`;
-      const legend = player || !elt.townSpots?.length ? '' : `<ol class="small town-legend">${
-        elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
-      return svg + legend;
+      return svg;
     };
+
+    // The numbered spots, written out. Beside the drawing rather than in it,
+    // so the map can be panned and zoomed without dragging the list around.
+    const townLegendHTML = (elt, player = false) => (player || !elt.townSpots?.length ? ''
+      : `<ol class="small town-legend">${elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`);
 
     const downloadTownMap = (elt, player) => {
       const t = elt.townMap;
@@ -1583,6 +1582,24 @@ export default {
         return `<button class="exit-link" data-goto="${esc(id)}" title="${esc(dest ? dest.roleLabel : 'elsewhere')}">${esc(id)}${
           dest ? ` <span class="faint">${esc(dest.roleLabel)}</span>` : ''}</button>`;
       }).join('')}</p>`;
+    };
+
+    // A passage has ways out the same as a room does, and they work the same
+    // way: the rooms at either end, plus anything else keyed on the same run,
+    // since a trap and a named hallway can share one stretch of corridor.
+    const passageExitsHTML = (elt, x, pid) => {
+      const byId = new Map((elt.nodes || []).map(n => [n.id, n]));
+      const ends = (x.between || []).filter(id => byId.has(id)).map(id => {
+        const dest = byId.get(id);
+        return `<button class="exit-link" data-goto="${esc(id)}" title="${esc(dest.roleLabel)}">${esc(id)} <span class="faint">${esc(dest.roleLabel)}</span></button>`;
+      });
+      const pair = (b) => [...(b || [])].sort().join('|');
+      const alongside = (elt.passages || []).map((p, i) => ({ p, key: passageKey(p, i) }))
+        .filter(({ p, key }) => key !== pid && pair(p.between) === pair(x.between))
+        .map(({ p, key }) => `<button class="exit-link" data-goto="${esc(key)}" title="${esc(p.name)}">${esc(p.name)} <span class="faint">${esc(p.kind === 'trap' ? 'trap' : p.kind === 'hallway' ? 'passage' : 'hidden')}</span></button>`);
+      const all = [...ends, ...alongside];
+      if (!all.length) return '';
+      return `<p class="small exit-row"><b>Ways out:</b> ${all.join('')}</p>`;
     };
 
     // Which room is open survives a redraw, so rerolling a fight inside a
@@ -1776,6 +1793,7 @@ export default {
               : x.kind === 'hallway'
                 ? playerBox(esc(x.desc), 'Read aloud as they walk it')
                 : dmBox(`<p class="small">Found on ${esc(x.find)}; ${esc(x.open)}. It holds ${esc(x.holds)}.</p>`)}
+            ${passageExitsHTML(elt, x, pid)}
           </details>`;
         }).join('')}`;
 
@@ -1789,9 +1807,17 @@ export default {
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}${passagesHTML}</div>`;
 
       if (elt.type === 'settlement') return `${head}
-        ${elt.townMap ? `<div class="town-wrap">${townMapSVG(elt)}
-          <div class="map-side">${townKeyPanel(elt.townMap, false)}</div>
+        ${elt.townMap ? `<div class="map-wrap">${townMapSVG(elt)}
+          <div class="map-side">
+            ${townKeyPanel(elt.townMap, false)}
+            <div class="map-zoom">
+              <button class="btn small" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+              <button class="btn small" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+              <button class="btn small" data-zoom="reset" title="Fit the whole town" aria-label="Fit the whole town">Fit</button>
+            </div>
+          </div>
         </div>
+        ${townLegendHTML(elt)}
         <div class="row"><button class="btn small" id="tm-playermap" title="The town with no numbered spots; safe to put in front of players">Player map (SVG)</button>
         <button class="btn small" id="tm-dmmap" title="The town with every campaign location numbered and keyed">DM map (SVG)</button></div>` : ''}
         <div class="grid-2 mt">
