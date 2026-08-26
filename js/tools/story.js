@@ -1187,7 +1187,12 @@ export default {
 
     const downloadMap = (elt, player) => {
       const src = dungeonMapSVG(elt, player);
-      const parts = src.match(/<svg[\s\S]*?<\/svg>/g) || [];
+      // Only the drawn levels. The DM view's markup also holds the key
+      // panel, whose swatches are little svgs of their own: sweeping every
+      // svg into the sheet stacked the swatches as extra levels, and
+      // injecting a width into tags that already carry one made the file
+      // invalid XML.
+      const parts = (src.match(/<svg[\s\S]*?<\/svg>/g) || []).filter(p2 => !p2.includes('map-swatch'));
       if (!parts.length) return toast('There is no drawn map to export', 'danger');
       const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-grid:rgba(25,19,9,.13);--map-water:#b9cdd2';
       const CSS = player ? PLAYER_MAP_CSS : DM_MAP_CSS;
