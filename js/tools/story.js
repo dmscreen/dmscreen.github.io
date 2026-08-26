@@ -359,10 +359,6 @@ export default {
         return `M${x},${y} h${w} v${h} h${-w} Z`;
       };
 
-      // One merged rock band for the whole dungeon: rasterise every floor
-      // cell, dilate outward, trace the outline with marching squares, and
-      // jitter the trace so it reads as rough stone. Because it is a single
-      // silhouette, crowded rooms share one band instead of double-hatching.
       const inPoly = (poly, x, y) => {
         let hit = false;
         for (let i = 0, k = poly.length - 1; i < poly.length; k = i++) {
@@ -372,89 +368,109 @@ export default {
         return hit;
       };
 
-      const silhouette = (grow = 2) => {
-        // returns { d, loops, has }: the path to draw with, the loops as
-        // points, and a test for whether a cell is floor. The hatching needs
-        // all three, because a stroke has to know which way is out.
-        const cells = new Set();
-        const mark = (x, y) => cells.add(x + ',' + y);
-        for (const r of rooms) {
-          // a carved room contributes the floor it actually has, so the rock
-          // closes into the bite of an L and follows a cavern's bulges
+      // The outline the walls are actually drawn with: one merged trace of
+      // every room shape and every corridor run, plus a point test for
+      // whether a spot lies on drawn floor. The hatching used to grow from a
+      // whole-cell rasterisation of the floor with its vertices jittered,
+      // both leftovers from the fuzzy band it once was; fine while a wide
+      // blurred band hid the difference, but strokes rooted on it followed
+      // the cells while the walls followed the geometry, so on an octagon or
+      // a carved cavern the rock drifted clear of its own wall. This follows
+      // the same shapes roomPath and corridorPts draw.
+      const drawnEdge = () => {
+        const tests = rooms.map(r => {
+          const x = r.x * C, y = r.y * C, w = r.w * C, h = r.h * C;
           if (r.poly) {
-            for (let x = Math.floor(r.x) - 2; x < Math.ceil(r.x + r.w) + 2; x++) {
-              for (let y = Math.floor(r.y) - 2; y < Math.ceil(r.y + r.h) + 2; y++) {
-                if (inPoly(r.poly, x + 0.5, y + 0.5)) mark(x, y);
-              }
-            }
-          } else {
-            for (let x = Math.floor(r.x); x < Math.ceil(r.x + r.w); x++) {
-              for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) mark(x, y);
-            }
+            const pp = r.poly.map(([a, b]) => [a * C, b * C]);
+            return (px, py) => inPoly(pp, px, py);
           }
-        }
-        for (const co of corridors) for (const [x, y] of co.cells) mark(x, y);
-        for (let pass = 0; pass < grow; pass++) {
-          for (const k of [...cells]) {
-            const [x, y] = k.split(',').map(Number);
-            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) mark(x + dx, y + dy);
+          if (r.shape === 'round') {
+            const cx = x + w / 2, cy = y + h / 2;
+            return (px, py) => ((px - cx) / (w / 2)) ** 2 + ((py - cy) / (h / 2)) ** 2 <= 1;
           }
-        }
-        // marching squares: collect boundary segments between corner points
-        const segs = new Map(); // "x,y" start -> [ex, ey]
-        const has = (x, y) => cells.has(x + ',' + y);
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const k of cells) {
-          const [x, y] = k.split(',').map(Number);
-          if (x < minX) minX = x; if (y < minY) minY = y;
-          if (x > maxX) maxX = x; if (y > maxY) maxY = y;
-        }
-        const addSeg = (x1, y1, x2, y2) => segs.set(`${x1},${y1}|${Math.random()}`, [[x1, y1], [x2, y2]]);
-        for (let x = minX; x <= maxX; x++) for (let y = minY; y <= maxY; y++) {
-          if (!has(x, y)) continue;
-          if (!has(x, y - 1)) addSeg(x, y, x + 1, y);
-          if (!has(x, y + 1)) addSeg(x + 1, y + 1, x, y + 1);
-          if (!has(x - 1, y)) addSeg(x, y + 1, x, y);
-          if (!has(x + 1, y)) addSeg(x + 1, y, x + 1, y + 1);
-        }
-        // chain segments into loops
-        const byStart = new Map();
-        for (const [, [a, b]] of segs) {
-          byStart.set(a[0] + ',' + a[1], (byStart.get(a[0] + ',' + a[1]) || []).concat([[a, b]]));
-        }
-        const used = new Set();
-        const loops = [];
-        for (const [, list] of byStart) {
-          for (const seg of list) {
-            const segKey = seg[0] + '>' + seg[1];
-            if (used.has(segKey)) continue;
-            const loop = [seg[0]];
-            let cur = seg;
-            for (let guard = 0; guard < 5000; guard++) {
-              used.add(cur[0] + '>' + cur[1]);
-              const nexts = (byStart.get(cur[1][0] + ',' + cur[1][1]) || []).filter(s2 => !used.has(s2[0] + '>' + s2[1]));
-              if (!nexts.length) break;
-              cur = nexts[0];
-              loop.push(cur[0]);
-              if (cur[1][0] === seg[0][0] && cur[1][1] === seg[0][1]) break;
-            }
-            if (loop.length > 3) loops.push(loop);
+          if (r.shape === 'octagon') {
+            const c1 = Math.min(w, h) * 0.28;
+            const pp = [[x + c1, y], [x + w - c1, y], [x + w, y + c1], [x + w, y + h - c1],
+              [x + w - c1, y + h], [x + c1, y + h], [x, y + h - c1], [x, y + c1]];
+            return (px, py) => inPoly(pp, px, py);
           }
-        }
-        // drop collinear runs, then jitter what remains
-        const jittered = loops.map(loop => {
-          const slim = loop.filter((pt, i) => {
-            const prev = loop[(i - 1 + loop.length) % loop.length], next = loop[(i + 1) % loop.length];
-            return (prev[0] - pt[0]) * (next[1] - pt[1]) !== (prev[1] - pt[1]) * (next[0] - pt[0]);
-          });
-          return slim.map(([x, y]) => [
-            +((x + (jig(x, y) - 0.5) * 0.55) * C).toFixed(1),
-            +((y + (jig(y, x, 5) - 0.5) * 0.55) * C).toFixed(1),
-          ]);
+          return (px, py) => px >= x && px <= x + w && py >= y && py <= y + h;
         });
-        const d = jittered.map(loop =>
-          'M' + loop.map(([x, y]) => `${x},${y}`).join('L') + 'Z').join(' ');
-        return { d: `<path d="${d}" fill-rule="evenodd"/>`, loops: jittered, has };
+        const runs = corridors.map(co => corridorXY(co.cells));
+        const half = PASSAGE / 2;
+        const inside = (px, py) => {
+          for (const t of tests) if (t(px, py)) return true;
+          for (const pts of runs) {
+            for (let i = 0; i < pts.length - 1; i++) {
+              const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+              const dx = bx - ax, dy = by - ay;
+              const L2 = dx * dx + dy * dy || 1;
+              let t = ((px - ax) * dx + (py - ay) * dy) / L2;
+              t = t < 0 ? 0 : t > 1 ? 1 : t;
+              const qx = ax + dx * t - px, qy = ay + dy * t - py;
+              if (qx * qx + qy * qy <= half * half) return true;
+            }
+          }
+          return false;
+        };
+
+        // trace it with marching squares on a fine grid, then pull every
+        // vertex onto the true edge, so neither the grid's staircase nor
+        // its quarter-cell offset ever reaches the page
+        const step = 3;
+        const gw = Math.ceil(W / step) + 2, gh = Math.ceil(H / step) + 2;
+        const grid = new Uint8Array(gw * gh);
+        for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+          if (inside((i + 0.5) * step, (j + 0.5) * step)) grid[j * gw + i] = 1;
+        }
+        const has = (i, j) => i >= 0 && j >= 0 && i < gw && j < gh && grid[j * gw + i] === 1;
+        const segs = [];
+        for (let i = 0; i < gw; i++) for (let j = 0; j < gh; j++) {
+          if (!has(i, j)) continue;
+          if (!has(i, j - 1)) segs.push([[i, j], [i + 1, j]]);
+          if (!has(i, j + 1)) segs.push([[i + 1, j + 1], [i, j + 1]]);
+          if (!has(i - 1, j)) segs.push([[i, j + 1], [i, j]]);
+          if (!has(i + 1, j)) segs.push([[i + 1, j], [i + 1, j + 1]]);
+        }
+        const byStart = new Map();
+        for (const sg of segs) {
+          const k = sg[0][0] + ',' + sg[0][1];
+          if (!byStart.has(k)) byStart.set(k, []);
+          byStart.get(k).push(sg);
+        }
+        const used = new Set(), loops = [];
+        for (const sg of segs) {
+          if (used.has(sg[0] + '>' + sg[1])) continue;
+          const loop = [sg[0]];
+          let cur = sg;
+          for (let guard = 0; guard < 200000; guard++) {
+            used.add(cur[0] + '>' + cur[1]);
+            const nexts = (byStart.get(cur[1][0] + ',' + cur[1][1]) || []).filter(z => !used.has(z[0] + '>' + z[1]));
+            if (!nexts.length) break;
+            cur = nexts[0];
+            loop.push(cur[0]);
+            if (cur[1][0] === sg[0][0] && cur[1][1] === sg[0][1]) break;
+          }
+          if (loop.length > 6) loops.push(loop.map(([i, j]) => [i * step, j * step]));
+        }
+        for (const loop of loops) {
+          const n = loop.length;
+          for (let i = 0; i < n; i++) {
+            const a = loop[(i - 2 + n) % n], b = loop[(i + 2) % n];
+            const tx = b[0] - a[0], ty = b[1] - a[1], tl = Math.hypot(tx, ty) || 1;
+            let nx = -ty / tl, ny = tx / tl;
+            const [px, py] = loop[i];
+            if (inside(px + nx * step, py + ny * step)) { nx = -nx; ny = -ny; }
+            let lo = -step * 1.5, hi = step * 1.5;   // lo toward the floor, hi toward the page
+            if (inside(px + nx * hi, py + ny * hi) || !inside(px + nx * lo, py + ny * lo)) continue;
+            for (let k = 0; k < 6; k++) {
+              const mid = (lo + hi) / 2;
+              if (inside(px + nx * mid, py + ny * mid)) lo = mid; else hi = mid;
+            }
+            loop[i] = [px + nx * ((lo + hi) / 2), py + ny * ((lo + hi) / 2)];
+          }
+        }
+        return { loops, inside };
       };
 
       // The rock outside the walls, drawn the way a hand draws it: short
@@ -468,7 +484,7 @@ export default {
       // angled hatching growing out of the rind, each patch leaning the
       // opposite way from the last so the sets cross, all of it giving out
       // into the page. Solid at the wall, broken at the far edge.
-      const hatchMarks = (loops, has) => {
+      const hatchMarks = (loops, inside) => {
         const STEP = 1.0;                 // px between boundary samples
         const SMOOTH = 4;                 // samples either side, for the tangent
         const PATCH = 18;                 // samples per patch of hatching
@@ -503,7 +519,7 @@ export default {
             const tx = b[0] - a[0], ty = b[1] - a[1];
             const tl = Math.hypot(tx, ty) || 1;
             let nx = -ty / tl, ny = tx / tl;
-            if (has(Math.floor(pts[i][0] / C + nx * 0.55), Math.floor(pts[i][1] / C + ny * 0.55))) { nx = -nx; ny = -ny; }
+            if (inside(pts[i][0] + nx * 3, pts[i][1] + ny * 3)) { nx = -nx; ny = -ny; }
             norms.push([nx, ny]);
           }
 
@@ -514,7 +530,7 @@ export default {
             const cs2 = Math.cos(ang), sn = Math.sin(ang);
             const ex = nx * cs2 - ny * sn, ey = nx * sn + ny * cs2;
             for (let q = Math.max(3, off); q < off + L + 4; q += 1.4) {
-              if (has(Math.floor((px2 + ex * q) / C), Math.floor((py2 + ey * q) / C))) { L = q - off - 4.2; break; }
+              if (inside(px2 + ex * q, py2 + ey * q)) { L = q - off - 4.2; break; }
             }
             if (L < 1.6) return;
             put(px2 + ex * off, py2 + ey * off, ex * L, ey * L);
@@ -541,7 +557,7 @@ export default {
         return `<path d="${marks.join('')}"/>`;
       };
 
-      const corridorPts = (cells, carry = true) => {
+      const corridorPath = (cells, carry = true) => {
         // simplify the cell path to bend points, then optionally wobble
         const pts = [cells[0]];
         for (let i = 1; i < cells.length - 1; i++) {
@@ -578,14 +594,19 @@ export default {
           const wobble = cave && !ends.includes(i);
           const wx = wobble ? (jig(x, y) - 0.5) * 0.5 : 0;
           const wy = wobble ? (jig(y, x, 7) - 0.5) * 0.5 : 0;
-          return `${((x + 0.5 + wx) * C).toFixed(1)},${((y + 0.5 + wy) * C).toFixed(1)}`;
-        }).join(' ');
+          return [(x + 0.5 + wx) * C, (y + 0.5 + wy) * C];
+        });
       };
+      // the same run as coordinates for the hatching, and as the string a
+      // polyline wants for drawing
+      const corridorXY = (cells, carry = true) => corridorPath(cells, carry);
+      const corridorPts = (cells, carry = true) =>
+        corridorPath(cells, carry).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
-      // The hatching grows from the edge of the floor itself, so it starts
-      // against the wall the way it does on a drawn map.
-      const edge = silhouette(0);
-      const crag = hatchMarks(edge.loops, edge.has);
+      // The hatching grows from the walls as they are actually drawn, so it
+      // starts against the wall the way it does on a drawn map.
+      const edge = drawnEdge();
+      const crag = hatchMarks(edge.loops, edge.inside);
 
       // A passage is exactly one square wide. At 0.95 of one it sat a fraction
       // inside the grid lines on both sides, so it never lined up with the
