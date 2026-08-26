@@ -1,6 +1,6 @@
 // Character Options: feats and backgrounds from the Level Up A5E books.
 import { loadFeats, loadBackgrounds } from '../srd.js';
-import { el, esc, md, modal, searchInput } from '../components/ui.js';
+import { el, esc, md, modal, searchInput, randomButton } from '../components/ui.js';
 
 export function featDetail(f) {
   const body = el(`<div>
@@ -35,6 +35,7 @@ export default {
             <option value="backgrounds">Backgrounds (${backgrounds.length})</option>
           </select></label>
           <div class="grow" id="co-search"></div>
+          <span id="co-random"></span>
         </div>
       </div>
       <div id="co-list"></div>
@@ -42,6 +43,9 @@ export default {
 
     const listEl = container.querySelector('#co-list');
     let query = '';
+    // whichever of the two lists is on show, filtered, and how to open one
+    let pickFrom = () => [];
+    let openOne = featDetail;
 
     const draw = () => {
       const kind = container.querySelector('#co-kind').value;
@@ -55,6 +59,7 @@ export default {
             <td class="muted small">${esc(f.source)}</td></tr>`).join('')}</tbody></table></div>`;
         listEl.querySelectorAll('tr[data-i]').forEach(tr =>
           tr.addEventListener('click', () => featDetail(rows[Number(tr.dataset.i)])));
+        pickFrom = () => rows; openOne = featDetail;
       } else {
         const rows = backgrounds.filter(b => !query || b.name.toLowerCase().includes(query))
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -64,10 +69,12 @@ export default {
             <td><b>${esc(b.name)}</b></td><td class="muted small">${esc(b.source)}</td></tr>`).join('')}</tbody></table></div>`;
         listEl.querySelectorAll('tr[data-i]').forEach(tr =>
           tr.addEventListener('click', () => backgroundDetail(rows[Number(tr.dataset.i)])));
+        pickFrom = () => rows; openOne = backgroundDetail;
       }
     };
 
     container.querySelector('#co-search').append(searchInput('Search...', q => { query = q; draw(); }));
+    container.querySelector('#co-random').append(randomButton(() => pickFrom(), (x) => openOne(x), 'entries'));
     container.querySelector('#co-kind').addEventListener('change', draw);
     draw();
   },

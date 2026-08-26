@@ -267,3 +267,17 @@ export function searchInput(placeholder, onQuery) {
   });
   return input;
 }
+
+// A "Random" button to sit beside a search box. The pool is asked for at
+// click time rather than handed over once, so whatever the search and the
+// filters have left on screen is what it draws from: type "heal" and it
+// picks a healing spell.
+export function randomButton(pool, open, what = 'entries') {
+  const btn = el(`<button class="btn" title="Open one at random from whatever the search and filters have left">Random</button>`);
+  btn.addEventListener('click', () => {
+    const rows = pool();
+    if (!rows || !rows.length) return toast(`No ${what} to pick from; widen the search`, 'danger');
+    open(rows[Math.floor(Math.random() * rows.length)]);
+  });
+  return btn;
+}

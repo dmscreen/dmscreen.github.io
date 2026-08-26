@@ -1,6 +1,6 @@
 // Spell Reference: SRD spell browser.
 import { loadSpells } from '../srd.js';
-import { el, esc, md, modal, searchInput } from '../components/ui.js';
+import { el, esc, md, modal, searchInput, randomButton } from '../components/ui.js';
 
 const SCHOOLS = ['Abjuration', 'Conjuration', 'Divination', 'Enchantment', 'Evocation', 'Illusion', 'Necromancy', 'Transmutation'];
 const CLASSES = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard'];
@@ -32,6 +32,7 @@ export default {
       <div class="card">
         <div class="row">
           <div class="grow" id="s-search"></div>
+          <span id="s-random"></span>
           <label class="field"><span>Level</span><select id="f-level"><option value="">Any</option><option value="0">Cantrip</option>${Array.from({ length: 9 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}</select></label>
           <label class="field"><span>School</span><select id="f-school"><option value="">Any</option>${SCHOOLS.map(s => `<option>${s}</option>`).join('')}</select></label>
           <label class="field"><span>Class</span><select id="f-class"><option value="">Any</option>${CLASSES.map(c => `<option>${c}</option>`).join('')}</select></label>
@@ -47,6 +48,7 @@ export default {
       </table></div>`;
 
     let query = '';
+    let filteredNow = [];      // what is on screen, for the Random button
     const draw = () => {
       const level = container.querySelector('#f-level').value;
       const school = container.querySelector('#f-school').value;
@@ -63,6 +65,7 @@ export default {
         (!ritual || s.ritual) &&
         (!source || s.source === source)
       ).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+      filteredNow = filtered;
 
       // Several third-party books publish no class list at all, so a class
       // filter necessarily hides them. Say so rather than losing them quietly.
@@ -81,6 +84,7 @@ export default {
     };
 
     container.querySelector('#s-search').append(searchInput('Search spells...', q => { query = q; draw(); }));
+    container.querySelector('#s-random').append(randomButton(() => filteredNow, spellDetail, 'spells'));
     container.querySelectorAll('select,input[type=checkbox]').forEach(x => x.addEventListener('change', draw));
     draw();
   },
