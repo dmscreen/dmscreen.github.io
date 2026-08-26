@@ -4,6 +4,7 @@
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState, getPrefs, setPref } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
+import { renderTownSVG } from '../town-map.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
   rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
@@ -1260,6 +1261,14 @@ export default {
     const townMapSVG = (elt, player = false) => {
       const t = elt.townMap;
       if (!t) return '';
+      // v2 towns come from the shared renderer in town-map.js, so the app
+      // and the exports can never disagree; the v1 path below stays for the
+      // campaigns saved while towns were still rings and rays.
+      if (t.v === 2) {
+        const legend2 = player || !elt.townSpots?.length ? '' : `<ol class="small town-legend">${
+          elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
+        return renderTownSVG(t, { player }) + legend2;
+      }
       const poly = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
       const roads = t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-ink)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
         + t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-floor)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -1286,7 +1295,7 @@ export default {
       if (!t) return toast('This settlement predates town maps; generate a new campaign for one', 'danger');
       const body = townMapSVG(elt, player);
       const svgOnly = (body.match(/<svg[\s\S]*?<\/svg>/) || [''])[0];
-      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214';
+      const VARS = '--map-page:#e4dccb;--map-floor:#f7f2e7;--map-ink:#191309;--map-hatch:#2b2214;--map-water:#b9cdd2';
       const legendRows = player ? [] : (elt.townSpots || []);
       const legendH = legendRows.length ? 22 + legendRows.length * 15 : 0;
       const W2 = Math.max(t.w, 340), H2 = t.h + legendH;

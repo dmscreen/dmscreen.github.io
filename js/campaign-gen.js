@@ -509,7 +509,12 @@ function makeBeat(ctx, kindId, { level, pool, boss, items }) {
 
 function makeSettlement(ctx, { title, level, isHub }) {
   const { C, names, shops } = ctx;
-  const size = isHub ? pick(C.settlement.sizes.slice(1, 3)) : pick(C.settlement.sizes.slice(0, 2));
+  // The hub is the campaign's home and earns a real town or a small city;
+  // the places the road passes through run the whole gamut, weighted toward
+  // villages, so the storyline's settlements come in every size.
+  const size = isHub
+    ? pick(C.settlement.sizes.slice(2))
+    : C.settlement.sizes[[0, 1, 1, 1, 2, 2, 3][int(0, 6)]];
   const roster = [];
   const roleIds = isHub
     ? ['patron', 'authority', 'quartermaster', 'broker', 'specialist', 'betrayer']
@@ -531,7 +536,11 @@ function makeSettlement(ctx, { title, level, isHub }) {
   // it: the tavern first, because the spot-picker seats spot 1 nearest the
   // plaza, then the event, then the locations of interest around the town.
   const townSpots = [`${tavern} (the tavern)`, `While they are here: ${event}`, ...locations];
-  const townMap = generateTownMap({ size: size.label, spots: townSpots.length });
+  const townMap = generateTownMap({
+    size: size.label, spots: townSpots.length,
+    // a settlement in a coastal region can sit on the water
+    coast: (ctx.region?.terrain || []).includes('coast') ? 'maybe' : 'no',
+  });
 
   return {
     id: uid('el'),
@@ -1045,7 +1054,11 @@ export async function generateCampaign(opts = {}) {
     loadTables('names'), loadTables('npc'), loadTables('shops'),
   ]);
 
-  const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(C.premises) : pick(C.premises);
+  // "Surprise me" never deals a mode premise: a twenty-floor descent is a
+  // different commitment from a campaign, so the structural premises come
+  // only when asked for by name.
+  const ordinary = C.premises.filter(p => !p.mode);
+  const premise = opts.premiseId ? C.premises.find(p => p.id === opts.premiseId) || pick(ordinary) : pick(ordinary);
   // A one-shot is a length, but it dictates the skeleton too: no six-chapter
   // shape fits in one sitting, so it overrides whatever shape was chosen.
   // The verb decides the shape of the campaign: recovering scattered things,
