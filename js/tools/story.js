@@ -289,7 +289,42 @@ export default {
     // is the order the generator wrote them in.
     const passageKey = (x, i) => x?.id || `p${i + 1}`;
 
+    // A drawn level is pure output of the stored geometry: nothing on it
+    // changes after generation, so it is rendered once per campaign and
+    // kept. Rerolling a chapter replaces its elements under new ids, which
+    // simply leaves the old entries behind.
+    const mapCache = new Map();
     const dungeonMapSVG = (elt, player = false) => {
+      const key = `${campaign?.id}|${elt.id}|${player ? 'p' : 'dm'}`;
+      let html = mapCache.get(key);
+      if (html === undefined) {
+        html = buildDungeonMapSVG(elt, player);
+        mapCache.set(key, html);
+      }
+      return html;
+    };
+
+    // Drawing every dungeon takes long enough to feel, so the moment a
+    // campaign is on screen the rest of its maps render quietly in the
+    // background, one per idle beat: by the time the sidebar is clicked the
+    // drawing is already in the cache. A newly shown campaign abandons the
+    // previous campaign's queue.
+    let preloadToken = 0;
+    const preloadMaps = () => {
+      const token = ++preloadToken;
+      if (!campaign) return;
+      const elts = campaign.acts.flatMap(a => a.chapters).flatMap(ch => ch.elements)
+        .filter(e => e.type === 'dungeon' && (e.map?.rooms?.length || e.map?.levels?.length));
+      let i = 0;
+      const next = () => {
+        if (token !== preloadToken || i >= elts.length) return;
+        dungeonMapSVG(elts[i++]);
+        setTimeout(next, 40);
+      };
+      setTimeout(next, 80);
+    };
+
+    const buildDungeonMapSVG = (elt, player = false) => {
       const top = elt.map;
       if (!top || !(top.rooms?.length || top.levels?.length)) return legacyMapSVG(elt);
       const written = elt.passages || [];
@@ -470,7 +505,9 @@ export default {
             loop[i] = [px + nx * ((lo + hi) / 2), py + ny * ((lo + hi) / 2)];
           }
         }
-        return { loops, inside };
+        // exact where it matters, O(1) where it is called in bulk
+        const insideGrid = (px, py) => has(Math.floor(px / step), Math.floor(py / step));
+        return { loops, inside: insideGrid };
       };
 
       // The rock outside the walls, drawn the way a hand draws it: short
@@ -2134,6 +2171,8 @@ export default {
       record.progress ||= {};
       const c = rec.data;
       campaign = c;
+      mapCache.clear();
+      preloadMaps();
       selection = { kind: 'overview' };
       out.innerHTML = `
         <div class="row mb mt" style="align-items:center">
