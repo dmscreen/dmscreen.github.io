@@ -463,10 +463,17 @@ export default {
       // clipped to a blurred copy of the outline, which gave every wall the
       // same diagonal shading whichever way it ran and read as a second
       // border drawn around the rooms rather than as rock.
+      // The rock outside the walls, in two layers the way a hand does it: a
+      // nearly solid ink rind hugging the wall line itself, and patches of
+      // angled hatching growing out of the rind, each patch leaning the
+      // opposite way from the last so the sets cross, all of it giving out
+      // into the page. Solid at the wall, broken at the far edge.
       const hatchMarks = (loops, has) => {
-        const STEP = 2.3;                 // px between one stroke and the next
+        const STEP = 1.0;                 // px between boundary samples
         const SMOOTH = 4;                 // samples either side, for the tangent
+        const PATCH = 18;                 // samples per patch of hatching
         const marks = [];
+        const put = (x, y, dx, dy) => marks.push(`M${x.toFixed(1)},${y.toFixed(1)}l${dx.toFixed(1)},${dy.toFixed(1)}`);
         loops.forEach((loop, li2) => {
           if (loop.length < 4) return;
 
@@ -489,33 +496,46 @@ export default {
           const n = pts.length;
           if (n < SMOOTH * 2 + 2) return;
 
+          // outward normal at every sample, smoothed across the staircase
+          const norms = [];
           for (let i = 0; i < n; i++) {
             const a = pts[(i - SMOOTH + n) % n], b = pts[(i + SMOOTH) % n];
             const tx = b[0] - a[0], ty = b[1] - a[1];
             const tl = Math.hypot(tx, ty) || 1;
             let nx = -ty / tl, ny = tx / tl;
-            const [px2, py2] = pts[i];
-            // out is whichever side of the wall is not floor
-            if (has(Math.floor(px2 / C + nx * 0.55), Math.floor(py2 / C + ny * 0.55))) { nx = -nx; ny = -ny; }
+            if (has(Math.floor(pts[i][0] / C + nx * 0.55), Math.floor(pts[i][1] / C + ny * 0.55))) { nx = -nx; ny = -ny; }
+            norms.push([nx, ny]);
+          }
 
-            // length runs in streaks rather than at random, which is what
-            // makes the edge read as chiselled rather than as fur
-            const seed = Math.floor(i / 5);
-            const run = jig(seed, li2 + 1) * 0.6 + jig(Math.floor(i / 17), li2 + 9) * 0.4;
-            const spike = jig(i * 3 + 1, li2 + 2) > 0.88 ? 1.75 : 1;
-            let L = (4.6 + run * 9.5) * spike;
-            // stop short of anything on the other side of a narrow gap
-            for (let q = 3; q < L + 4; q += 1.4) {
-              if (has(Math.floor((px2 + nx * q) / C), Math.floor((py2 + ny * q) / C))) { L = q - 4.2; break; }
-            }
-            if (L < 2.2) continue;
-            // a touch of splay, so the strokes are not a perfect comb
-            const sp = (jig(i * 7 + 3, li2 + 5) - 0.5) * 0.3;
-            const cs2 = Math.cos(sp), sn = Math.sin(sp);
+          // the stroke, leaned off the normal and cut short of any floor on
+          // the far side of a narrow gap
+          const stroke = (i, ang, off, L) => {
+            const [px2, py2] = pts[i], [nx, ny] = norms[i];
+            const cs2 = Math.cos(ang), sn = Math.sin(ang);
             const ex = nx * cs2 - ny * sn, ey = nx * sn + ny * cs2;
-            // start just clear of the wall's own line rather than under it
-            const sx = px2 + ex * 1.5, sy = py2 + ey * 1.5;
-            marks.push(`M${sx.toFixed(1)},${sy.toFixed(1)}l${(ex * L).toFixed(1)},${(ey * L).toFixed(1)}`);
+            for (let q = Math.max(3, off); q < off + L + 4; q += 1.4) {
+              if (has(Math.floor((px2 + ex * q) / C), Math.floor((py2 + ey * q) / C))) { L = q - off - 4.2; break; }
+            }
+            if (L < 1.6) return;
+            put(px2 + ex * off, py2 + ey * off, ex * L, ey * L);
+          };
+
+          // the rind: tight overlapping ticks on the wall line itself, so
+          // the edge reads nearly solid before the hatching takes over
+          for (let i = 0; i < n; i++) {
+            stroke(i, (jig(i, li2 + 1) - 0.5) * 0.5, 0, 2.2 + jig(i, li2 + 2) * 1.6);
+          }
+
+          // patches of directional hatching growing out of the rind, the
+          // lean alternating patch by patch
+          for (let start2 = 0; start2 < n; start2 += Math.floor(PATCH * 0.75)) {
+            const pi = Math.floor((start2 / PATCH) * 1.33);
+            const ang = (pi % 2 ? 1 : -1) * (0.42 + jig(pi, li2 + 3) * 0.3);
+            for (let k = 0; k < PATCH; k += 2.1) {
+              const i = Math.floor(start2 + k) % n;
+              stroke(i, ang, 1.6 + jig(i, li2 + 4) * 1.4,
+                (6 + jig(pi, li2 + 5) * 8) * (0.7 + jig(i, li2 + 6) * 0.5));
+            }
           }
         });
         return `<path d="${marks.join('')}"/>`;
