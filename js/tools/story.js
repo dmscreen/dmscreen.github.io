@@ -438,39 +438,75 @@ export default {
       // a carved cavern the rock drifted clear of its own wall. This follows
       // the same shapes roomPath and corridorPts draw.
       const drawnEdge = () => {
+        // Each test carries the box it actually occupies, for the binning
+        // below. A cave chamber's outline is grown out of its rectangle and
+        // reaches past it, so the rectangle is not a safe bound for one.
         const tests = rooms.map(r => {
           const x = r.x * C, y = r.y * C, w = r.w * C, h = r.h * C;
+          const boxOf = (pp) => [Math.min(...pp.map(q => q[0])), Math.min(...pp.map(q => q[1])),
+            Math.max(...pp.map(q => q[0])), Math.max(...pp.map(q => q[1]))];
           if (r.poly) {
             const pp = r.poly.map(([a, b]) => [a * C, b * C]);
-            return (px, py) => inPoly(pp, px, py);
+            return { hit: (px, py) => inPoly(pp, px, py), box: boxOf(pp) };
           }
           if (r.shape === 'round') {
             const cx = x + w / 2, cy = y + h / 2;
-            return (px, py) => ((px - cx) / (w / 2)) ** 2 + ((py - cy) / (h / 2)) ** 2 <= 1;
+            return { hit: (px, py) => ((px - cx) / (w / 2)) ** 2 + ((py - cy) / (h / 2)) ** 2 <= 1,
+              box: [x, y, x + w, y + h] };
           }
           if (r.shape === 'octagon') {
             const c1 = Math.min(w, h) * 0.28;
             const pp = [[x + c1, y], [x + w - c1, y], [x + w, y + c1], [x + w, y + h - c1],
               [x + w - c1, y + h], [x + c1, y + h], [x, y + h - c1], [x, y + c1]];
-            return (px, py) => inPoly(pp, px, py);
+            return { hit: (px, py) => inPoly(pp, px, py), box: boxOf(pp) };
           }
-          return (px, py) => px >= x && px <= x + w && py >= y && py <= y + h;
+          return { hit: (px, py) => px >= x && px <= x + w && py >= y && py <= y + h,
+            box: [x, y, x + w, y + h] };
         });
         const runs = corridors.map(co => corridorXY(co.cells));
         const half = PASSAGE / 2;
-        const inside = (px, py) => {
-          for (const t of tests) if (t(px, py)) return true;
-          for (const pts of runs) {
-            for (let i = 0; i < pts.length - 1; i++) {
-              const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-              const dx = bx - ax, dy = by - ay;
-              const L2 = dx * dx + dy * dy || 1;
+
+        // Every probe used to be tested against every room and every corridor
+        // segment on the level, and the raster below probes a point every
+        // three pixels across the whole map. On a large floor that is tens of
+        // millions of tests, and it was the whole cost of drawing a level.
+        //
+        // Bin the shapes by where they are, so a probe only tests what is
+        // actually near it. This is exact rather than approximate: a shape can
+        // only hold a point inside a bin its bounding box covers, so binning
+        // by bounding box can never drop a hit. The grid carries a bin of
+        // margin on every side, because the edge refinement probes a few
+        // pixels off the map.
+        const BIN = 48;
+        const bw = Math.ceil(W / BIN) + 3, bh = Math.ceil(H / BIN) + 3;
+        const bins = Array.from({ length: bw * bh }, () => []);
+        const bx0 = (v) => Math.floor(v / BIN) + 1;    // one bin of margin
+        const put = (x0, y0, x1, y1, fn) => {
+          const i0 = Math.max(0, bx0(x0)), i1 = Math.min(bw - 1, bx0(x1));
+          const j0 = Math.max(0, bx0(y0)), j1 = Math.min(bh - 1, bx0(y1));
+          for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) bins[j * bw + i].push(fn);
+        };
+        for (const t of tests) put(t.box[0], t.box[1], t.box[2], t.box[3], t.hit);
+        for (const pts of runs) {
+          for (let i = 0; i < pts.length - 1; i++) {
+            const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+            const dx = bx - ax, dy = by - ay;
+            const L2 = dx * dx + dy * dy || 1;
+            const seg = (px, py) => {
               let t = ((px - ax) * dx + (py - ay) * dy) / L2;
               t = t < 0 ? 0 : t > 1 ? 1 : t;
               const qx = ax + dx * t - px, qy = ay + dy * t - py;
-              if (qx * qx + qy * qy <= half * half) return true;
-            }
+              return qx * qx + qy * qy <= half * half;
+            };
+            put(Math.min(ax, bx) - half, Math.min(ay, by) - half,
+              Math.max(ax, bx) + half, Math.max(ay, by) + half, seg);
           }
+        }
+        const inside = (px, py) => {
+          const i = bx0(px), j = bx0(py);
+          if (i < 0 || j < 0 || i >= bw || j >= bh) return false;
+          const cell = bins[j * bw + i];
+          for (let k = 0; k < cell.length; k++) if (cell[k](px, py)) return true;
           return false;
         };
 
@@ -535,19 +571,36 @@ export default {
         // clearance: how far a point stands from the nearest drawn floor, in
         // px, by chamfer flood over the same fine grid. The hatching's fill
         // pass uses it to know what counts as band and what is open page.
+        // Two sweeps rather than a relaxation queue. The queue re-entered
+        // the same cell many times over and was the slowest part left of
+        // drawing a level; the classic forward-then-backward pass settles
+        // the very same chamfer distance in one visit each way.
         const dfArr = new Float32Array(gw * gh).fill(1e9);
-        {
-          const q = [];
-          for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
-            if (grid[j * gw + i]) { dfArr[j * gw + i] = 0; q.push(i, j); }
+        for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+          if (grid[j * gw + i]) dfArr[j * gw + i] = 0;
+        }
+        for (let j = 0; j < gh; j++) {
+          for (let i = 0; i < gw; i++) {
+            const k = j * gw + i;
+            let d = dfArr[k];
+            if (d === 0) continue;
+            if (i > 0 && dfArr[k - 1] + 3 < d) d = dfArr[k - 1] + 3;
+            if (j > 0 && dfArr[k - gw] + 3 < d) d = dfArr[k - gw] + 3;
+            if (i > 0 && j > 0 && dfArr[k - gw - 1] + 4.24 < d) d = dfArr[k - gw - 1] + 4.24;
+            if (i < gw - 1 && j > 0 && dfArr[k - gw + 1] + 4.24 < d) d = dfArr[k - gw + 1] + 4.24;
+            dfArr[k] = d;
           }
-          for (let h2 = 0; h2 < q.length; h2 += 2) {
-            const i = q[h2], j = q[h2 + 1], base = dfArr[j * gw + i];
-            for (const [di, dj, c] of [[1, 0, 3], [-1, 0, 3], [0, 1, 3], [0, -1, 3], [1, 1, 4.24], [1, -1, 4.24], [-1, 1, 4.24], [-1, -1, 4.24]]) {
-              const ni = i + di, nj = j + dj;
-              if (ni < 0 || nj < 0 || ni >= gw || nj >= gh) continue;
-              if (dfArr[nj * gw + ni] > base + c + 0.001) { dfArr[nj * gw + ni] = base + c; q.push(ni, nj); }
-            }
+        }
+        for (let j = gh - 1; j >= 0; j--) {
+          for (let i = gw - 1; i >= 0; i--) {
+            const k = j * gw + i;
+            let d = dfArr[k];
+            if (d === 0) continue;
+            if (i < gw - 1 && dfArr[k + 1] + 3 < d) d = dfArr[k + 1] + 3;
+            if (j < gh - 1 && dfArr[k + gw] + 3 < d) d = dfArr[k + gw] + 3;
+            if (i < gw - 1 && j < gh - 1 && dfArr[k + gw + 1] + 4.24 < d) d = dfArr[k + gw + 1] + 4.24;
+            if (i > 0 && j < gh - 1 && dfArr[k + gw - 1] + 4.24 < d) d = dfArr[k + gw - 1] + 4.24;
+            dfArr[k] = d;
           }
         }
         const clear = (px, py) => {
