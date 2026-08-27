@@ -1860,31 +1860,69 @@ export default {
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}${passagesHTML}</div>`;
 
       // A location on the town map opens like a dungeon room does: what they
-      // see on arrival, what goes on there, who is minding it, something worth
-      // a second look, a thread to pull, and what only the DM knows. Older
-      // campaigns saved before locations had any of this keep their plain list.
+      // see on arrival, what goes on there, who is there, something worth a
+      // second look, a thread to pull, and what only the DM knows. Everything
+      // the settlement has is behind one of these doors, because a roster of
+      // six people and five rumours in a column beside the map is a list, and
+      // the same six people and five rumours behind the doors they are
+      // actually behind is a town. Older campaigns saved before locations had
+      // any of this keep their plain list.
+      const whoLine = (n, lead) => `<p class="small"><b>${lead}</b> ${esc(n.name)}, ${esc(n.occupation)}${
+        n.statSuggestion ? `, use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a> (CR ${esc(n.statSuggestion.cr)})` : ''
+      }. ${esc(n.personality)}; ${esc(n.quirk)}.</p>`;
+      const wantsLine = (n) => `<p class="small"><b>${esc(n.name)} wants</b> ${esc(n.wants)}. <b>And hides</b> ${esc(n.secret)}</p>`;
+      const byNpcId = new Map((elt.roster || []).map(n => [n.id, n]));
+      const spotNo = (id) => {
+        const n = (elt.spotIds || []).indexOf(id);
+        return n >= 0 ? `${n + 1}. ` : '';
+      };
+
+      const placeHTML = (l) => {
+        const open = openArea && openArea.eltId === elt.id && openArea.nodeId === l.id;
+        const seated = (l.seated || []).map(id => byNpcId.get(id)).filter(Boolean);
+        const heard = l.heard || [];
+        return `<details class="story-area" id="area-${esc(l.id)}" data-elt="${esc(elt.id)}" data-node="${esc(l.id)}"${open ? ' open' : ''}>
+          <summary><b>${spotNo(l.id)}${esc(l.name)}</b>
+            <span class="small faint">${esc(l.line)}</span>
+            ${seated.length ? `<span class="pill">${seated.length} on the roster</span>` : ''}
+          </summary>
+          ${playerBox(esc(l.sights.join(' ')), 'Read aloud as they arrive')}
+          <p class="small"><b>What goes on here</b> ${esc(l.trade)}</p>
+          <p class="small"><b>Worth a second look</b> ${cap(esc(l.object))}</p>
+          ${l.npc ? whoLine(l.npc, 'Minding the place') : ''}
+          ${seated.map(n => whoLine(n, `Also here, ${n.role.toLowerCase()}:`)).join('')}
+          ${playerBox(`They hear that ${esc(l.rumor)}.${
+            // quoted rather than folded into the sentence: lowercasing the
+            // first letter to make it read on turned "Leucis" into "leucis"
+            heard.map(r => ` And, from somebody at the next table: &ldquo;${esc(r.text)}&rdquo;`).join('')
+          }`, 'Heard on the spot')}
+          ${dmBox(`${heard.map(r => `<p class="small"><span class="pill ${r.true ? 'success' : 'danger'}">${r.true ? 'true' : 'false'}</span> &ldquo;${esc(r.text)}&rdquo;</p>`).join('')}
+            <p class="small"><b>A thread to pull</b> ${esc(l.hook)}</p>
+            <p class="small"><b>What only you know</b> ${esc(l.hidden)}</p>
+            ${l.npc ? wantsLine(l.npc) : ''}
+            ${seated.map(wantsLine).join('')}`)}
+        </details>`;
+      };
+
+      const eventHTML = () => {
+        if (!elt.eventId) return '';
+        const open = openArea && openArea.eltId === elt.id && openArea.nodeId === elt.eventId;
+        return `<details class="story-area" id="area-${esc(elt.eventId)}" data-elt="${esc(elt.id)}" data-node="${esc(elt.eventId)}"${open ? ' open' : ''}>
+          <summary><b>${spotNo(elt.eventId)}While they are here</b>
+            <span class="small faint">${elt.eventAt ? `it happens at ${esc(elt.eventAt.replace(/^The /, 'the '))}` : 'somewhere in the streets'}</span>
+            <span class="pill accent">event</span>
+          </summary>
+          ${playerBox(cap(esc(elt.event)) + '.', 'It happens in front of them')}
+          ${dmBox('<p class="small">Drop this in whenever the session needs something to happen. It is not on a clock, and the party can walk past it.</p>')}
+        </details>`;
+      };
+
       const placesHTML = !elt.places?.length ? '' : `
         <h3 class="mt">Locations of interest</h3>
-        <p class="small faint">Numbered on the map. Click a pin to jump to one.</p>
-        ${elt.places.map((l) => {
-          const open = openArea && openArea.eltId === elt.id && openArea.nodeId === l.id;
-          const n = (elt.spotIds || []).indexOf(l.id);
-          return `<details class="story-area" id="area-${esc(l.id)}" data-elt="${esc(elt.id)}" data-node="${esc(l.id)}"${open ? ' open' : ''}>
-            <summary><b>${n >= 0 ? `${n + 1}. ` : ''}${esc(l.name)}</b>
-              <span class="small faint">${esc(l.line)}</span>
-            </summary>
-            ${playerBox(esc(l.sights.join(' ')), 'Read aloud as they arrive')}
-            <p class="small"><b>What goes on here</b> ${esc(l.trade)}</p>
-            <p class="small"><b>Worth a second look</b> ${cap(esc(l.object))}</p>
-            ${l.npc ? `<p class="small"><b>Minding the place</b> ${esc(l.npc.name)}, ${esc(l.npc.occupation)}${
-              l.npc.statSuggestion ? `, use <a href="javascript:void 0" data-mon="${esc(l.npc.statSuggestion.slug)}">${esc(l.npc.statSuggestion.name)}</a> (CR ${esc(l.npc.statSuggestion.cr)})` : ''
-            }. ${esc(l.npc.personality)}; ${esc(l.npc.quirk)}.</p>` : ''}
-            ${playerBox(`They hear that ${esc(l.rumor)}.`, 'Heard on the spot')}
-            ${dmBox(`<p class="small"><b>A thread to pull</b> ${esc(l.hook)}</p>
-              <p class="small"><b>What only you know</b> ${esc(l.hidden)}</p>
-              ${l.npc ? `<p class="small"><b>${esc(l.npc.name)} wants</b> ${esc(l.npc.wants)}. <b>And hides</b> ${esc(l.npc.secret)}</p>` : ''}`)}
-          </details>`;
-        }).join('')}`;
+        <p class="small faint">Every one of them numbered on the map. Click a pin to jump to it. The roster and the rumours are seated in these, wherever they belong.</p>
+        ${elt.places.length ? placeHTML(elt.places[0]) : ''}
+        ${eventHTML()}
+        ${elt.places.slice(1).map(placeHTML).join('')}`;
 
       if (elt.type === 'settlement') return `${head}
         ${elt.townMap ? `<div class="map-wrap">${townMapSVG(elt)}
@@ -1904,11 +1942,13 @@ export default {
           <div><h3>Who runs it</h3><p class="small">${esc(elt.ruler)}</p>
             <h3>Services</h3><p class="small">${elt.services.map(esc).join(', ')}. The tavern is ${esc(elt.tavern)}.</p>
             ${elt.places?.length ? '' : `<h3>Locations of interest</h3><ul class="small">${elt.locations.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`}
-            <h3>While they are here</h3><p class="small">${esc(elt.event)}</p></div>
-          <div><h3>Rumours</h3>
-            <p class="small faint">The rumour text is player-facing; the true/false tags are yours alone.</p>
-            <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul>
-            <h3>Roster</h3>${elt.roster.map(npcCardHTML).join('')}</div>
+            ${elt.eventId ? '' : `<h3>While they are here</h3><p class="small">${esc(elt.event)}</p>`}
+            <h3>Rumours</h3>
+            <p class="small faint">The text is player-facing; the true/false tags are yours alone. Each one is also seated at the location it is overheard in, below.</p>
+            <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul></div>
+          <div><h3>Roster</h3>
+            ${elt.places?.length ? '<p class="small faint">Each of them is standing somewhere. The location they are found at is below, and opens from the map.</p>' : ''}
+            ${elt.roster.map(npcCardHTML).join('')}</div>
         </div>
         ${placesHTML}`;
 

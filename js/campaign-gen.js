@@ -538,46 +538,77 @@ function makeSettlement(ctx, { title, level, isHub }) {
   // object worth a second look, a thread to pull, a rumour heard on the spot,
   // and one thing only the DM knows. All of it rolled off the place's own
   // tables, so a temple's secret is a temple's secret.
-  const makePlaces = () => {
-    const archetypes = C.settlement.places || [];
-    if (!archetypes.length) return [];
-    // a hamlet has fewer doors to knock on than a small city
-    const want = Math.min(archetypes.length, [3, 4, 5, 6][C.settlement.sizes.indexOf(size)] || 4);
-    return some(archetypes, want).map((a) => ({
-      id: uid('loc'),
-      placeId: a.id,
-      name: a.name,
-      mapLabel: a.map || a.name,
-      line: a.line,
-      sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
-      trade: fill(pick(a.trade), ctx.slots),
-      object: fill(pick(a.objects), ctx.slots),
-      hook: fill(pick(a.hooks), ctx.slots),
-      hidden: fill(pick(a.hidden), ctx.slots),
-      rumor: fill(pick(a.rumors), ctx.slots),
-      npc: makeNPC(ctx, pick(['witness', 'broker', 'specialist', 'survivor', 'authority']),
-        `${title}: ${a.name}`, pick(a.occupations)),
-    }));
-  };
-  const places = makePlaces();
+  const buildPlace = (a, name) => ({
+    id: uid('loc'),
+    placeId: a.id,
+    name: name || a.name,
+    mapLabel: a.map || a.name,
+    line: a.line,
+    sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
+    trade: fill(pick(a.trade), ctx.slots),
+    object: fill(pick(a.objects), ctx.slots),
+    hook: fill(pick(a.hooks), ctx.slots),
+    hidden: fill(pick(a.hidden), ctx.slots),
+    rumor: fill(pick(a.rumors), ctx.slots),
+    npc: makeNPC(ctx, pick(['witness', 'broker', 'specialist', 'survivor', 'authority']),
+      `${title}: ${name || a.name}`, pick(a.occupations)),
+    seated: [],      // roster people found here, filled in below
+    heard: [],       // the settlement's own rumours, dealt out below
+  });
 
   const shopTypes = Object.keys(shops.types);
   const services = some(shopTypes, Math.min(size.services, shopTypes.length));
 
   const tavern = `The ${pick(names.tavern.adjectives)} ${pick(names.tavern.nouns)}`;
+  const places = (() => {
+    const archetypes = C.settlement.places || [];
+    if (!archetypes.length) return [];
+    const tavernType = archetypes.find(a => a.id === 'tavern');
+    const rest = archetypes.filter(a => a.id !== 'tavern');
+    // a hamlet has fewer doors to knock on than a small city
+    const want = Math.min(rest.length, [3, 4, 5, 6][C.settlement.sizes.indexOf(size)] || 4);
+    const out = tavernType ? [buildPlace(tavernType, tavern)] : [];
+    return out.concat(some(rest, want).map(a => buildPlace(a)));
+  })();
   // the one-line summaries the older views and the markdown export read
   const locations = places.length
     ? places.map(l => `${l.name.replace(/^The /, 'the ')}, ${l.line}`)
     : some(C.settlement.locations, 4);
   const event = fill(pick(C.settlement.events), ctx.slots);
+  // The event is somewhere too, so it gets a spot and a section like the
+  // rest rather than a pin that leads nowhere.
+  const eventPlace = places.length ? pick(places) : null;
+  const eventId = uid('evt');
+
+  const rumors = [
+    ...some(C.settlement.rumorsTrue, 3).map(t => ({ true: true, text: fill(t, ctx.slots) })),
+    ...some(C.settlement.rumorsFalse, 2).map(t => ({ true: false, text: fill(t, ctx.slots) })),
+  ];
+
+  // Everybody the settlement has, and everything there is to overhear, is
+  // put somewhere a party can walk to. A roster of six people and a list of
+  // five rumours sitting in a column beside the map is a list; the same six
+  // people and five rumours behind the doors they are actually behind is a
+  // town. The roster still reads as a roster, but each of them now says
+  // where they are found.
+  if (places.length) {
+    roster.forEach((n, i) => {
+      const at = places[i % places.length];
+      at.seated.push(n.id);
+      n.where = `${title}: ${at.name}`;
+    });
+    rumors.forEach((r, i) => places[(i + 1) % places.length].heard.push(r));
+  }
+
   // The drawn town. The campaign's own locations become numbered spots on
   // it: the tavern first, because the spot-picker seats spot 1 nearest the
-  // plaza, then the event, then the locations of interest around the town.
-  // Each spot past those two carries the id of the place it stands for, so
-  // clicking the pin opens that location the way clicking a room does.
-  const townSpots = [`${tavern} (the tavern)`, `While they are here: ${event}`,
-    ...places.map(l => `${l.name}, ${l.line}`)];
-  const spotIds = [null, null, ...places.map(l => l.id)];
+  // plaza, then the event, then the rest of the locations. Every spot
+  // carries the id of the section it stands for, so clicking any pin opens
+  // it the way clicking a room does.
+  const townSpots = [`${places[0]?.name || tavern} (the tavern)`,
+    `While they are here: ${event}`,
+    ...places.slice(1).map(l => `${l.name}, ${l.line}`)];
+  const spotIds = [places[0]?.id || null, eventId, ...places.slice(1).map(l => l.id)];
   const townMap = generateTownMap({
     size: size.label, spots: townSpots.length,
     // a settlement in a coastal region can sit on the water
@@ -597,13 +628,12 @@ function makeSettlement(ctx, { title, level, isHub }) {
     locations,
     places,
     event,
+    eventId,
+    eventAt: eventPlace ? eventPlace.name : null,
     townMap,
     townSpots,
     spotIds,
-    rumors: [
-      ...some(C.settlement.rumorsTrue, 3).map(t => ({ true: true, text: fill(t, ctx.slots) })),
-      ...some(C.settlement.rumorsFalse, 2).map(t => ({ true: false, text: fill(t, ctx.slots) })),
-    ],
+    rumors,
     nodes: [],
     level,
   };
@@ -2244,23 +2274,35 @@ export function campaignMarkdown(c) {
         if (el.type === 'settlement') {
           L.push(`Ruler: ${el.ruler}. Tavern: ${el.tavern}.`, '');
           if (el.places?.length) {
-            L.push('Locations (numbered as on the map):', '');
-            el.places.forEach((l, i) => {
-              L.push(`**${i + 3}. ${l.name}**, ${l.line}`, '',
+            const seatOf = new Map((el.roster || []).map(n => [n.id, n]));
+            const no = (id) => { const i = (el.spotIds || []).indexOf(id); return i >= 0 ? i + 1 : '-'; };
+            const placeLines = (l) => {
+              const seated = (l.seated || []).map(id => seatOf.get(id)).filter(Boolean);
+              L.push(`**${no(l.id)}. ${l.name}**, ${l.line}`, '',
                 `*Read aloud:* ${l.sights.join(' ')}`, '',
                 `- What goes on here: ${l.trade}`,
                 `- Worth a second look: ${l.object}`,
                 ...(l.npc ? [`- Minding the place: ${l.npc.name}, ${l.npc.occupation}. ${l.npc.personality}; ${l.npc.quirk}`] : []),
+                ...seated.map(n => `- Also here (${n.role}): ${n.name}, ${n.occupation}. ${n.personality}; ${n.quirk}`),
                 `- Heard on the spot: they hear that ${l.rumor}`,
+                ...(l.heard || []).map(r => `- Also heard here: "${r.text}" *(${r.true ? 'true' : 'false'})*`),
                 `- *A thread to pull (DM):* ${l.hook}`,
                 `- *What only you know (DM):* ${l.hidden}`,
                 ...(l.npc ? [`- *${l.npc.name} wants ${l.npc.wants}, and hides ${l.npc.secret}*`] : []),
+                ...seated.map(n => `- *${n.name} wants ${n.wants}, and hides ${n.secret}*`),
                 '');
-            });
+            };
+            L.push('Locations (numbered as on the map):', '');
+            placeLines(el.places[0]);
+            if (el.eventId) {
+              L.push(`**${no(el.eventId)}. While they are here**${el.eventAt ? `, at ${el.eventAt}` : ''}`, '',
+                `*In front of them:* ${el.event}`, '');
+            }
+            el.places.slice(1).forEach(placeLines);
           } else {
             L.push('Locations:', ...el.locations.map(x => `- ${x}`), '');
           }
-          L.push('Rumours (text is player-facing; true/false is DM only):', ...el.rumors.map(r => `- "${r.text}" *(${r.true ? 'true' : 'false'})*`), '');
+          L.push('Rumours in full (text is player-facing; true/false is DM only):', ...el.rumors.map(r => `- "${r.text}" *(${r.true ? 'true' : 'false'})*`), '');
         }
         if (el.type === 'region') {
           L.push('Routes:', ...el.legs.map(l => `- ${l.label}, ${l.days} days. ${l.checks}. Complication: ${l.complication}`), '', 'Encounters (d6):', ...el.encounterTable.map(r => `- ${r.range}: ${r.text}`), '');
