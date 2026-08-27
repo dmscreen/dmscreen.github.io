@@ -1260,6 +1260,50 @@
     ],
     "_placesNote": "Each place is somewhere a party walks into and something happens, so each carries what a dungeon room carries: what they see, what goes on, someone to talk to, something to take an interest in, a thread to pull, and something only the DM knows.",
     "places": [
+      { "id": "tavern", "name": "The tavern", "map": "Tavern", "line": "where the party will hear most of what they hear",
+        "sights": [
+          "Low beams, a fire drawing badly, and every head turning once before deciding the party are nobody.",
+          "A common room loud enough to talk under, and a corner table nobody sits at.",
+          "Trestle benches, a dog under one of them, and a smell of last night still winning against this morning.",
+          "Tallies chalked beside the door against names rather than numbers, some of them very long."
+        ],
+        "trade": [
+          "Beds in the loft, stew from a pot that is never emptied, and beer the locals apologise for and drink anyway.",
+          "The only rooms for hire, which is why the room rate is what it is.",
+          "Ale, gossip, and the settlement's unofficial hiring hall.",
+          "Food, drink, and a back room let by the hour to people who want a door."
+        ],
+        "occupations": [
+          "innkeeper",
+          "potboy",
+          "cook",
+          "cellarer",
+          "resident drunk"
+        ],
+        "objects": [
+          "a tally slate beside the door with one name owing more than the rest combined",
+          "a shield over the fireplace with the device scratched out",
+          "a sealed cask nobody is allowed to broach, kept for an occasion the innkeeper will not name",
+          "a guest book with three days torn out of it"
+        ],
+        "hooks": [
+          "The innkeeper will forgive a debt if the party settles it with the person who owes it.",
+          "Somebody has been drinking here alone every night for a week and paying in coin from far away.",
+          "A room upstairs has been paid for a month in advance and has not been slept in.",
+          "There is a fight brewing between two regulars and the whole room knows what it is really about."
+        ],
+        "hidden": [
+          "The back room is let to people the innkeeper would rather the watch did not know about.",
+          "The cellar has a door onto a passage that comes up outside the settlement.",
+          "The innkeeper reports who comes and goes, and has done for years, to whoever pays.",
+          "The torn pages of the guest book were removed by a guest, not by the innkeeper."
+        ],
+        "rumors": [
+          "the room at the top of the stair is paid for and empty",
+          "the innkeeper stopped writing names in the book about a month ago",
+          "somebody has been drinking here alone and paying in coin nobody recognises"
+        ]
+      },
       { "id": "market", "name": "The market square", "map": "Market square", "line": "where the notice board is the fastest information in the region",
         "sights": [
           "Stalls under mismatched awnings, and a notice board so thick with layered bills that the oldest are load-bearing.",
