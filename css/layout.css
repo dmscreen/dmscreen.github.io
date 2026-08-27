@@ -105,6 +105,8 @@
 #app.sidebar-collapsed .nav-item { justify-content: center; padding: 9px 0; }
 #app.sidebar-collapsed .sidebar-head { justify-content: center; }
 #app.sidebar-collapsed .sidebar-head .collapse-btn { margin-left: 0; }
+/* The chevron points the way the rail will go, so collapsed it faces out. */
+#app.sidebar-collapsed .sidebar-head .collapse-btn svg { transform: rotate(180deg); }
 #app.sidebar-collapsed .sidebar-head .logo { display: none; }
 
 /* ---------- Mobile title bar ---------- */

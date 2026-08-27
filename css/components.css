@@ -880,6 +880,10 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .dungeon-map .map-hall .map-hall-glow { pointer-events: auto; cursor: pointer; }
 .dungeon-map .map-hazard[data-goto]:hover path,
 .dungeon-map .map-hazard[data-goto]:hover circle { stroke: var(--accent); stroke-width: 2.4; }
+/* a numbered town pin that has a section of its own is a target too */
+.dungeon-map .map-spot[data-goto] { pointer-events: auto; cursor: pointer; }
+.dungeon-map .map-spot[data-goto] * { pointer-events: auto; }
+.dungeon-map .map-spot[data-goto]:hover .map-badge { stroke: var(--accent); stroke-width: 2.4; }
 .dungeon-map .map-hall-glow { fill: none; stroke: transparent; }
 .dungeon-map .map-hall:hover .map-hall-glow { stroke: var(--accent); opacity: 0.3; }
 .dungeon-map { --map-water: #3d5661; }
