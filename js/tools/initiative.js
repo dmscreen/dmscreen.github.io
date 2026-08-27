@@ -17,11 +17,11 @@ const SKELETON = () => el(`<div class="init-skeleton">
     <span class="skel skel-name"></span>
     <span class="skel skel-hp"></span>
   </div>`).join('')}
-  <div class="empty-state"><p>No combatants. Add your party and monsters, or build an encounter in the Encounter Builder and hit "Run".</p></div>
+  <div class="empty-state"><p>No combatants. Add your party and monsters, or build one on the Build tab and hit "Run".</p></div>
 </div>`);
 
 export default {
-  id: 'initiative', title: 'Initiative Tracker', shortTitle: 'Initiative', group: 'Combat', icon: 'shield',
+  id: 'initiative', title: 'Initiative Tracker', shortTitle: 'Encounter', group: 'Combat', icon: 'shield',
   subtitle: 'Run the fight: turns, HP, conditions, death saves',
 
   async render(container) {

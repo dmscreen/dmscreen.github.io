@@ -116,7 +116,7 @@ export function rollRandomEncounter(monsters, party, { env = '', level = 3, diff
 const DIFF_PILL = { Trivial: '', Easy: 'success', Medium: 'info', Hard: 'accent', Deadly: 'danger' };
 
 export default {
-  id: 'encounters', title: 'Encounter Builder', shortTitle: 'Encounter', group: 'Combat', icon: 'swords',
+  id: 'encounters', title: 'Encounter Builder', shortTitle: 'Build', group: 'Combat', icon: 'swords',
   subtitle: 'Build and balance encounters against your party',
 
   async render(container) {

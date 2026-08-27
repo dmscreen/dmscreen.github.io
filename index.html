@@ -64,11 +64,18 @@
   var sc_security="122e2ab1"; 
   </script>
   <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
-  <div class="statcounter"><a title="Web Analytics"
-  href="https://statcounter.com/" target="_blank"><img
+  <!-- The counter is invisible (sc_invisible above); this pixel is the fallback
+       that records the visit when the script cannot. It is clipped rather than
+       display:none so the browser still fetches it, and carries no alt text,
+       because on iPad the image does not load and the alt was rendering as
+       "Web Analytics" in the corner of the page. -->
+  <div class="statcounter" aria-hidden="true"
+  style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);pointer-events:none"><a
+  href="https://statcounter.com/" target="_blank" tabindex="-1"><img
   class="statcounter"
   src="https://c.statcounter.com/13341423/0/122e2ab1/1/"
-  alt="Web Analytics"
+  alt=""
+  width="1" height="1"
   referrerPolicy="no-referrer-when-downgrade"></a></div>
   <!-- End of Statcounter Code -->
   
