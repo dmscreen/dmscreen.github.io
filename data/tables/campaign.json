@@ -1258,6 +1258,525 @@
       "the bathhouse, where every deal in town is actually made",
       "the ferry landing, and the ferryman who decides who crosses"
     ],
+    "_placesNote": "Each place is somewhere a party walks into and something happens, so each carries what a dungeon room carries: what they see, what goes on, someone to talk to, something to take an interest in, a thread to pull, and something only the DM knows.",
+    "places": [
+      { "id": "market", "name": "The market square", "map": "Market square", "line": "where the notice board is the fastest information in the region",
+        "sights": [
+          "Stalls under mismatched awnings, and a notice board so thick with layered bills that the oldest are load-bearing.",
+          "Three quarters of the pitches are trading and the rest stand empty, their owners not spoken of.",
+          "A weighing beam chained to a post, and a queue of people who clearly do not trust it.",
+          "Chalk prices on slate, rubbed out and rewritten twice since morning."
+        ],
+        "trade": [
+          "Grain, root vegetables, and whatever the last caravan could not sell downriver.",
+          "Wool, tallow, and a surprising quantity of secondhand boots.",
+          "Fish, salt, and news, in roughly that order of freshness."
+        ],
+        "occupations": [
+          "stallholder",
+          "market warden",
+          "weights inspector",
+          "hawker",
+          "cutpurse"
+        ],
+        "objects": [
+          "a bill on the notice board, three layers down, offering a reward for something already found",
+          "a stall of salvage nobody will say where it came from",
+          "a set of scales with a lead pea soldered under one pan",
+          "a caged bird that repeats a phrase in a language nobody here speaks"
+        ],
+        "hooks": [
+          "The warden wants the party to stand at a pitch tomorrow and watch who does not come.",
+          "Two stallholders are feuding, and one of them is right in a way that implicates a third party.",
+          "A trader will pay well to have a crate escorted as far as the crossroads, and will not say what is in it.",
+          "Somebody has been buying up one commodity quietly, and prices are about to bite."
+        ],
+        "hidden": [
+          "A floor cavity under the third stall holds a strongbox of coin nobody has claimed since its owner vanished.",
+          "The notice board's backing plank is a stolen inn sign from a town that burned.",
+          "A stallholder is fencing goods lifted from the antagonist's people, and is being watched for it.",
+          "The well at the square's corner has something at the bottom that is not water-worn."
+        ],
+        "rumors": [
+          "the prices went strange the week before the trouble started",
+          "somebody paid in old coin, the kind with the wrong face on it",
+          "a stall stood empty three days before its owner was reported missing"
+        ]
+      },
+      { "id": "temple", "name": "The temple", "map": "Temple", "line": "which is short a priest and long on questions",
+        "sights": [
+          "Cold stone, a smell of old smoke, and more candles lit than the congregation could account for.",
+          "A roof patched with the wrong colour tile, and offerings left at a side altar rather than the main one.",
+          "Names cut into the floor slabs, the most recent still pale at the edges.",
+          "A door to the vestry bolted from the inside on a day nobody should be in there."
+        ],
+        "trade": [
+          "Blessings, burials, and the only literate hand in the settlement.",
+          "Sanctuary, which is being claimed by someone the authorities want.",
+          "Healing, in the practical sense: broth, splints, and somewhere warm."
+        ],
+        "occupations": [
+          "acolyte",
+          "lay sister",
+          "sexton",
+          "chandler",
+          "itinerant preacher"
+        ],
+        "objects": [
+          "a votive left at the side altar worth more than anyone here earns in a year",
+          "a burial register with a page cut out cleanly",
+          "a reliquary whose seal has been broken and pressed back",
+          "a bell rope worn smooth in the wrong place, as if pulled from a stool"
+        ],
+        "hooks": [
+          "The acolyte wants the party present at a burial, and will not say why they are afraid of it.",
+          "Something has been leaving offerings at night, and the offerings are not food.",
+          "The priest left in a hurry and the letter explaining it was never finished.",
+          "A family wants a body exhumed and the temple will not permit it."
+        ],
+        "hidden": [
+          "Beneath the flagstone with the worn inscription is a stair, and it is not part of a crypt.",
+          "The vestry strongbox holds tithes meant to be forwarded and never were.",
+          "One name on the floor belongs to somebody currently alive and drinking in the tavern.",
+          "The relic is a forgery, and the sexton knows because he made it."
+        ],
+        "rumors": [
+          "the bell rang at an hour nobody was in the tower",
+          "the priest was writing to somebody outside the region right before they left",
+          "there is a stair under the temple older than the temple"
+        ]
+      },
+      { "id": "mill", "name": "The mill", "map": "Mill", "line": "whose owner hears everything the water carries",
+        "sights": [
+          "The grind of the stones felt through the boards before it is heard, and flour dust hanging in every shaft of light.",
+          "A wheel running at full race on a day with no grain queued to be ground.",
+          "Sacks stacked to the rafters, and a tally chalked on the door that does not match them.",
+          "A millpond gone still and green, with a rake left standing in it."
+        ],
+        "trade": [
+          "Grinding, at a toll the miller sets and nobody argues with twice.",
+          "Grain storage for half the outlying farms, which makes this building the settlement's larder.",
+          "Sawing as well as grinding, since the second wheel was fitted."
+        ],
+        "occupations": [
+          "miller",
+          "miller's apprentice",
+          "sack carter",
+          "wheelwright",
+          "grain factor"
+        ],
+        "objects": [
+          "a tally stick recording a delivery on a night the road was closed",
+          "a millstone dressed with a pattern from another region entirely",
+          "a bundle of letters kept dry in the flour loft, none of them the miller's",
+          "a sluice gate forced open from the pond side"
+        ],
+        "hooks": [
+          "The miller will trade what he has overheard for a favour he cannot ask openly.",
+          "Grain is going missing in quantities too large to carry by hand.",
+          "The upstream sluice keeps being opened at night, and the miller wants to know by whom.",
+          "Somebody drowned in the race last winter and the verdict was reached suspiciously fast."
+        ],
+        "hidden": [
+          "The flour loft's false floor holds smuggled goods the miller is only storing, not selling.",
+          "The millpond holds something weighted down, and the rake was an attempt to reach it.",
+          "The miller's toll book is a second set of accounts for somebody else entirely.",
+          "A body was put through the race, and one of the stones still shows it."
+        ],
+        "rumors": [
+          "the wheel runs at night with nothing to grind",
+          "the miller has not bought grain in a month and is still selling flour",
+          "something came down the race in the spring flood and was never talked about again"
+        ]
+      },
+      { "id": "gaol", "name": "The gaol", "map": "Gaol", "line": "holding two people who should not be in there together",
+        "sights": [
+          "Two cells, one occupant each, and a silence between them doing a lot of work.",
+          "A charge book on the desk, open, with the most recent entry in a different hand.",
+          "Straw that has not been changed and a bucket that has, recently and hastily.",
+          "A key ring hung well within reach of the bars, which says something about the gaoler."
+        ],
+        "trade": [
+          "Holding drunks overnight and debtors rather longer.",
+          "Whatever the authority wants held, for as long as they want it held.",
+          "The settlement's only lockable room, which is why the strongbox is here too."
+        ],
+        "occupations": [
+          "gaoler",
+          "constable",
+          "night watchman",
+          "magistrate's clerk",
+          "turnkey"
+        ],
+        "objects": [
+          "a charge book with an entry for a name that appears nowhere else in the settlement",
+          "a confiscated item on the shelf that plainly belongs to somebody dangerous",
+          "a scratched message on a cell wall, finished in a shakier hand than it started",
+          "a set of manacles sized for something that is not a person"
+        ],
+        "hooks": [
+          "One prisoner will trade what they saw for their release, and what they saw is verifiable.",
+          "The gaoler is holding somebody without a charge and has stopped writing anything down.",
+          "A prisoner's family is raising money fast, from people who should not have it.",
+          "Somebody is going to be moved to a larger town in three days, and will not arrive."
+        ],
+        "hidden": [
+          "The gaoler is being paid to keep one of the two in there, and by whom would matter.",
+          "The strongbox holds evidence from a case that was closed as an accident.",
+          "The scratched wall message names one of the antagonist's people.",
+          "There is a third cell, bricked over, and the brick is newer than the wall."
+        ],
+        "rumors": [
+          "the two in there will not speak in front of each other",
+          "a prisoner was released in the night and nobody logged it",
+          "the constable has stopped patrolling one particular street"
+        ]
+      },
+      { "id": "caravanserai", "name": "The caravanserai", "map": "Caravanserai", "line": "full of people who will be gone by morning",
+        "sights": [
+          "A walled yard of tethered animals, cook fires, and six conversations in four languages.",
+          "Wagons drawn up in a ring, and one unloaded far more carefully than the rest.",
+          "A board of tolls and stabling fees, with the through-road rate scratched out and raised.",
+          "Guards hired by the day, sizing up the party as a matter of professional habit."
+        ],
+        "trade": [
+          "Beds, stabling, and passage arranged with whoever is going the right way.",
+          "Goods in transit that will not be on any local market.",
+          "News from three roads at once, most of it a week old and some of it wrong."
+        ],
+        "occupations": [
+          "caravan master",
+          "yard keeper",
+          "outrider",
+          "drover",
+          "translator"
+        ],
+        "objects": [
+          "a manifest listing more crates than the wagon can hold",
+          "a travel token from a city nobody here has been to",
+          "a horse with a brand from the wrong side of the border",
+          "a sealed letter whose bearer is asking, quietly, who is heading north"
+        ],
+        "hooks": [
+          "A caravan master needs guards for the next leg and is offering above the going rate, which is the tell.",
+          "Somebody arrived on a wagon they did not leave on, and their bag is still in the yard.",
+          "Two outfits are refusing to travel on the same day and neither will explain.",
+          "A traveller recognises one of the party, or claims to."
+        ],
+        "hidden": [
+          "One wagon has a false floor, and its contents are the campaign's business.",
+          "A driver is an agent of the antagonist, riding the roads as a courier.",
+          "The yard keeper sells the guest list to anyone who asks in the right coin.",
+          "Something in the stable is not an animal and is being fed as though it were."
+        ],
+        "rumors": [
+          "a wagon came in loaded and left light, and nothing was sold here",
+          "the north road has been quiet in a way the drovers do not like",
+          "somebody has been asking after travellers by description, not by name"
+        ]
+      },
+      { "id": "graveyard", "name": "The graveyard", "map": "Graveyard", "line": "which is being used more efficiently than it should be",
+        "sights": [
+          "Older stones leaning companionably, newer ones standing very straight and very close together.",
+          "Turned earth in a corner with no marker at all, and grass that has not taken.",
+          "A lychgate with a bench worn hollow by people waiting to carry.",
+          "Flowers on one grave that are out of season and not from anywhere nearby."
+        ],
+        "trade": [
+          "Burials, at a fee the sexton adjusts by what a family can bear.",
+          "The parish's memory, since the stones outlast the register.",
+          "Quiet, which is why certain meetings happen here."
+        ],
+        "occupations": [
+          "sexton",
+          "gravedigger",
+          "monumental mason",
+          "mourner for hire",
+          "watchman"
+        ],
+        "objects": [
+          "a headstone carved with a date that has not happened yet",
+          "a spade left where nobody would leave a spade",
+          "a grave whose earth is settled wrong, as though filled twice",
+          "an iron grille bolted over one plot, from the inside"
+        ],
+        "hooks": [
+          "The sexton has buried more than the register shows and wants somebody else to know it.",
+          "A family will pay to have a grave watched for three nights, no questions.",
+          "Something has been taking from the graves, and it is being selective.",
+          "A mourner attends a funeral for a person the town says died years ago."
+        ],
+        "hidden": [
+          "One coffin holds no body, and the paperwork was signed by the authority.",
+          "The unmarked corner holds the people who came in on the road and were never claimed.",
+          "A crypt connects to something older, and the connection was made deliberately.",
+          "Grave goods worth real money were buried with a family that has since fallen on hard times."
+        ],
+        "rumors": [
+          "they have started burying two to a plot and not telling the families",
+          "lights move between the stones on nights with no moon",
+          "a grave was opened and closed again in the same night"
+        ]
+      },
+      { "id": "guildhall", "name": "The guild hall", "map": "Guild hall", "line": "where the accounts are kept and edited",
+        "sights": [
+          "Panelled walls, a table too fine for the building, and the smell of ink and money.",
+          "A ledger on a lectern, chained, open at a page anyone may read and several nobody may.",
+          "Guild marks burned into the beams, one of them chiselled off entirely.",
+          "A back room whose door is shut, from behind which comes the sound of counting."
+        ],
+        "trade": [
+          "Contracts, apprenticeships, and the right to trade here at all.",
+          "Loans, at rates that explain the panelling.",
+          "Arbitration, which is to say whatever the guild decides is true."
+        ],
+        "occupations": [
+          "guild clerk",
+          "master of the hall",
+          "apprentice",
+          "factor",
+          "auditor"
+        ],
+        "objects": [
+          "a ledger page in which the same sum appears three times under three names",
+          "a guild seal recut, badly, by someone in a hurry",
+          "a contract with a clause everyone signed without reading",
+          "a strongbox key worn on a cord, in plain view, by someone who should not have it"
+        ],
+        "hooks": [
+          "The clerk will show the party the real accounts if they solve a problem the guild cannot admit to having.",
+          "A member is being squeezed out and is willing to burn the place down about it.",
+          "The guild has been paying a levy to somebody outside the settlement for two years.",
+          "An apprentice has gone missing and the guild has recorded them as having left."
+        ],
+        "hidden": [
+          "The guild is laundering the antagonist's money and half the masters know.",
+          "The chiselled guild mark belonged to a family the hall destroyed and would rather forget.",
+          "The back room's strongbox holds deeds to most of the property in the settlement.",
+          "The auditor is not from the guild and is here to find exactly what the party is looking for."
+        ],
+        "rumors": [
+          "the guild has been buying land nobody wants, at prices nobody sensible would pay",
+          "a master has not been seen in the hall in a month and still signs everything",
+          "the levy went up again and nobody will say who receives it"
+        ]
+      },
+      { "id": "tower", "name": "The old tower", "map": "Old tower", "line": "condemned, occupied",
+        "sights": [
+          "Boards nailed over the door at ground level, and a rope ladder pulled up to the second floor.",
+          "Stonework from three different centuries, the oldest of it the best.",
+          "A crack running the full height, packed with mortar fresher than the notice condemning it.",
+          "Rooks on the parapet who watch the party the whole way round."
+        ],
+        "trade": [
+          "Nothing officially. Somebody is living up there regardless.",
+          "A view of every road into the settlement, which is worth something to the right person.",
+          "Storage for what the settlement wants out of sight."
+        ],
+        "occupations": [
+          "squatter",
+          "hedge scholar",
+          "lookout",
+          "stonemason",
+          "hermit"
+        ],
+        "objects": [
+          "a signal lantern, shuttered, positioned to be seen from one direction only",
+          "chalk marks on the inner wall counting something in tallies of five",
+          "a foundation stone with a name and a date that predates the settlement",
+          "a rope ladder cut and spliced, repeatedly, by somebody in a hurry"
+        ],
+        "hooks": [
+          "Whoever is up there has been watching the roads and will trade what they saw for supplies.",
+          "The tower is condemned because of what was found in the footings, not because of the crack.",
+          "The authority wants it pulled down this month and somebody is paying to delay that.",
+          "Lights have been seen answering from the hills."
+        ],
+        "hidden": [
+          "The tower is a signal station in a chain the antagonist runs, and the party is now on it.",
+          "Below the ground floor is a chamber the settlement's founders sealed and lied about.",
+          "The occupant is somebody the campaign has already mentioned, hiding.",
+          "The foundation stone is the only surviving record of what stood here first."
+        ],
+        "rumors": [
+          "there is a light in the tower some nights and the tower is empty",
+          "the mason who condemned it left the settlement the same week",
+          "the crack goes further down than up"
+        ]
+      },
+      { "id": "bathhouse", "name": "The bathhouse", "map": "Bathhouse", "line": "where every deal in town is actually made",
+        "sights": [
+          "Steam, echo, and the particular candour of people with no pockets to hide anything in.",
+          "Attendants who see everyone and are paid, well, to have seen nobody.",
+          "A cold plunge fed from a spring, and a notice about how long is prudent.",
+          "Two men in the corner pool conducting business the whole settlement will feel next week."
+        ],
+        "trade": [
+          "Hot water, which in this climate is a luxury and therefore leverage.",
+          "Discretion, sold by the hour.",
+          "Cupping, shaving, and the setting of bones by someone better at it than the temple."
+        ],
+        "occupations": [
+          "bath attendant",
+          "masseur",
+          "barber-surgeon",
+          "stoker",
+          "towel boy"
+        ],
+        "objects": [
+          "a ring left on the ledge, too fine for anyone who bathes here",
+          "a scar the attendant recognises and will describe for a price",
+          "a wax tablet of appointments in a shorthand only the keeper reads",
+          "a hollow bench slat where notes are left and collected"
+        ],
+        "hooks": [
+          "The attendant will sell the party a conversation they overheard, and it names somebody.",
+          "A regular has stopped coming, which everybody has noticed and nobody has mentioned.",
+          "The spring has run warmer this month and the stoker is frightened by it.",
+          "Somebody wants a meeting arranged here, with the party as the reason for both parties to attend."
+        ],
+        "hidden": [
+          "The hollow bench slat is a dead drop, currently loaded.",
+          "The keeper has a book of everything overheard in twenty years and has never used it.",
+          "The spring feeds from something under the settlement that is not a natural aquifer.",
+          "One of the attendants reports weekly to the antagonist."
+        ],
+        "rumors": [
+          "the deals get made in the steam and the guild hall just writes them down",
+          "the water changed taste the same week the trouble started",
+          "somebody was recognised in there by a scar and left the settlement that night"
+        ]
+      },
+      { "id": "ferry", "name": "The ferry landing", "map": "Ferry landing", "line": "and the ferryman who decides who crosses",
+        "sights": [
+          "A stone slip worn into a groove, a flat-bottomed punt, and a rope across the water thicker than a wrist.",
+          "A tally board of crossings, and a fare that changes with the weather and the passenger.",
+          "Water running high and brown, carrying branches at a speed that argues against swimming.",
+          "A shrine at the top of the slip with coins pressed into the mud around it."
+        ],
+        "trade": [
+          "Crossings, on the ferryman's judgement rather than the queue's order.",
+          "The only way over for a day's travel in either direction.",
+          "What the river brings down, sorted and sold quietly."
+        ],
+        "occupations": [
+          "ferryman",
+          "rope tender",
+          "toll clerk",
+          "wherryman",
+          "beachcomber"
+        ],
+        "objects": [
+          "a boot pulled from the water, matched to nothing, kept anyway",
+          "a fare tally showing a crossing at an hour the ferry does not run",
+          "a coin pressed into the shrine mud that is older than the settlement",
+          "a coil of rope cut clean, not frayed, and kept out of sight"
+        ],
+        "hooks": [
+          "The ferryman refuses to take somebody across and will not say what he knows about them.",
+          "Something came down the river and is caught in the rope, upstream and out of sight.",
+          "A crossing has been arranged for the middle of the night, and the fare was paid in advance.",
+          "The far bank has stopped answering the signal bell."
+        ],
+        "hidden": [
+          "The ferryman ran the antagonist's people across and can name every one of them.",
+          "The shrine coins have been accumulating since before anyone settled here, and something collects them.",
+          "There is a second boat, hidden downstream, kept for crossings that leave no tally.",
+          "The rope was cut once already, deliberately, with a loaded ferry on it."
+        ],
+        "rumors": [
+          "the ferryman turned somebody away and would not say why",
+          "there is a crossing that runs at night and is not on the board",
+          "the river came up faster than the rain accounts for"
+        ]
+      },
+      { "id": "smithy", "name": "The smithy", "map": "Smithy", "line": "where the fire has not been let out in living memory",
+        "sights": [
+          "Heat you feel from the doorway, and the smith working through the conversation rather than pausing for it.",
+          "Finished work hung by size, and one piece under a cloth that is not for sale.",
+          "A stack of charcoal that will not last the month at this rate of burning.",
+          "Horseshoes nailed above the door, one of them upside down and deliberately so."
+        ],
+        "trade": [
+          "Shoeing, tools, and repairs. Weapons only for those the smith takes a view on.",
+          "Ironwork for the whole valley, which means the smith knows every household's business.",
+          "Charcoal bought from the colliers up the hill, when they come down."
+        ],
+        "occupations": [
+          "blacksmith",
+          "striker",
+          "farrier",
+          "charcoal burner",
+          "tinker"
+        ],
+        "objects": [
+          "a broken blade brought in for reforging, with a maker's mark from far away",
+          "a commission under a cloth that nobody has come to collect",
+          "a barrel of quenching water changed far more often than it needs to be",
+          "a set of tongs sized for something the smith does not admit to making"
+        ],
+        "hooks": [
+          "The smith was paid to make something and wants the party to take it off the premises.",
+          "The colliers have not come down from the hill this month.",
+          "Somebody has been buying iron in quantities no farm needs.",
+          "A blade came in for repair with damage the smith cannot account for."
+        ],
+        "hidden": [
+          "The uncollected commission is a weapon made to a design the smith was given, not one they know.",
+          "The smith is shoeing horses for people who ride at night and is paid in silence.",
+          "Under the anvil block is a cavity with a family's savings in it.",
+          "The forge is built on an older forge, and the older one was for something else."
+        ],
+        "rumors": [
+          "the smith has been buying charcoal like they mean to work all winter",
+          "somebody ordered a piece and never came for it",
+          "the fire went out once, years ago, and nobody will say what happened that week"
+        ]
+      },
+      { "id": "orchard", "name": "The orchard", "map": "Orchard", "line": "which yielded twice this year and nobody is happy about it",
+        "sights": [
+          "Ranks of old trees, pruned into shapes by generations who each had opinions.",
+          "Windfalls left where they lie, which is not how a working orchard is kept.",
+          "A ladder against a tree at the far end, and nobody on it.",
+          "Ribbons tied in the branches of the oldest tree, faded through several summers."
+        ],
+        "trade": [
+          "Fruit, cider, and the vinegar that comes of getting the cider wrong.",
+          "The settlement's only surplus worth trading out of the valley.",
+          "Grazing under the trees, rented by the season."
+        ],
+        "occupations": [
+          "orchardist",
+          "cider maker",
+          "hedge witch",
+          "picker",
+          "cooper"
+        ],
+        "objects": [
+          "a tree with a name carved into it and the bark grown almost closed over",
+          "a cider press with a stain under it that is the wrong colour",
+          "ribbons in the oldest tree, one of them newer than the rest",
+          "a hive that has been moved recently and badly"
+        ],
+        "hooks": [
+          "The orchardist wants the party to stay a night and tell them what they hear.",
+          "The second yield came the week the trouble started and the pickers refuse to touch it.",
+          "A picker has not come back and their ladder is still standing at the far end.",
+          "Somebody has been leaving offerings at the oldest tree again."
+        ],
+        "hidden": [
+          "The oldest tree is growing over something buried, and the ribbons are a warning kept up for generations.",
+          "The cider cellar has a second door and it is not on the orchardist's side of the wall.",
+          "The second yield is not natural and the hedge witch knows exactly what caused it.",
+          "A body was buried under the new planting and the trees there are doing very well."
+        ],
+        "rumors": [
+          "the orchard fruited twice and the second lot tastes wrong",
+          "the ribbons in the old tree get retied by somebody nobody has seen do it",
+          "a picker walked into the rows and came out at the other end changed"
+        ]
+      }
+    ],
     "events": [
       "a public argument between {faction} and the watch that the party can end either way",
       "a funeral for someone who died in a way nobody will describe",

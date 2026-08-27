@@ -515,7 +515,7 @@ export function generateTownMap({ size = 'village', spots = 0, coast = 'no' } = 
 
 // One renderer for the app and the exports, so they can never disagree.
 // Colours come from the same --map-* variables the dungeon maps use.
-export function renderTownSVG(t, { player = false } = {}) {
+export function renderTownSVG(t, { player = false, spotIds = null } = {}) {
   const poly = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
   const line = (pts, stroke, w2, extra = '') =>
     `<polyline points="${poly(pts)}" fill="none" stroke="${stroke}" stroke-width="${w2}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
@@ -577,8 +577,12 @@ export function renderTownSVG(t, { player = false } = {}) {
     out += `<polygon points="${poly(b.pts)}" fill="var(--map-floor)" stroke="var(--map-ink)" stroke-width="${b.big ? 1.9 : 1.15}"/>`;
   }
   if (!player) {
+    // A pin whose location has a section of its own is clickable, the way a
+    // room on a dungeon map is; the rest are plain.
     for (const sp of t.spots || []) {
-      out += `<g><circle cx="${sp.x}" cy="${sp.y}" r="7" class="map-badge"/><text x="${sp.x}" y="${sp.y + 3}" class="map-label">${sp.n}</text></g>`;
+      const goto = spotIds && spotIds[sp.n - 1];
+      const attr = goto ? ` class="map-spot" data-goto="${goto}"` : '';
+      out += `<g${attr}><circle cx="${sp.x}" cy="${sp.y}" r="7" class="map-badge"/><text x="${sp.x}" y="${sp.y + 3}" class="map-label">${sp.n}</text></g>`;
     }
   }
   return `<svg class="dungeon-map is-town" viewBox="0 0 ${t.w} ${t.h}" role="img" aria-label="Town map">${out}</svg>`;

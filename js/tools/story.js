@@ -3,7 +3,7 @@
 // whatever the DM drilled into.
 import { dbAll, dbPut, dbDelete, activeCampaignId, getState, setState, getPrefs, setPref } from '../store.js';
 import { loadMonsters, loadItems } from '../srd.js';
-import { el, esc, md, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
+import { el, esc, md, cap, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
 import { renderTownSVG } from '../town-map.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
   rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook } from '../campaign-gen.js';
@@ -1501,7 +1501,7 @@ export default {
       // v2 towns come from the shared renderer in town-map.js, so the app
       // and the exports can never disagree; the v1 path below stays for the
       // campaigns saved while towns were still rings and rays.
-      if (t.v === 2) return renderTownSVG(t, { player });
+      if (t.v === 2) return renderTownSVG(t, { player, spotIds: elt.spotIds || null });
       const poly = (pts) => pts.map(([x, y]) => `${x},${y}`).join(' ');
       const roads = t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-ink)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('')
         + t.roads.map(r => `<polyline points="${poly(r)}" fill="none" stroke="var(--map-floor)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -1859,6 +1859,33 @@ export default {
         </div>` : ''}
         ${wanderingHTML}<div class="mt">${nodesHTML(elt)}${passagesHTML}</div>`;
 
+      // A location on the town map opens like a dungeon room does: what they
+      // see on arrival, what goes on there, who is minding it, something worth
+      // a second look, a thread to pull, and what only the DM knows. Older
+      // campaigns saved before locations had any of this keep their plain list.
+      const placesHTML = !elt.places?.length ? '' : `
+        <h3 class="mt">Locations of interest</h3>
+        <p class="small faint">Numbered on the map. Click a pin to jump to one.</p>
+        ${elt.places.map((l) => {
+          const open = openArea && openArea.eltId === elt.id && openArea.nodeId === l.id;
+          const n = (elt.spotIds || []).indexOf(l.id);
+          return `<details class="story-area" id="area-${esc(l.id)}" data-elt="${esc(elt.id)}" data-node="${esc(l.id)}"${open ? ' open' : ''}>
+            <summary><b>${n >= 0 ? `${n + 1}. ` : ''}${esc(l.name)}</b>
+              <span class="small faint">${esc(l.line)}</span>
+            </summary>
+            ${playerBox(esc(l.sights.join(' ')), 'Read aloud as they arrive')}
+            <p class="small"><b>What goes on here</b> ${esc(l.trade)}</p>
+            <p class="small"><b>Worth a second look</b> ${cap(esc(l.object))}</p>
+            ${l.npc ? `<p class="small"><b>Minding the place</b> ${esc(l.npc.name)}, ${esc(l.npc.occupation)}${
+              l.npc.statSuggestion ? `, use <a href="javascript:void 0" data-mon="${esc(l.npc.statSuggestion.slug)}">${esc(l.npc.statSuggestion.name)}</a> (CR ${esc(l.npc.statSuggestion.cr)})` : ''
+            }. ${esc(l.npc.personality)}; ${esc(l.npc.quirk)}.</p>` : ''}
+            ${playerBox(`They hear that ${esc(l.rumor)}.`, 'Heard on the spot')}
+            ${dmBox(`<p class="small"><b>A thread to pull</b> ${esc(l.hook)}</p>
+              <p class="small"><b>What only you know</b> ${esc(l.hidden)}</p>
+              ${l.npc ? `<p class="small"><b>${esc(l.npc.name)} wants</b> ${esc(l.npc.wants)}. <b>And hides</b> ${esc(l.npc.secret)}</p>` : ''}`)}
+          </details>`;
+        }).join('')}`;
+
       if (elt.type === 'settlement') return `${head}
         ${elt.townMap ? `<div class="map-wrap">${townMapSVG(elt)}
           <div class="map-side">
@@ -1876,13 +1903,14 @@ export default {
         <div class="grid-2 mt">
           <div><h3>Who runs it</h3><p class="small">${esc(elt.ruler)}</p>
             <h3>Services</h3><p class="small">${elt.services.map(esc).join(', ')}. The tavern is ${esc(elt.tavern)}.</p>
-            <h3>Locations of interest</h3><ul class="small">${elt.locations.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+            ${elt.places?.length ? '' : `<h3>Locations of interest</h3><ul class="small">${elt.locations.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`}
             <h3>While they are here</h3><p class="small">${esc(elt.event)}</p></div>
           <div><h3>Rumours</h3>
             <p class="small faint">The rumour text is player-facing; the true/false tags are yours alone.</p>
             <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul>
             <h3>Roster</h3>${elt.roster.map(npcCardHTML).join('')}</div>
-        </div>`;
+        </div>
+        ${placesHTML}`;
 
       if (elt.type === 'region') return `${head}
         <h3 class="mt">Routes</h3>

@@ -196,10 +196,19 @@ async function boot() {
 
   // sidebar collapse
   const app = $('#app');
+  const collapseBtn = $('#collapse-btn');
+  const sayCollapse = (collapsed) => {
+    const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    collapseBtn.title = label;
+    collapseBtn.setAttribute('aria-label', label);
+    collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  };
   if (getPrefs().sidebarCollapsed) app.classList.add('sidebar-collapsed');
-  $('#collapse-btn').addEventListener('click', () => {
+  sayCollapse(app.classList.contains('sidebar-collapsed'));
+  collapseBtn.addEventListener('click', () => {
     const collapsed = app.classList.toggle('sidebar-collapsed');
     setPref('sidebarCollapsed', collapsed);
+    sayCollapse(collapsed);
   });
 
   onCampaignChange(async () => { await renderCampaignBar(); route(); });
