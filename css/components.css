@@ -362,33 +362,15 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 /* The outline folds to a rail: the chevron flips, the rows hide, and the
    rail carries the current step's name sideways so the DM still knows where
-   they are. Same gesture as the app's own nav collapse. */
-.tree-collapse {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px 4px 6px;
-  font: inherit;
-  font-size: 0.8rem;
-}
-.tree-collapse:hover { color: var(--text); }
-.tree-collapse .tc-arrow { font-size: 1.1rem; line-height: 1; }
-.tree-collapse .tc-where { display: none; }
-.story-layout.tree-collapsed { grid-template-columns: 34px 1fr; }
-.story-layout.tree-collapsed .story-tree { padding: 4px 2px; overflow: hidden; }
+   they are. The control is the same icon button the app's own nav collapse
+   uses, rather than a bare chevron sitting on the panel. */
+.tree-head { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+.tc-where { display: none; }
+.story-layout.tree-collapsed { grid-template-columns: 42px 1fr; }
+.story-layout.tree-collapsed .story-tree { padding: 6px 4px; overflow: hidden; }
 .story-layout.tree-collapsed #sg-tree { display: none; }
-.story-layout.tree-collapsed .tree-collapse {
-  flex-direction: column;
-  padding: 4px 0;
-  height: 100%;
-  justify-content: flex-start;
-}
-.story-layout.tree-collapsed .tc-arrow { transform: rotate(180deg); }
+.story-layout.tree-collapsed .tree-head { justify-content: center; }
+.story-layout.tree-collapsed .tree-collapse svg { transform: rotate(180deg); }
 .story-layout.tree-collapsed .tc-where {
   display: block;
   writing-mode: vertical-rl;
@@ -396,13 +378,19 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   overflow: hidden;
   text-overflow: ellipsis;
   max-height: 60vh;
+  margin: 6px auto 0;
+  font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text-dim);
 }
 @media (max-width: 900px) {
   /* stacked on mobile there is no column to reclaim */
   .story-layout.tree-collapsed { grid-template-columns: 1fr; }
   .story-layout.tree-collapsed #sg-tree { display: block; }
-  .tree-collapse { display: none; }
+  /* matched to the collapsed rules above, which are more specific than a
+     bare .tc-where and would otherwise keep the sideways label on screen */
+  .story-layout .tree-head,
+  .story-layout.tree-collapsed .tc-where { display: none; }
 }
 /* Stacked on mobile the outline sits above the detail, so cap it and let it
    scroll rather than pushing the content the DM just tapped off the screen. */
