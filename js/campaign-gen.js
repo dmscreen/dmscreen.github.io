@@ -193,14 +193,26 @@ function makeNPC(ctx, roleId, where, occupation) {
   };
 }
 
+// What a location is called, in full: the sort of place it is, then its own
+// name. "The Weeping Kraken" alone does not say it is the inn.
+export const placeLabel = (l) => (l && l.type ? `${l.type}: ${l.name}` : (l?.name || ''));
+
 // One location, built out of its archetype's own tables. Used when a
 // settlement is generated and again when an older one is filled in, so a
 // campaign saved last month ends up with exactly what a fresh one has.
 function makePlace(ctx, a, name, title) {
+  // Every location earns a name of its own, so a party can be told to meet
+  // at the Undershot rather than at the mill. A {last} in the pattern takes
+  // a surname from the same tables the people come from, which ties the
+  // place to somebody who could plausibly have built it.
+  const named = name || (a.names?.length
+    ? fill(pick(a.names), { last: pick(ctx.names.people[pick(Object.keys(ctx.names.people))].last) })
+    : a.name);
   return {
     id: uid('loc'),
     placeId: a.id,
-    name: name || a.name,
+    name: named,
+    type: a.type || '',
     mapLabel: a.map || a.name,
     line: a.line,
     sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
@@ -591,7 +603,7 @@ function makeSettlement(ctx, { title, level, isHub }) {
   })();
   // the one-line summaries the older views and the markdown export read
   const locations = places.length
-    ? places.map(l => `${l.name.replace(/^The /, 'the ')}, ${l.line}`)
+    ? places.map(l => `${placeLabel(l)}, ${l.line}`)
     : some(C.settlement.locations, 4);
   const event = fill(pick(C.settlement.events), ctx.slots);
   // The event is somewhere too, so it gets a spot and a section like the
@@ -617,9 +629,9 @@ function makeSettlement(ctx, { title, level, isHub }) {
   // plaza, then the event, then the rest of the locations. Every spot
   // carries the id of the section it stands for, so clicking any pin opens
   // it the way clicking a room does.
-  const townSpots = [`${places[0]?.name || tavern} (the tavern)`,
+  const townSpots = [places[0] ? `${placeLabel(places[0])}, ${places[0].line}` : `${tavern} (the tavern)`,
     `While they are here: ${event}`,
-    ...places.slice(1).map(l => `${l.name}, ${l.line}`)];
+    ...places.slice(1).map(l => `${placeLabel(l)}, ${l.line}`)];
   const spotIds = [places[0]?.id || null, eventId, ...places.slice(1).map(l => l.id)];
   const townMap = generateTownMap({
     size: size.label, spots: townSpots.length,
@@ -641,7 +653,7 @@ function makeSettlement(ctx, { title, level, isHub }) {
     places,
     event,
     eventId,
-    eventAt: eventPlace ? eventPlace.name : null,
+    eventAt: eventPlace ? placeLabel(eventPlace) : null,
     townMap,
     townSpots,
     spotIds,
@@ -2011,12 +2023,13 @@ export async function upgradeSettlements(campaign) {
 
     elt.places = places;
     elt.eventId = uid('evt');
-    elt.eventAt = pick(places).name;
+    elt.eventAt = placeLabel(pick(places));
     seatSettlement(elt, places, elt.rumors || [], elt.title);
 
-    elt.locations = places.map(l => `${l.name.replace(/^The /, 'the ')}, ${l.line}`);
-    elt.townSpots = [`${places[0].name} (the tavern)`, `While they are here: ${elt.event}`,
-      ...places.slice(1).map(l => `${l.name}, ${l.line}`)];
+    elt.locations = places.map(l => `${placeLabel(l)}, ${l.line}`);
+    elt.townSpots = [`${placeLabel(places[0])}, ${places[0].line}`,
+      `While they are here: ${elt.event}`,
+      ...places.slice(1).map(l => `${placeLabel(l)}, ${l.line}`)];
     elt.spotIds = [places[0].id, elt.eventId, ...places.slice(1).map(l => l.id)];
   }
   if (campaign.stats) campaign.stats.npcs = campaign.appendices.npcs.length;
@@ -2367,7 +2380,7 @@ export function campaignMarkdown(c) {
             const no = (id) => { const i = (el.spotIds || []).indexOf(id); return i >= 0 ? i + 1 : '-'; };
             const placeLines = (l) => {
               const seated = (l.seated || []).map(id => seatOf.get(id)).filter(Boolean);
-              L.push(`**${no(l.id)}. ${l.name}**, ${l.line}`, '',
+              L.push(`**${no(l.id)}. ${placeLabel(l)}**, ${l.line}`, '',
                 `*Read aloud:* ${l.sights.join(' ')}`, '',
                 `- What goes on here: ${l.trade}`,
                 `- Worth a second look: ${l.object}`,

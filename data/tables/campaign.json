@@ -1260,7 +1260,7 @@
     ],
     "_placesNote": "Each place is somewhere a party walks into and something happens, so each carries what a dungeon room carries: what they see, what goes on, someone to talk to, something to take an interest in, a thread to pull, and something only the DM knows.",
     "places": [
-      { "id": "tavern", "name": "The tavern", "map": "Tavern", "line": "where the party will hear most of what they hear",
+      { "id": "tavern", "name": "The tavern", "map": "Tavern", "line": "where the party will hear most of what they hear", "type": "Inn",
         "sights": [
           "Low beams, a fire drawing badly, and every head turning once before deciding the party are nobody.",
           "A common room loud enough to talk under, and a corner table nobody sits at.",
@@ -1304,7 +1304,7 @@
           "somebody has been drinking here alone and paying in coin nobody recognises"
         ]
       },
-      { "id": "market", "name": "The market square", "map": "Market square", "line": "where the notice board is the fastest information in the region",
+      { "id": "market", "name": "The market square", "map": "Market square", "line": "where the notice board is the fastest information in the region", "type": "Market", "names": ["The Weighhouse", "Chandlers' Row", "The Open Stones", "{last} Market", "The Cross Stalls"],
         "sights": [
           "Stalls under mismatched awnings, and a notice board so thick with layered bills that the oldest are load-bearing.",
           "Three quarters of the pitches are trading and the rest stand empty, their owners not spoken of.",
@@ -1347,7 +1347,7 @@
           "a stall stood empty three days before its owner was reported missing"
         ]
       },
-      { "id": "temple", "name": "The temple", "map": "Temple", "line": "which is short a priest and long on questions",
+      { "id": "temple", "name": "The temple", "map": "Temple", "line": "which is short a priest and long on questions", "type": "Temple", "names": ["The Pale Sept", "The Kneeling Stone", "Saint {last}'s", "The Ash Chapel", "The Quiet House"],
         "sights": [
           "Cold stone, a smell of old smoke, and more candles lit than the congregation could account for.",
           "A roof patched with the wrong colour tile, and offerings left at a side altar rather than the main one.",
@@ -1390,7 +1390,7 @@
           "there is a stair under the temple older than the temple"
         ]
       },
-      { "id": "mill", "name": "The mill", "map": "Mill", "line": "whose owner hears everything the water carries",
+      { "id": "mill", "name": "The mill", "map": "Mill", "line": "whose owner hears everything the water carries", "type": "Mill", "names": ["{last}'s Mill", "The Undershot", "Millrace", "The Old Wheel", "Stonegrist"],
         "sights": [
           "The grind of the stones felt through the boards before it is heard, and flour dust hanging in every shaft of light.",
           "A wheel running at full race on a day with no grain queued to be ground.",
@@ -1433,7 +1433,7 @@
           "something came down the race in the spring flood and was never talked about again"
         ]
       },
-      { "id": "gaol", "name": "The gaol", "map": "Gaol", "line": "holding two people who should not be in there together",
+      { "id": "gaol", "name": "The gaol", "map": "Gaol", "line": "holding two people who should not be in there together", "type": "Gaol", "names": ["The Lockhouse", "Two Cells", "The Watch House", "{last}'s Keeping", "The Cold Room"],
         "sights": [
           "Two cells, one occupant each, and a silence between them doing a lot of work.",
           "A charge book on the desk, open, with the most recent entry in a different hand.",
@@ -1476,7 +1476,7 @@
           "the constable has stopped patrolling one particular street"
         ]
       },
-      { "id": "caravanserai", "name": "The caravanserai", "map": "Caravanserai", "line": "full of people who will be gone by morning",
+      { "id": "caravanserai", "name": "The caravanserai", "map": "Caravanserai", "line": "full of people who will be gone by morning", "type": "Caravanserai", "names": ["The Wayhouse", "Six Roads Yard", "The Long Yard", "{last}'s Halt", "The Drovers' Rest"],
         "sights": [
           "A walled yard of tethered animals, cook fires, and six conversations in four languages.",
           "Wagons drawn up in a ring, and one unloaded far more carefully than the rest.",
@@ -1519,7 +1519,7 @@
           "somebody has been asking after travellers by description, not by name"
         ]
       },
-      { "id": "graveyard", "name": "The graveyard", "map": "Graveyard", "line": "which is being used more efficiently than it should be",
+      { "id": "graveyard", "name": "The graveyard", "map": "Graveyard", "line": "which is being used more efficiently than it should be", "type": "Graveyard", "names": ["The Lychfield", "Stonegarden", "The Quiet Acre", "{last} Ground", "The Lower Yard"],
         "sights": [
           "Older stones leaning companionably, newer ones standing very straight and very close together.",
           "Turned earth in a corner with no marker at all, and grass that has not taken.",
@@ -1562,7 +1562,7 @@
           "a grave was opened and closed again in the same night"
         ]
       },
-      { "id": "guildhall", "name": "The guild hall", "map": "Guild hall", "line": "where the accounts are kept and edited",
+      { "id": "guildhall", "name": "The guild hall", "map": "Guild hall", "line": "where the accounts are kept and edited", "type": "Guild hall", "names": ["The Counting Hall", "Ledger House", "The Panelled Room", "{last} Hall", "The Long Table"],
         "sights": [
           "Panelled walls, a table too fine for the building, and the smell of ink and money.",
           "A ledger on a lectern, chained, open at a page anyone may read and several nobody may.",
@@ -1605,7 +1605,7 @@
           "the levy went up again and nobody will say who receives it"
         ]
       },
-      { "id": "tower", "name": "The old tower", "map": "Old tower", "line": "condemned, occupied",
+      { "id": "tower", "name": "The old tower", "map": "Old tower", "line": "condemned, occupied", "type": "Tower", "names": ["The Leaning Tower", "Old Rook", "The Condemned", "{last}'s Folly", "The Crack"],
         "sights": [
           "Boards nailed over the door at ground level, and a rope ladder pulled up to the second floor.",
           "Stonework from three different centuries, the oldest of it the best.",
@@ -1648,7 +1648,7 @@
           "the crack goes further down than up"
         ]
       },
-      { "id": "bathhouse", "name": "The bathhouse", "map": "Bathhouse", "line": "where every deal in town is actually made",
+      { "id": "bathhouse", "name": "The bathhouse", "map": "Bathhouse", "line": "where every deal in town is actually made", "type": "Bathhouse", "names": ["The Steam Rooms", "The Warm Spring", "{last}'s Baths", "The Quiet Water", "The Cold Plunge"],
         "sights": [
           "Steam, echo, and the particular candour of people with no pockets to hide anything in.",
           "Attendants who see everyone and are paid, well, to have seen nobody.",
@@ -1691,7 +1691,7 @@
           "somebody was recognised in there by a scar and left the settlement that night"
         ]
       },
-      { "id": "ferry", "name": "The ferry landing", "map": "Ferry landing", "line": "and the ferryman who decides who crosses",
+      { "id": "ferry", "name": "The ferry landing", "map": "Ferry landing", "line": "and the ferryman who decides who crosses", "type": "Ferry", "names": ["The Rope Crossing", "Lower Slip", "{last}'s Ferry", "The Wide Water", "Coin Landing"],
         "sights": [
           "A stone slip worn into a groove, a flat-bottomed punt, and a rope across the water thicker than a wrist.",
           "A tally board of crossings, and a fare that changes with the weather and the passenger.",
@@ -1734,7 +1734,7 @@
           "the river came up faster than the rain accounts for"
         ]
       },
-      { "id": "smithy", "name": "The smithy", "map": "Smithy", "line": "where the fire has not been let out in living memory",
+      { "id": "smithy", "name": "The smithy", "map": "Smithy", "line": "where the fire has not been let out in living memory", "type": "Smithy", "names": ["{last}'s Forge", "The Standing Fire", "Anvil Yard", "The Black House", "Coalside"],
         "sights": [
           "Heat you feel from the doorway, and the smith working through the conversation rather than pausing for it.",
           "Finished work hung by size, and one piece under a cloth that is not for sale.",
@@ -1777,7 +1777,7 @@
           "the fire went out once, years ago, and nobody will say what happened that week"
         ]
       },
-      { "id": "orchard", "name": "The orchard", "map": "Orchard", "line": "which yielded twice this year and nobody is happy about it",
+      { "id": "orchard", "name": "The orchard", "map": "Orchard", "line": "which yielded twice this year and nobody is happy about it", "type": "Orchard", "names": ["The Ribbon Trees", "{last}'s Rows", "The Second Yield", "Old Orchard", "The Cider Ground"],
         "sights": [
           "Ranks of old trees, pruned into shapes by generations who each had opinions.",
           "Windfalls left where they lie, which is not how a working orchard is kept.",

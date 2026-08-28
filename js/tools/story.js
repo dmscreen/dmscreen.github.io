@@ -7,7 +7,7 @@ import { el, esc, md, cap, toast, confirmDialog, modal, toggleRow, showStatBlock
 import { renderTownSVG } from '../town-map.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
   rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook,
-  upgradeSettlements } from '../campaign-gen.js';
+  upgradeSettlements, placeLabel } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
 import { launchCombat, addToCombat } from './encounters.js';
 import { getParty } from './party.js';
@@ -1886,7 +1886,7 @@ export default {
         const seated = (l.seated || []).map(id => byNpcId.get(id)).filter(Boolean);
         const heard = l.heard || [];
         return `<details class="story-area" id="area-${esc(l.id)}" data-elt="${esc(elt.id)}" data-node="${esc(l.id)}"${open ? ' open' : ''}>
-          <summary><b>${spotNo(l.id)}${esc(l.name)}</b>
+          <summary><b>${spotNo(l.id)}${esc(placeLabel(l))}</b>
             <span class="small faint">${esc(l.line)}</span>
             ${seated.length ? `<span class="pill">${seated.length} on the roster</span>` : ''}
           </summary>
@@ -1913,7 +1913,7 @@ export default {
         const open = openArea && openArea.eltId === elt.id && openArea.nodeId === elt.eventId;
         return `<details class="story-area" id="area-${esc(elt.eventId)}" data-elt="${esc(elt.id)}" data-node="${esc(elt.eventId)}"${open ? ' open' : ''}>
           <summary><b>${spotNo(elt.eventId)}While they are here</b>
-            <span class="small faint">${elt.eventAt ? `it happens at ${esc(elt.eventAt.replace(/^The /, 'the '))}` : 'somewhere in the streets'}</span>
+            <span class="small faint">${elt.eventAt ? `it happens at ${esc(elt.eventAt)}` : 'somewhere in the streets'}</span>
             <span class="pill accent">event</span>
           </summary>
           ${playerBox(cap(esc(elt.event)) + '.', 'It happens in front of them')}
