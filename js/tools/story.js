@@ -6,7 +6,8 @@ import { loadMonsters, loadItems } from '../srd.js';
 import { el, esc, md, cap, toast, confirmDialog, modal, toggleRow, showStatBlock } from '../components/ui.js';
 import { renderTownSVG } from '../town-map.js';
 import { generateCampaign, campaignMarkdown, playerHandoutMarkdown, rerollChapter, rerollEncounter, rerollCreature,
-  rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook } from '../campaign-gen.js';
+  rerollNPC, rerollLieutenant, renameVillain, rerollAppendixCreature, endingOutlook,
+  upgradeSettlements } from '../campaign-gen.js';
 import { icon } from '../components/icons.js';
 import { launchCombat, addToCombat } from './encounters.js';
 import { getParty } from './party.js';
@@ -1922,7 +1923,7 @@ export default {
 
       const placesHTML = !elt.places?.length ? '' : `
         <h3 class="mt">Locations of interest</h3>
-        <p class="small faint">Every one of them numbered on the map. Click a pin to jump to it. The roster and the rumours are seated in these, wherever they belong.</p>
+        <p class="small faint">Every pin on the map has one of these, and every one opens the way a dungeon room does. Click a pin to jump to it. The roster and the rumours are seated in them, wherever they belong.</p>
         ${elt.places.length ? placeHTML(elt.places[0]) : ''}
         ${eventHTML()}
         ${elt.places.slice(1).map(placeHTML).join('')}`;
@@ -1941,19 +1942,19 @@ export default {
         ${townLegendHTML(elt)}
         <div class="row"><button class="btn small" id="tm-playermap" title="The town with no numbered spots; safe to put in front of players">Player map (SVG)</button>
         <button class="btn small" id="tm-dmmap" title="The town with every campaign location numbered and keyed">DM map (SVG)</button></div>` : ''}
+        ${placesHTML}
         <div class="grid-2 mt">
           <div><h3>Who runs it</h3><p class="small">${esc(elt.ruler)}</p>
             <h3>Services</h3><p class="small">${elt.services.map(esc).join(', ')}. The tavern is ${esc(elt.tavern)}.</p>
             ${elt.places?.length ? '' : `<h3>Locations of interest</h3><ul class="small">${elt.locations.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`}
             ${elt.eventId ? '' : `<h3>While they are here</h3><p class="small">${esc(elt.event)}</p>`}
             <h3>Rumours</h3>
-            <p class="small faint">The text is player-facing; the true/false tags are yours alone. Each one is also seated at the location it is overheard in, below.</p>
+            <p class="small faint">The text is player-facing; the true/false tags are yours alone.${elt.places?.length ? ' Each one is also seated at the location it is overheard in, above.' : ''}</p>
             <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul></div>
           <div><h3>Roster</h3>
-            ${elt.places?.length ? '<p class="small faint">Each of them is standing somewhere. The location they are found at is below, and opens from the map.</p>' : ''}
+            ${elt.places?.length ? '<p class="small faint">Each of them is standing somewhere. The location they are found at is named on their card, and opens from the map above.</p>' : ''}
             ${elt.roster.map(npcCardHTML).join('')}</div>
-        </div>
-        ${placesHTML}`;
+        </div>`;
 
       if (elt.type === 'region') return `${head}
         <h3 class="mt">Routes</h3>
@@ -2636,6 +2637,15 @@ export default {
       mapCache.clear();
       preloadMaps();
       selection = { kind: 'overview' };
+      // Campaigns saved before a town's locations had any detail get it
+      // filled in the first time they are opened, and the result is saved,
+      // so an existing campaign is not stuck with the old flat list.
+      upgradeSettlements(c).then(async (n) => {
+        if (!n) return;
+        await dbPut('stories', record);
+        drawTree();
+        drawDetail();
+      }).catch(err => console.error(err));
       out.innerHTML = `
         <div class="row mb mt" style="align-items:center">
           <h2 style="margin:0">${esc(c.title)}</h2>
