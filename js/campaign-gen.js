@@ -193,6 +193,41 @@ function makeNPC(ctx, roleId, where, occupation) {
   };
 }
 
+// One location, built out of its archetype's own tables. Used when a
+// settlement is generated and again when an older one is filled in, so a
+// campaign saved last month ends up with exactly what a fresh one has.
+function makePlace(ctx, a, name, title) {
+  return {
+    id: uid('loc'),
+    placeId: a.id,
+    name: name || a.name,
+    mapLabel: a.map || a.name,
+    line: a.line,
+    sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
+    trade: fill(pick(a.trade), ctx.slots),
+    object: fill(pick(a.objects), ctx.slots),
+    hook: fill(pick(a.hooks), ctx.slots),
+    hidden: fill(pick(a.hidden), ctx.slots),
+    rumor: fill(pick(a.rumors), ctx.slots),
+    npc: makeNPC(ctx, pick(['witness', 'broker', 'specialist', 'survivor', 'authority']),
+      `${title}: ${name || a.name}`, pick(a.occupations)),
+    seated: [],      // roster people found here
+    heard: [],       // the settlement's own rumours, dealt out
+  };
+}
+
+// Seating the roster and dealing the rumours out across the locations. Both
+// the generator and the backfill end at the same arrangement.
+function seatSettlement(elt, places, rumors, title) {
+  if (!places.length) return;
+  (elt.roster || []).forEach((n, i) => {
+    const at = places[i % places.length];
+    at.seated.push(n.id);
+    n.where = `${title}: ${at.name}`;
+  });
+  rumors.forEach((r, i) => places[(i + 1) % places.length].heard.push(r));
+}
+
 /* ---------- dungeon elements ---------- */
 
 function weightedRole(roles) {
@@ -538,23 +573,7 @@ function makeSettlement(ctx, { title, level, isHub }) {
   // object worth a second look, a thread to pull, a rumour heard on the spot,
   // and one thing only the DM knows. All of it rolled off the place's own
   // tables, so a temple's secret is a temple's secret.
-  const buildPlace = (a, name) => ({
-    id: uid('loc'),
-    placeId: a.id,
-    name: name || a.name,
-    mapLabel: a.map || a.name,
-    line: a.line,
-    sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
-    trade: fill(pick(a.trade), ctx.slots),
-    object: fill(pick(a.objects), ctx.slots),
-    hook: fill(pick(a.hooks), ctx.slots),
-    hidden: fill(pick(a.hidden), ctx.slots),
-    rumor: fill(pick(a.rumors), ctx.slots),
-    npc: makeNPC(ctx, pick(['witness', 'broker', 'specialist', 'survivor', 'authority']),
-      `${title}: ${name || a.name}`, pick(a.occupations)),
-    seated: [],      // roster people found here, filled in below
-    heard: [],       // the settlement's own rumours, dealt out below
-  });
+  const buildPlace = (a, name) => makePlace(ctx, a, name, title);
 
   const shopTypes = Object.keys(shops.types);
   const services = some(shopTypes, Math.min(size.services, shopTypes.length));
@@ -591,14 +610,7 @@ function makeSettlement(ctx, { title, level, isHub }) {
   // people and five rumours behind the doors they are actually behind is a
   // town. The roster still reads as a roster, but each of them now says
   // where they are found.
-  if (places.length) {
-    roster.forEach((n, i) => {
-      const at = places[i % places.length];
-      at.seated.push(n.id);
-      n.where = `${title}: ${at.name}`;
-    });
-    rumors.forEach((r, i) => places[(i + 1) % places.length].heard.push(r));
-  }
+  seatSettlement({ roster }, places, rumors, title);
 
   // The drawn town. The campaign's own locations become numbered spots on
   // it: the tavern first, because the spot-picker seats spot 1 nearest the
@@ -1934,6 +1946,83 @@ function eachById(campaign, id, fn) {
 // A fresh person in the same seat. The role and the place they are found in
 // stay put, because that is what the rest of the book points at; everything
 // that makes them who they are is rolled again.
+// Settlements saved before their locations had any detail. The town was
+// drawn with a fixed number of pins and the DM may already have read the
+// list out, so this fills in what was missing rather than inventing a new
+// town: the locations they already have keep their names and gain their
+// tables, the tavern becomes the location it always was, the event gets a
+// section, and the roster and rumours are seated the same way a fresh
+// settlement seats them.
+//
+// The count is pinned to the map. A drawn town has as many pins as it has,
+// and a section without a pin, or a pin without a section, is worse than
+// what was there before.
+export async function upgradeSettlements(campaign) {
+  const settlements = (campaign?.acts || []).flatMap(a => a.chapters).flatMap(ch => ch.elements)
+    .filter(el => el.type === 'settlement' && !el.places?.length);
+  if (!settlements.length) return 0;
+
+  const [monsters, C, names, npcTable] = await Promise.all([
+    loadMonsters(), loadTables('campaign'), loadTables('names'), loadTables('npc'),
+  ]);
+  const archetypes = C.settlement?.places || [];
+  if (!archetypes.length) return 0;
+
+  const usedNames = new Set((campaign.appendices?.npcs || []).map(n => n.name));
+  usedNames.add(campaign.villain?.name);
+  (campaign.villain?.lieutenants || []).forEach(l => usedNames.add(l.name));
+  const ctx = { C, names, npcTable, monsters, usedNames, slots: campaign.slots || {} };
+
+  for (const elt of settlements) {
+    // how many pins the drawn map already has; everything below fits that
+    const pins = elt.townMap?.spots?.length || elt.townSpots?.length || 6;
+    const wantPlaces = Math.max(1, pins - 1);          // one pin is the event
+
+    const tavernType = archetypes.find(a => a.id === 'tavern');
+    const rest = archetypes.filter(a => a.id !== 'tavern');
+
+    // the locations this settlement already listed, matched back to the
+    // archetype each one came from, so a DM's notes still line up
+    const taken = new Set();
+    const matched = (elt.locations || []).map((text) => {
+      const t = String(text).toLowerCase();
+      const hit = rest.find(a => !taken.has(a.id)
+        && (t.includes(a.line.toLowerCase().slice(0, 24))
+          || t.startsWith(a.name.toLowerCase().replace(/^the /, 'the '))));
+      if (hit) taken.add(hit.id);
+      return hit;
+    }).filter(Boolean);
+
+    const spare = rest.filter(a => !taken.has(a.id));
+    const chosen = matched.slice(0, wantPlaces - 1);
+    while (chosen.length < wantPlaces - 1 && spare.length) {
+      chosen.push(spare.splice(Math.floor(Math.random() * spare.length), 1)[0]);
+    }
+
+    const places = [];
+    if (tavernType) places.push(makePlace(ctx, tavernType, elt.tavern, elt.title));
+    for (const a of chosen) places.push(makePlace(ctx, a, null, elt.title));
+    while (places.length > wantPlaces) places.pop();
+    if (!places.length) continue;
+
+    // the people minding these places are people the campaign now has
+    const fresh = places.map(l => l.npc);
+    campaign.appendices.npcs = [...(campaign.appendices.npcs || []), ...fresh];
+
+    elt.places = places;
+    elt.eventId = uid('evt');
+    elt.eventAt = pick(places).name;
+    seatSettlement(elt, places, elt.rumors || [], elt.title);
+
+    elt.locations = places.map(l => `${l.name.replace(/^The /, 'the ')}, ${l.line}`);
+    elt.townSpots = [`${places[0].name} (the tavern)`, `While they are here: ${elt.event}`,
+      ...places.slice(1).map(l => `${l.name}, ${l.line}`)];
+    elt.spotIds = [places[0].id, elt.eventId, ...places.slice(1).map(l => l.id)];
+  }
+  if (campaign.stats) campaign.stats.npcs = campaign.appendices.npcs.length;
+  return settlements.length;
+}
+
 export async function rerollNPC(campaign, npcId) {
   const [monsters, C, names, npcTable] = await Promise.all([
     loadMonsters(), loadTables('campaign'), loadTables('names'), loadTables('npc'),
