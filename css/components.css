@@ -559,7 +559,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .npc-fold > summary::-webkit-details-marker { display: none; }
 .npc-fold > summary::marker { content: ''; }
 .npc-fold > summary::before {
-  content: 'A';
+  content: '›';
   display: inline-block;
   width: 12px;
   color: var(--text-faint);
