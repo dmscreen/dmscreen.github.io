@@ -2678,20 +2678,36 @@ export default {
         </div>
         <div class="story-layout${getPrefs().sgTreeCollapsed ? ' tree-collapsed' : ''}" id="sg-layout">
           <div class="story-tree" id="sg-tree-wrap">
-            <button class="tree-collapse" id="sg-tree-toggle" title="Collapse or expand the campaign outline">
-              <span class="tc-arrow">&lsaquo;</span><span class="tc-where" id="sg-tree-where"></span>
-            </button>
+            <div class="tree-head">
+              <button class="btn icon-btn tree-collapse" id="sg-tree-toggle"
+                title="Collapse the campaign outline" aria-label="Collapse the campaign outline" aria-expanded="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6 L9 12 L15 18"/></svg>
+              </button>
+            </div>
+            <span class="tc-where" id="sg-tree-where"></span>
             <div id="sg-tree"></div>
           </div>
           <div class="story-detail card" id="sg-detail"></div>
         </div>`;
       // Collapsed, the outline folds to a slim rail that still says where in
-      // the campaign you are; the choice is remembered like the app nav's.
-      out.querySelector('#sg-tree-toggle').addEventListener('click', () => {
+      // the campaign you are; the choice, the chevron and the label all work
+      // the way the app's own nav collapse does.
+      {
+        const toggle = out.querySelector('#sg-tree-toggle');
         const lay = out.querySelector('#sg-layout');
-        lay.classList.toggle('tree-collapsed');
-        setPref('sgTreeCollapsed', lay.classList.contains('tree-collapsed'));
-      });
+        const sayTree = (collapsed) => {
+          const label = collapsed ? 'Expand the campaign outline' : 'Collapse the campaign outline';
+          toggle.title = label;
+          toggle.setAttribute('aria-label', label);
+          toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        };
+        sayTree(lay.classList.contains('tree-collapsed'));
+        toggle.addEventListener('click', () => {
+          const collapsed = lay.classList.toggle('tree-collapsed');
+          setPref('sgTreeCollapsed', collapsed);
+          sayTree(collapsed);
+        });
+      }
       out.querySelector('#sg-export').addEventListener('click', () => downloadMarkdown(c));
       out.querySelector('#sg-handout').addEventListener('click', () => {
         const blob = new Blob([playerHandoutMarkdown(c)], { type: 'text/markdown' });
