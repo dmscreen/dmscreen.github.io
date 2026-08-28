@@ -1522,9 +1522,12 @@ export default {
       return svg;
     };
 
-    // The numbered spots, written out. Beside the drawing rather than in it,
-    // so the map can be panned and zoomed without dragging the list around.
-    const townLegendHTML = (elt, player = false) => (player || !elt.townSpots?.length ? ''
+    // The numbered spots, written out. Only for a settlement whose locations
+    // have no sections of their own: where they do, the list said the same
+    // thing twice, once under the map and again in the accordion under that.
+    // The exported sheet still carries its own numbered list, since a sheet
+    // of paper has nothing to open.
+    const townLegendHTML = (elt, player = false) => (player || elt.places?.length || !elt.townSpots?.length ? ''
       : `<ol class="small town-legend">${elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`);
 
     const downloadTownMap = (elt, player) => {
@@ -1950,7 +1953,7 @@ export default {
             <ul class="small">${elt.rumors.map(r => `<li><span class="player-inline">${esc(r.text)}</span> <span class="pill ${r.true ? 'success' : 'danger'}" title="DM only">${r.true ? 'true' : 'false'}</span></li>`).join('')}</ul></div>
           <div><h3>Roster</h3>
             ${elt.places?.length ? '<p class="small faint">Each of them is standing somewhere. The location they are found at is named on their card, and opens from the map above.</p>' : ''}
-            ${elt.roster.map(npcCardHTML).join('')}</div>
+            ${elt.roster.map(n => npcCardHTML(n, { fold: true })).join('')}</div>
         </div>`;
 
       if (elt.type === 'region') return `${head}
@@ -2017,14 +2020,30 @@ export default {
 
     // Top half is safe on a shared screen; the fenced block is where the role
     // tag lives too, since "Betrayer" next to a name is itself a spoiler.
-    const npcCardHTML = (n) => `<div class="npc-card">
-      <b>${esc(n.name)}</b>
-      <span class="small faint">${esc(n.ancestry)} ${esc(n.occupation)}${n.where ? `, ${esc(n.where)}` : ''}</span>
+    //
+    // A roster of these is a wall of tiles, so it can be asked to fold: the
+    // name, what they are, where they are found and the two buttons stay on
+    // the closed tile, and the personality, wants and secret are behind it.
+    // The buttons sit inside the summary because a closed <details> shows
+    // nothing else; a click on one is stopped from folding the tile.
+    const npcBody = (n) => `
       <p class="small">${esc(n.personality)}; ${esc(n.quirk)}.</p>
       ${dmBox(`<p class="small"><span class="pill">${esc(n.role)}</span><br>
         <b>Wants</b> ${esc(n.wants)}<br>
-        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}
-      ${personActions('npc', n.id, { rerollTip: 'Roll a different person into the same seat: new name, ancestry, wants and secret. Their role and where they are found stay put, and the new name replaces the old one everywhere the campaign mentions it.' })}</div>`;
+        <b>Secret</b> ${esc(n.secret)}${n.connection ? `<br><b>Connection</b> ${esc(n.connection)}` : ''}${n.statSuggestion ? `<br><b>If it comes to blows</b> use <a href="javascript:void 0" data-mon="${esc(n.statSuggestion.slug)}">${esc(n.statSuggestion.name)}</a>` : ''}</p>`)}`;
+    const npcMeta = (n) => `<b>${esc(n.name)}</b>
+      <span class="small faint">${esc(n.ancestry)} ${esc(n.occupation)}${n.where ? `, ${esc(n.where)}` : ''}</span>`;
+    const npcButtons = (n) => personActions('npc', n.id, { rerollTip: 'Roll a different person into the same seat: new name, ancestry, wants and secret. Their role and where they are found stay put, and the new name replaces the old one everywhere the campaign mentions it.' });
+
+    const npcCardHTML = (n, { fold = false } = {}) => (fold
+      ? `<details class="npc-card npc-fold">
+          <summary><span class="npc-head">${npcMeta(n)}</span>${npcButtons(n)}</summary>
+          ${npcBody(n)}
+        </details>`
+      : `<div class="npc-card">
+          ${npcMeta(n)}
+          ${npcBody(n)}
+          ${npcButtons(n)}</div>`);
 
     // The antagonist and their lieutenants belong on the cast list too: they
     // are the people the party spends the campaign chasing.
@@ -2528,6 +2547,12 @@ export default {
           b.disabled = false;
         }
       }));
+      // A folding tile carries its buttons inside its own summary, since a
+      // closed <details> renders nothing else. Pressing one is not a request
+      // to fold the tile.
+      box.querySelectorAll('.npc-fold > summary .person-actions').forEach(row =>
+        row.addEventListener('click', (ev) => { if (ev.target.closest('.btn')) ev.preventDefault(); }));
+
       // Everyone on the cast list can be found again from their id alone,
       // wherever the card that carries them happens to be drawn.
       const findPerson = (kind, id) => {
