@@ -25,7 +25,7 @@ const stockFor = (item) => {
 
 export default {
   id: 'shops', title: 'Shop Generator', shortTitle: 'Shops', group: 'Generators', icon: 'store',
-  subtitle: 'Stocked shelves and a keeper to haggle with',
+  subtitle: 'Stocked shelves, counted, that stay stocked between visits',
 
   async render(container) {
     const [shopData, names] = await Promise.all([loadTables('shops'), loadTables('names')]);
@@ -76,7 +76,7 @@ export default {
 
       const card = el(`<div class="card" style="margin-bottom:0">
         <h2>${esc(shop.name)}</h2>
-        <p class="muted">${esc(shop.type)} in a ${esc(shop.size).toLowerCase()}. Keeper: <b>${esc(shop.keeper)}</b>.</p>
+        <p class="muted">${esc(shop.type)} in a ${esc(shop.size).toLowerCase()}.</p>
         <p class="small faint">${esc(shop.note)}</p>
         <div class="row mb">
           <button class="btn small" data-refresh title="A day of trade: some stock sells through, some is restocked, and something new comes in">Refresh items</button>
@@ -199,6 +199,9 @@ export default {
       }
       return {
         name: name || shopName(names), type: typeName, size: sizeName, note: sizeConf.note,
+        // still rolled and still saved, just not on the card: a shop is its
+        // shelves here, and the person behind the counter belongs to the
+        // settlement that has one
         keeper: personName(names), items, campaignId: activeCampaignId(),
       };
     };
