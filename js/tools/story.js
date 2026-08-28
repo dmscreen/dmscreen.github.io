@@ -1521,9 +1521,12 @@ export default {
       return svg;
     };
 
-    // The numbered spots, written out. Beside the drawing rather than in it,
-    // so the map can be panned and zoomed without dragging the list around.
-    const townLegendHTML = (elt, player = false) => (player || !elt.townSpots?.length ? ''
+    // The numbered spots, written out. Only for a settlement whose locations
+    // have no sections of their own: where they do, the list said the same
+    // thing twice, once under the map and again in the accordion under that.
+    // The exported sheet still carries its own numbered list, since a sheet
+    // of paper has nothing to open.
+    const townLegendHTML = (elt, player = false) => (player || elt.places?.length || !elt.townSpots?.length ? ''
       : `<ol class="small town-legend">${elt.townSpots.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`);
 
     const downloadTownMap = (elt, player) => {
