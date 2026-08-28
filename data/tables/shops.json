@@ -1,91 +1,440 @@
 {
   "types": {
     "General store": {
+      "rank": 1,
+      "settlement": "hamlet",
       "items": [
-        { "name": "Backpack", "price": "2 gp" }, { "name": "Bedroll", "price": "1 gp" },
-        { "name": "Rope, hempen (50 ft)", "price": "1 gp" }, { "name": "Rope, silk (50 ft)", "price": "10 gp" },
-        { "name": "Torch", "price": "1 cp" }, { "name": "Lantern, hooded", "price": "5 gp" },
-        { "name": "Oil (flask)", "price": "1 sp" }, { "name": "Rations (1 day)", "price": "5 sp" },
-        { "name": "Waterskin", "price": "2 sp" }, { "name": "Tinderbox", "price": "5 sp" },
-        { "name": "Crowbar", "price": "2 gp" }, { "name": "Hammer", "price": "1 gp" },
-        { "name": "Piton", "price": "5 cp" }, { "name": "Grappling hook", "price": "2 gp" },
-        { "name": "Chalk (1 piece)", "price": "1 cp" }, { "name": "Mirror, steel", "price": "5 gp" },
-        { "name": "Shovel", "price": "2 gp" }, { "name": "Sack", "price": "1 cp" },
-        { "name": "Blanket", "price": "5 sp" }, { "name": "Candle", "price": "1 cp" },
-        { "name": "Fishing tackle", "price": "1 gp" }, { "name": "Tent, two-person", "price": "2 gp" }
+        {"name": "Backpack", "price": "2 gp"},
+        {"name": "Bedroll", "price": "1 gp"},
+        {"name": "Rope, hempen (50 ft)", "price": "1 gp"},
+        {"name": "Rope, silk (50 ft)", "price": "10 gp"},
+        {"name": "Torch", "price": "1 cp"},
+        {"name": "Lantern, hooded", "price": "5 gp"},
+        {"name": "Oil (flask)", "price": "1 sp"},
+        {"name": "Rations (1 day)", "price": "5 sp"},
+        {"name": "Waterskin", "price": "2 sp"},
+        {"name": "Tinderbox", "price": "5 sp"},
+        {"name": "Crowbar", "price": "2 gp"},
+        {"name": "Hammer", "price": "1 gp"},
+        {"name": "Piton", "price": "5 cp"},
+        {"name": "Grappling hook", "price": "2 gp"},
+        {"name": "Chalk (1 piece)", "price": "1 cp"},
+        {"name": "Mirror, steel", "price": "5 gp"},
+        {"name": "Shovel", "price": "2 gp"},
+        {"name": "Sack", "price": "1 cp"},
+        {"name": "Blanket", "price": "5 sp"},
+        {"name": "Candle", "price": "1 cp"},
+        {"name": "Fishing tackle", "price": "1 gp"},
+        {"name": "Tent, two-person", "price": "2 gp"}
+      ]
+    },
+    "Tavern": {
+      "rank": 2,
+      "settlement": "hamlet",
+      "items": [
+        {"name": "Ale, pitcher", "price": "2 sp"},
+        {"name": "Ale, tankard", "price": "4 cp"},
+        {"name": "Wine, common (pitcher)", "price": "2 sp"},
+        {"name": "Wine, fine (bottle)", "price": "10 gp"},
+        {"name": "Bread and dripping", "price": "2 cp"},
+        {"name": "Stew and bread", "price": "3 cp"},
+        {"name": "Roast fowl", "price": "3 sp"},
+        {"name": "Cheese, wedge", "price": "1 sp"},
+        {"name": "Bed in the common room", "price": "5 cp"},
+        {"name": "Private room, per night", "price": "5 sp"},
+        {"name": "Stabling, per night", "price": "5 sp"},
+        {"name": "Bath, hot", "price": "3 sp"}
+      ]
+    },
+    "Bakery": {
+      "rank": 3,
+      "settlement": "village",
+      "items": [
+        {"name": "Loaf, dark", "price": "2 cp"},
+        {"name": "Loaf, white", "price": "4 cp"},
+        {"name": "Hard tack, week's worth", "price": "5 sp"},
+        {"name": "Honey cake", "price": "3 cp"},
+        {"name": "Meat pie", "price": "5 cp"},
+        {"name": "Fruit tart", "price": "4 cp"},
+        {"name": "Griddle cakes, dozen", "price": "2 sp"},
+        {"name": "Flour, sack", "price": "2 sp"},
+        {"name": "Travel biscuit, tin", "price": "8 sp"},
+        {"name": "Festival loaf, plaited", "price": "1 gp"}
+      ]
+    },
+    "Butcher": {
+      "rank": 4,
+      "settlement": "village",
+      "items": [
+        {"name": "Salt pork, side", "price": "1 gp"},
+        {"name": "Mutton, joint", "price": "6 sp"},
+        {"name": "Sausage, string", "price": "3 sp"},
+        {"name": "Smoked ham", "price": "2 gp"},
+        {"name": "Chicken, dressed", "price": "3 sp"},
+        {"name": "Beef, salted barrel", "price": "5 gp"},
+        {"name": "Bacon, flitch", "price": "1 gp"},
+        {"name": "Suet, block", "price": "4 cp"},
+        {"name": "Bone broth, crock", "price": "2 cp"},
+        {"name": "Game, whatever came in", "price": "8 sp"}
       ]
     },
     "Smithy": {
+      "rank": 5,
+      "settlement": "village",
       "items": [
-        { "name": "Dagger", "price": "2 gp" }, { "name": "Handaxe", "price": "5 gp" },
-        { "name": "Longsword", "price": "15 gp" }, { "name": "Shortsword", "price": "10 gp" },
-        { "name": "Greatsword", "price": "50 gp" }, { "name": "Battleaxe", "price": "10 gp" },
-        { "name": "Warhammer", "price": "15 gp" }, { "name": "Spear", "price": "1 gp" },
-        { "name": "Mace", "price": "5 gp" }, { "name": "Shield", "price": "10 gp" },
-        { "name": "Chain shirt", "price": "50 gp" }, { "name": "Chain mail", "price": "75 gp" },
-        { "name": "Scale mail", "price": "50 gp" }, { "name": "Breastplate", "price": "400 gp" },
-        { "name": "Half plate", "price": "750 gp" }, { "name": "Caltrops (bag of 20)", "price": "1 gp" },
-        { "name": "Horseshoes (set)", "price": "5 sp" }, { "name": "Iron spikes (10)", "price": "1 gp" }
+        {"name": "Dagger", "price": "2 gp"},
+        {"name": "Handaxe", "price": "5 gp"},
+        {"name": "Longsword", "price": "15 gp"},
+        {"name": "Shortsword", "price": "10 gp"},
+        {"name": "Greatsword", "price": "50 gp"},
+        {"name": "Battleaxe", "price": "10 gp"},
+        {"name": "Warhammer", "price": "15 gp"},
+        {"name": "Spear", "price": "1 gp"},
+        {"name": "Mace", "price": "5 gp"},
+        {"name": "Shield", "price": "10 gp"},
+        {"name": "Chain shirt", "price": "50 gp"},
+        {"name": "Chain mail", "price": "75 gp"},
+        {"name": "Scale mail", "price": "50 gp"},
+        {"name": "Breastplate", "price": "400 gp"},
+        {"name": "Half plate", "price": "750 gp"},
+        {"name": "Caltrops (bag of 20)", "price": "1 gp"},
+        {"name": "Horseshoes (set)", "price": "5 sp"},
+        {"name": "Iron spikes (10)", "price": "1 gp"}
       ]
     },
-    "Fletcher & bowyer": {
+    "Tailor & clothier": {
+      "rank": 6,
+      "settlement": "village",
       "items": [
-        { "name": "Shortbow", "price": "25 gp" }, { "name": "Longbow", "price": "50 gp" },
-        { "name": "Light crossbow", "price": "25 gp" }, { "name": "Heavy crossbow", "price": "50 gp" },
-        { "name": "Arrows (20)", "price": "1 gp" }, { "name": "Crossbow bolts (20)", "price": "1 gp" },
-        { "name": "Quiver", "price": "1 gp" }, { "name": "Sling", "price": "1 sp" },
-        { "name": "Sling bullets (20)", "price": "4 cp" }, { "name": "Javelin", "price": "5 sp" },
-        { "name": "Dart", "price": "5 cp" }
+        {"name": "Common clothes", "price": "5 sp"},
+        {"name": "Traveler's clothes", "price": "2 gp"},
+        {"name": "Fine clothes", "price": "15 gp"},
+        {"name": "Costume", "price": "5 gp"},
+        {"name": "Cloak, wool", "price": "1 gp"},
+        {"name": "Cloak, oiled", "price": "3 gp"},
+        {"name": "Hat, broad", "price": "5 sp"},
+        {"name": "Gloves, pair", "price": "8 sp"},
+        {"name": "Bolt of linen", "price": "5 gp"},
+        {"name": "Bolt of wool", "price": "3 gp"},
+        {"name": "Needle and thread", "price": "1 sp"},
+        {"name": "Mending, same day", "price": "2 sp"}
+      ]
+    },
+    "Carpenter": {
+      "rank": 7,
+      "settlement": "village",
+      "items": [
+        {"name": "Ladder, 10 ft", "price": "1 sp"},
+        {"name": "Pole, 10 ft", "price": "5 cp"},
+        {"name": "Chest", "price": "5 gp"},
+        {"name": "Strongbox, banded", "price": "12 gp"},
+        {"name": "Barrel", "price": "2 gp"},
+        {"name": "Bucket", "price": "5 cp"},
+        {"name": "Stool", "price": "3 sp"},
+        {"name": "Table, trestle", "price": "1 gp"},
+        {"name": "Door, hung", "price": "4 gp"},
+        {"name": "Shutters, pair", "price": "2 gp"},
+        {"name": "Coffin, plain", "price": "3 gp"},
+        {"name": "Splints and boards", "price": "5 sp"}
       ]
     },
     "Apothecary": {
+      "rank": 8,
+      "settlement": "town",
       "items": [
-        { "name": "Potion of healing", "price": "50 gp" }, { "name": "Antitoxin (vial)", "price": "50 gp" },
-        { "name": "Healer's kit", "price": "5 gp" }, { "name": "Herbalism kit", "price": "5 gp" },
-        { "name": "Acid (vial)", "price": "25 gp" }, { "name": "Alchemist's fire (flask)", "price": "50 gp" },
-        { "name": "Perfume (vial)", "price": "5 gp" }, { "name": "Soap", "price": "2 cp" },
-        { "name": "Dried herbs (bundle)", "price": "2 sp" }, { "name": "Smelling salts", "price": "5 sp" },
-        { "name": "Basic poison (vial)", "price": "100 gp" }
+        {"name": "Potion of healing", "price": "50 gp"},
+        {"name": "Antitoxin (vial)", "price": "50 gp"},
+        {"name": "Healer's kit", "price": "5 gp"},
+        {"name": "Herbalism kit", "price": "5 gp"},
+        {"name": "Acid (vial)", "price": "25 gp"},
+        {"name": "Alchemist's fire (flask)", "price": "50 gp"},
+        {"name": "Perfume (vial)", "price": "5 gp"},
+        {"name": "Soap", "price": "2 cp"},
+        {"name": "Dried herbs (bundle)", "price": "2 sp"},
+        {"name": "Smelling salts", "price": "5 sp"},
+        {"name": "Basic poison (vial)", "price": "100 gp"}
       ]
     },
     "Outfitter & tack": {
+      "rank": 9,
+      "settlement": "town",
       "items": [
-        { "name": "Riding horse", "price": "75 gp" }, { "name": "Draft horse", "price": "50 gp" },
-        { "name": "Pony", "price": "30 gp" }, { "name": "Mule", "price": "8 gp" },
-        { "name": "Saddle, riding", "price": "10 gp" }, { "name": "Saddlebags", "price": "4 gp" },
-        { "name": "Bit and bridle", "price": "2 gp" }, { "name": "Feed (per day)", "price": "5 cp" },
-        { "name": "Cart", "price": "15 gp" }, { "name": "Wagon", "price": "35 gp" },
-        { "name": "Rowboat", "price": "50 gp" }, { "name": "Stabling (per day)", "price": "5 sp" }
+        {"name": "Riding horse", "price": "75 gp"},
+        {"name": "Draft horse", "price": "50 gp"},
+        {"name": "Pony", "price": "30 gp"},
+        {"name": "Mule", "price": "8 gp"},
+        {"name": "Saddle, riding", "price": "10 gp"},
+        {"name": "Saddlebags", "price": "4 gp"},
+        {"name": "Bit and bridle", "price": "2 gp"},
+        {"name": "Feed (per day)", "price": "5 cp"},
+        {"name": "Cart", "price": "15 gp"},
+        {"name": "Wagon", "price": "35 gp"},
+        {"name": "Rowboat", "price": "50 gp"},
+        {"name": "Stabling (per day)", "price": "5 sp"}
+      ]
+    },
+    "Leatherworker": {
+      "rank": 10,
+      "settlement": "town",
+      "items": [
+        {"name": "Leather armor", "price": "10 gp"},
+        {"name": "Studded leather", "price": "45 gp"},
+        {"name": "Boots, sturdy", "price": "2 gp"},
+        {"name": "Boots, riding", "price": "5 gp"},
+        {"name": "Belt and pouch", "price": "8 sp"},
+        {"name": "Backpack", "price": "2 gp"},
+        {"name": "Waterskin", "price": "2 sp"},
+        {"name": "Scabbard", "price": "1 gp"},
+        {"name": "Quiver", "price": "1 gp"},
+        {"name": "Bracers, plain", "price": "3 gp"},
+        {"name": "Saddlebags", "price": "4 gp"},
+        {"name": "Hide, tanned", "price": "1 gp"}
+      ]
+    },
+    "Chandler": {
+      "rank": 11,
+      "settlement": "town",
+      "items": [
+        {"name": "Candle", "price": "1 cp"},
+        {"name": "Candles, box of twenty", "price": "2 sp"},
+        {"name": "Lamp", "price": "5 sp"},
+        {"name": "Lantern, hooded", "price": "5 gp"},
+        {"name": "Lantern, bullseye", "price": "10 gp"},
+        {"name": "Oil (flask)", "price": "1 sp"},
+        {"name": "Soap, cake", "price": "2 cp"},
+        {"name": "Tallow, block", "price": "3 cp"},
+        {"name": "Tinderbox", "price": "5 sp"},
+        {"name": "Torch", "price": "1 cp"},
+        {"name": "Wick, coil", "price": "1 cp"}
+      ]
+    },
+    "Fletcher & bowyer": {
+      "rank": 12,
+      "settlement": "town",
+      "items": [
+        {"name": "Shortbow", "price": "25 gp"},
+        {"name": "Longbow", "price": "50 gp"},
+        {"name": "Light crossbow", "price": "25 gp"},
+        {"name": "Heavy crossbow", "price": "50 gp"},
+        {"name": "Arrows (20)", "price": "1 gp"},
+        {"name": "Crossbow bolts (20)", "price": "1 gp"},
+        {"name": "Quiver", "price": "1 gp"},
+        {"name": "Sling", "price": "1 sp"},
+        {"name": "Sling bullets (20)", "price": "4 cp"},
+        {"name": "Javelin", "price": "5 sp"},
+        {"name": "Dart", "price": "5 cp"}
+      ]
+    },
+    "Cooper": {
+      "rank": 13,
+      "settlement": "town",
+      "items": [
+        {"name": "Cask, small", "price": "1 gp"},
+        {"name": "Barrel, watertight", "price": "2 gp"},
+        {"name": "Tun, large", "price": "8 gp"},
+        {"name": "Bucket, banded", "price": "8 cp"},
+        {"name": "Churn", "price": "1 gp"},
+        {"name": "Tub, bathing", "price": "3 gp"},
+        {"name": "Waterbutt", "price": "2 gp"},
+        {"name": "Hoops, iron, set", "price": "5 sp"},
+        {"name": "Bung and spile", "price": "2 cp"},
+        {"name": "Rebinding, per cask", "price": "3 sp"}
+      ]
+    },
+    "Herbalist": {
+      "rank": 14,
+      "settlement": "town",
+      "items": [
+        {"name": "Healer's kit", "price": "5 gp"},
+        {"name": "Poultice, drawing", "price": "3 sp"},
+        {"name": "Fever tea, packet", "price": "2 sp"},
+        {"name": "Willow bark, bundle", "price": "1 sp"},
+        {"name": "Sleeping draught", "price": "2 gp"},
+        {"name": "Salve for burns", "price": "1 gp"},
+        {"name": "Antitoxin", "price": "50 gp"},
+        {"name": "Herbalism kit", "price": "5 gp"},
+        {"name": "Dried roots, mixed", "price": "5 sp"},
+        {"name": "Charm against the ague", "price": "1 gp"},
+        {"name": "Midwife's oil", "price": "8 sp"}
+      ]
+    },
+    "Weaponsmith": {
+      "rank": 15,
+      "settlement": "town",
+      "items": [
+        {"name": "Dagger", "price": "2 gp"},
+        {"name": "Shortsword", "price": "10 gp"},
+        {"name": "Longsword", "price": "15 gp"},
+        {"name": "Greatsword", "price": "50 gp"},
+        {"name": "Handaxe", "price": "5 gp"},
+        {"name": "Battleaxe", "price": "10 gp"},
+        {"name": "Warhammer", "price": "15 gp"},
+        {"name": "Spear", "price": "1 gp"},
+        {"name": "Halberd", "price": "20 gp"},
+        {"name": "Mace", "price": "5 gp"},
+        {"name": "Whetstone", "price": "1 cp"},
+        {"name": "Sharpening, per blade", "price": "5 cp"}
+      ]
+    },
+    "Armourer": {
+      "rank": 16,
+      "settlement": "city",
+      "items": [
+        {"name": "Shield", "price": "10 gp"},
+        {"name": "Padded armor", "price": "5 gp"},
+        {"name": "Hide armor", "price": "10 gp"},
+        {"name": "Chain shirt", "price": "50 gp"},
+        {"name": "Scale mail", "price": "50 gp"},
+        {"name": "Breastplate", "price": "400 gp"},
+        {"name": "Half plate", "price": "750 gp"},
+        {"name": "Helm, open", "price": "8 gp"},
+        {"name": "Gauntlets, pair", "price": "6 gp"},
+        {"name": "Buckler", "price": "5 gp"},
+        {"name": "Refitting, per piece", "price": "2 gp"},
+        {"name": "Armor polish and rag", "price": "2 sp"}
+      ]
+    },
+    "Stable & livery": {
+      "rank": 17,
+      "settlement": "town",
+      "items": [
+        {"name": "Riding horse", "price": "75 gp"},
+        {"name": "Draft horse", "price": "50 gp"},
+        {"name": "Pony", "price": "30 gp"},
+        {"name": "Mule", "price": "8 gp"},
+        {"name": "Saddle, riding", "price": "10 gp"},
+        {"name": "Bit and bridle", "price": "2 gp"},
+        {"name": "Cart", "price": "15 gp"},
+        {"name": "Wagon", "price": "35 gp"},
+        {"name": "Feed, per day", "price": "5 cp"},
+        {"name": "Stabling, per night", "price": "5 sp"},
+        {"name": "Shoeing, all four", "price": "1 gp"}
       ]
     },
     "Scribe & curios": {
+      "rank": 18,
+      "settlement": "city",
       "items": [
-        { "name": "Paper (sheet)", "price": "2 sp" }, { "name": "Parchment (sheet)", "price": "1 sp" },
-        { "name": "Ink (1 oz bottle)", "price": "10 gp" }, { "name": "Ink pen", "price": "2 cp" },
-        { "name": "Sealing wax", "price": "5 sp" }, { "name": "Signet ring", "price": "5 gp" },
-        { "name": "Book (blank)", "price": "25 gp" }, { "name": "Spellbook (blank)", "price": "50 gp" },
-        { "name": "Component pouch", "price": "25 gp" }, { "name": "Arcane focus, crystal", "price": "10 gp" },
-        { "name": "Holy symbol, amulet", "price": "5 gp" }, { "name": "Holy water (flask)", "price": "25 gp" },
-        { "name": "Magnifying glass", "price": "100 gp" }, { "name": "Hourglass", "price": "25 gp" },
-        { "name": "Spyglass", "price": "1000 gp" }
+        {"name": "Paper (sheet)", "price": "2 sp"},
+        {"name": "Parchment (sheet)", "price": "1 sp"},
+        {"name": "Ink (1 oz bottle)", "price": "10 gp"},
+        {"name": "Ink pen", "price": "2 cp"},
+        {"name": "Sealing wax", "price": "5 sp"},
+        {"name": "Signet ring", "price": "5 gp"},
+        {"name": "Book (blank)", "price": "25 gp"},
+        {"name": "Spellbook (blank)", "price": "50 gp"},
+        {"name": "Component pouch", "price": "25 gp"},
+        {"name": "Arcane focus, crystal", "price": "10 gp"},
+        {"name": "Holy symbol, amulet", "price": "5 gp"},
+        {"name": "Holy water (flask)", "price": "25 gp"},
+        {"name": "Magnifying glass", "price": "100 gp"},
+        {"name": "Hourglass", "price": "25 gp"},
+        {"name": "Spyglass", "price": "1000 gp"}
+      ]
+    },
+    "Jeweller": {
+      "rank": 19,
+      "settlement": "city",
+      "items": [
+        {"name": "Silver ring, plain", "price": "5 gp"},
+        {"name": "Gold ring, plain", "price": "25 gp"},
+        {"name": "Signet ring, cut to order", "price": "5 gp"},
+        {"name": "Amber pendant", "price": "50 gp"},
+        {"name": "Pearl", "price": "100 gp"},
+        {"name": "Silver chain", "price": "25 gp"},
+        {"name": "Brooch, enamelled", "price": "40 gp"},
+        {"name": "Gemstone, uncut", "price": "10 gp"},
+        {"name": "Jeweler's tools", "price": "25 gp"},
+        {"name": "Scales and weights", "price": "5 gp"},
+        {"name": "Valuation, per piece", "price": "1 gp"},
+        {"name": "Resetting a stone", "price": "3 gp"}
+      ]
+    },
+    "Alchemist": {
+      "rank": 20,
+      "settlement": "city",
+      "items": [
+        {"name": "Potion of healing", "price": "50 gp"},
+        {"name": "Acid (vial)", "price": "25 gp"},
+        {"name": "Alchemist's fire (flask)", "price": "50 gp"},
+        {"name": "Basic poison (vial)", "price": "100 gp"},
+        {"name": "Alchemist's supplies", "price": "50 gp"},
+        {"name": "Glass vial, empty", "price": "1 gp"},
+        {"name": "Retort, cracked but sound", "price": "8 gp"},
+        {"name": "Quicksilver, dram", "price": "10 gp"},
+        {"name": "Powdered iron, pouch", "price": "2 gp"},
+        {"name": "Reagent of dubious provenance", "price": "15 gp"},
+        {"name": "Smokestick", "price": "20 gp"}
+      ]
+    },
+    "Bookbinder": {
+      "rank": 21,
+      "settlement": "city",
+      "items": [
+        {"name": "Book, blank", "price": "25 gp"},
+        {"name": "Book, bound in calf", "price": "50 gp"},
+        {"name": "Ledger, ruled", "price": "15 gp"},
+        {"name": "Parchment, sheet", "price": "1 sp"},
+        {"name": "Vellum, sheet", "price": "5 sp"},
+        {"name": "Ink (1 oz bottle)", "price": "10 gp"},
+        {"name": "Ink pen", "price": "2 cp"},
+        {"name": "Sealing wax and seal", "price": "5 gp"},
+        {"name": "Rebinding, per volume", "price": "8 gp"},
+        {"name": "Copying, per page", "price": "2 sp"},
+        {"name": "Map case", "price": "1 gp"}
+      ]
+    },
+    "Magical curiosities": {
+      "rank": 22,
+      "settlement": "city",
+      "items": [
+        {"name": "Spell scroll (cantrip)", "price": "30 gp"},
+        {"name": "Spell scroll (1st level)", "price": "60 gp"},
+        {"name": "Potion of climbing", "price": "75 gp"},
+        {"name": "Component pouch", "price": "25 gp"},
+        {"name": "Arcane focus, crystal", "price": "10 gp"},
+        {"name": "Arcane focus, rod", "price": "10 gp"},
+        {"name": "Druidic focus, sprig", "price": "1 gp"},
+        {"name": "Holy symbol, silver", "price": "5 gp"},
+        {"name": "Everburning torch (so called)", "price": "110 gp"},
+        {"name": "Charm, probably inert", "price": "20 gp"},
+        {"name": "Identification, per item", "price": "50 gp"}
       ]
     }
   },
   "sizes": {
-    "Village": { "stock": [6, 10], "note": "Sparse stock; anything over 50 gp has a 50% chance to be unavailable." },
-    "Town": { "stock": [10, 16], "note": "Decent stock; big-ticket items may take a few days to order." },
-    "City": { "stock": [14, 22], "note": "Full stock, and special orders are usually possible." }
+    "Village": {
+      "stock": [
+        6,
+        10
+      ],
+      "note": "Sparse stock; anything over 50 gp has a 50% chance to be unavailable."
+    },
+    "Town": {
+      "stock": [
+        10,
+        16
+      ],
+      "note": "Decent stock; big-ticket items may take a few days to order."
+    },
+    "City": {
+      "stock": [
+        14,
+        22
+      ],
+      "note": "Full stock, and special orders are usually possible."
+    }
   },
   "flavor": [
-    { "name": "A jar of pickled something, unlabeled", "price": "3 cp" },
-    { "name": "Lucky rabbit's foot (allegedly lucky)", "price": "5 sp" },
-    { "name": "Map of the region, coffee-stained", "price": "2 gp" },
-    { "name": "Wooden holy symbol of a forgotten god", "price": "1 sp" },
-    { "name": "A very good knife for cheese specifically", "price": "8 sp" },
-    { "name": "Bundle of old love letters, unopened", "price": "1 sp" },
-    { "name": "Brass key that fits nothing in this town", "price": "5 cp" },
-    { "name": "Taxidermied badger, poorly done", "price": "1 gp" },
-    { "name": "Deck of marked playing cards", "price": "5 sp" },
-    { "name": "Songbook of extremely rude tavern ballads", "price": "6 sp" }
+    {"name": "A jar of pickled something, unlabeled", "price": "3 cp"},
+    {"name": "Lucky rabbit's foot (allegedly lucky)", "price": "5 sp"},
+    {"name": "Map of the region, coffee-stained", "price": "2 gp"},
+    {"name": "Wooden holy symbol of a forgotten god", "price": "1 sp"},
+    {"name": "A very good knife for cheese specifically", "price": "8 sp"},
+    {"name": "Bundle of old love letters, unopened", "price": "1 sp"},
+    {"name": "Brass key that fits nothing in this town", "price": "5 cp"},
+    {"name": "Taxidermied badger, poorly done", "price": "1 gp"},
+    {"name": "Deck of marked playing cards", "price": "5 sp"},
+    {"name": "Songbook of extremely rude tavern ballads", "price": "6 sp"}
   ]
 }

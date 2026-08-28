@@ -213,6 +213,7 @@ function makePlace(ctx, a, name, title) {
     placeId: a.id,
     name: named,
     type: a.type || '',
+    shopType: a.shopType || null,      // if it sells things, what kind of shop
     mapLabel: a.map || a.name,
     line: a.line,
     sights: some(a.sights, Math.min(2, a.sights.length)).map(t => fill(t, ctx.slots)),
@@ -594,11 +595,14 @@ function makeSettlement(ctx, { title, level, isHub }) {
   const places = (() => {
     const archetypes = C.settlement.places || [];
     if (!archetypes.length) return [];
-    const tavernType = archetypes.find(a => a.id === 'tavern');
-    const rest = archetypes.filter(a => a.id !== 'tavern');
+    // Somewhere to sleep and somewhere to buy rope: every settlement has
+    // those two, whatever else it happens to have. The rest are drawn.
+    const always = ['tavern', 'generalstore'];
+    const led = always.map(id => archetypes.find(a => a.id === id)).filter(Boolean);
+    const rest = archetypes.filter(a => !always.includes(a.id));
     // a hamlet has fewer doors to knock on than a small city
     const want = Math.min(rest.length, [3, 4, 5, 6][C.settlement.sizes.indexOf(size)] || 4);
-    const out = tavernType ? [buildPlace(tavernType, tavern)] : [];
+    const out = led.map(a => buildPlace(a, a.id === 'tavern' ? tavern : null));
     return out.concat(some(rest, want).map(a => buildPlace(a)));
   })();
   // the one-line summaries the older views and the markdown export read
@@ -1990,8 +1994,9 @@ export async function upgradeSettlements(campaign) {
     const pins = elt.townMap?.spots?.length || elt.townSpots?.length || 6;
     const wantPlaces = Math.max(1, pins - 1);          // one pin is the event
 
-    const tavernType = archetypes.find(a => a.id === 'tavern');
-    const rest = archetypes.filter(a => a.id !== 'tavern');
+    const always = ['tavern', 'generalstore'];
+    const led = always.map(id => archetypes.find(a => a.id === id)).filter(Boolean);
+    const rest = archetypes.filter(a => !always.includes(a.id));
 
     // the locations this settlement already listed, matched back to the
     // archetype each one came from, so a DM's notes still line up
@@ -2006,13 +2011,12 @@ export async function upgradeSettlements(campaign) {
     }).filter(Boolean);
 
     const spare = rest.filter(a => !taken.has(a.id));
-    const chosen = matched.slice(0, wantPlaces - 1);
-    while (chosen.length < wantPlaces - 1 && spare.length) {
+    const chosen = matched.slice(0, Math.max(0, wantPlaces - led.length));
+    while (chosen.length < wantPlaces - led.length && spare.length) {
       chosen.push(spare.splice(Math.floor(Math.random() * spare.length), 1)[0]);
     }
 
-    const places = [];
-    if (tavernType) places.push(makePlace(ctx, tavernType, elt.tavern, elt.title));
+    const places = led.map(a => makePlace(ctx, a, a.id === 'tavern' ? elt.tavern : null, elt.title));
     for (const a of chosen) places.push(makePlace(ctx, a, null, elt.title));
     while (places.length > wantPlaces) places.pop();
     if (!places.length) continue;
