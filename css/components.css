@@ -531,6 +531,42 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 }
 .person-actions .btn { flex: 0 0 auto; }
 .npc-card:has(.person-actions) { padding-right: 232px; }
+/* A folding tile keeps its name, what they are, where they are found and its
+   two buttons on the closed row; everything else is behind it. The buttons
+   live inside the summary because a closed <details> renders nothing else.
+   The card already reserves the right-hand gutter they sit in, so the
+   summary must not reserve it a second time: doing that squeezed the name
+   into a column a few characters wide. */
+/* The closed row lays itself out rather than living in the gutter the card
+   reserves for a corner: the roster sits in a half-width column, and a
+   232px gutter there left the name wrapping down ten lines. */
+.npc-fold:has(.person-actions) { padding-right: 10px; }
+.npc-fold > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-radius: var(--radius-sm);
+}
+.npc-fold > summary .npc-head { flex: 1 1 180px; min-width: 0; }
+.npc-fold > summary .person-actions {
+  position: static;
+  flex: 0 0 auto;
+  margin: 0;
+  width: auto;
+}
+.npc-fold > summary::-webkit-details-marker { display: none; }
+.npc-fold > summary::marker { content: ''; }
+.npc-fold > summary::before {
+  content: 'A';
+  display: inline-block;
+  width: 12px;
+  color: var(--text-faint);
+  transition: transform 0.12s ease;
+}
+.npc-fold[open] > summary::before { transform: rotate(90deg); }
+.npc-fold > summary:hover { color: var(--accent); }
 @media (max-width: 720px) {
   /* no corner to spare: the buttons go back under the text */
   .person-actions { position: static; margin-top: 8px; }
