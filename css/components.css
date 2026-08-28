@@ -202,6 +202,48 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .modal-body { padding: 16px; overflow-y: auto; }
 .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
 
+/* ---------- Shop generator ---------- */
+/* The saved shops are a rail beside the shop, not a panel under it: a list
+   of names needs a fraction of the width the stock table wants. */
+.shop-layout { display: grid; grid-template-columns: 210px 1fr; gap: 14px; align-items: start; }
+.shop-list { position: sticky; top: 8px; max-height: 78vh; overflow-y: auto; margin-bottom: 0; padding: 10px; }
+.shop-list h3 { margin: 0 0 6px; font-size: 0.9rem; color: var(--text-dim); }
+.shop-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 5px 7px;
+  font: inherit;
+}
+.shop-row:hover { background: var(--bg-hover); }
+.shop-row.is-open { border-color: var(--accent); color: var(--accent); }
+.shop-row.is-open .faint { color: var(--accent); opacity: 0.75; }
+/* the count of a thing, with a way to sell one without arithmetic */
+.qty-cell { display: inline-flex; align-items: center; gap: 4px; justify-content: center; width: 100%; }
+.qty-cell .btn { padding: 1px 7px; line-height: 1.2; }
+.qty-num {
+  width: 52px;
+  padding: 2px 4px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+/* deleting the shop is the last thing on the card, not a button beside its name */
+.shop-danger { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 12px; }
+@media (max-width: 720px) {
+  .shop-layout { grid-template-columns: 1fr; }
+  .shop-list { position: static; max-height: 30vh; }
+}
+
 /* ---------- Stat block ---------- */
 .stat-block {
   font-size: 0.9rem;

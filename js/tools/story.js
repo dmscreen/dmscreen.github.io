@@ -1876,6 +1876,15 @@ export default {
       }. ${esc(n.personality)}; ${esc(n.quirk)}.</p>`;
       const wantsLine = (n) => `<p class="small"><b>${esc(n.name)} wants</b> ${esc(n.wants)}. <b>And hides</b> ${esc(n.secret)}</p>`;
       const byNpcId = new Map((elt.roster || []).map(n => [n.id, n]));
+      // The shop generator thinks in Village / Town / City; a settlement
+      // knows whether it is a hamlet or a small city.
+      const shopSizeFor = (e) => {
+        const s2 = String(e.subtitle || '').toLowerCase();
+        if (s2.includes('city')) return 'City';
+        if (s2.includes('hamlet') || s2.includes('village')) return 'Village';
+        return 'Town';
+      };
+      elt.__shopSize = shopSizeFor(elt);
       const spotNo = (id) => {
         const n = (elt.spotIds || []).indexOf(id);
         return n >= 0 ? `${n + 1}. ` : '';
@@ -1905,6 +1914,7 @@ export default {
             <p class="small"><b>What only you know</b> ${esc(l.hidden)}</p>
             ${l.npc ? wantsLine(l.npc) : ''}
             ${seated.map(wantsLine).join('')}`)}
+          ${l.shopType ? `<div class="row mt" data-shop-row="${esc(l.id)}"></div>` : ''}
         </details>`;
       };
 
@@ -2547,6 +2557,35 @@ export default {
           b.disabled = false;
         }
       }));
+      // A place that sells things gets a way through to the shop generator.
+      // The button says which of the two things it will do, so it has to
+      // know whether that shop has been stocked already, which means asking
+      // the shop store once the markup is in.
+      (async () => {
+        const rows = [...box.querySelectorAll('[data-shop-row]')];
+        if (!rows.length) return;
+        const elt2 = selection.ref;
+        const shops = await dbAll('shops', activeCampaignId());
+        for (const row of rows) {
+          const l = (elt2.places || []).find(x => x.id === row.dataset.shopRow);
+          if (!l) continue;
+          const made = shops.find(sh => sh.name === l.name);
+          const btn = el(made
+            ? `<button class="btn small">View shop</button>`
+            : `<button class="btn small">Stock this shop</button>`);
+          btn.title = made
+            ? `Open ${l.name} in the shop generator`
+            : `Stock its shelves in the shop generator, under this name`;
+          btn.addEventListener('click', async () => {
+            if (made) await setState('shopOpenId', made.id);
+            else await setState('shopToCreate', { name: l.name, type: l.shopType, size: elt2.__shopSize || 'Town' });
+            setPref('cat:generators', 'shops');
+            location.hash = '#/generators';
+          });
+          row.append(btn);
+        }
+      })().catch(err => console.error(err));
+
       // A folding tile carries its buttons inside its own summary, since a
       // closed <details> renders nothing else. Pressing one is not a request
       // to fold the tile.

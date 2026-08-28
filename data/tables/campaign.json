@@ -1260,7 +1260,7 @@
     ],
     "_placesNote": "Each place is somewhere a party walks into and something happens, so each carries what a dungeon room carries: what they see, what goes on, someone to talk to, something to take an interest in, a thread to pull, and something only the DM knows.",
     "places": [
-      { "id": "tavern", "name": "The tavern", "map": "Tavern", "line": "where the party will hear most of what they hear", "type": "Inn",
+      { "id": "tavern", "name": "The tavern", "map": "Tavern", "line": "where the party will hear most of what they hear", "type": "Inn", "shopType": "Tavern",
         "sights": [
           "Low beams, a fire drawing badly, and every head turning once before deciding the party are nobody.",
           "A common room loud enough to talk under, and a corner table nobody sits at.",
@@ -1302,6 +1302,156 @@
           "the room at the top of the stair is paid for and empty",
           "the innkeeper stopped writing names in the book about a month ago",
           "somebody has been drinking here alone and paying in coin nobody recognises"
+        ]
+      },
+      { "id": "generalstore", "name": "The general store", "map": "General store", "type": "General store", "shopType": "General store", "line": "which has one of most things and two of nothing",
+        "names": [
+          "{last}'s Provisions",
+          "The Full Shelf",
+          "Sundries and Sundry",
+          "{last} & Daughter",
+          "The Long Counter"
+        ],
+        "sights": [
+          "Shelves to the ceiling and a ladder on a rail, and a counter worn to a shine at one spot.",
+          "Barrels open at the front, sacks stacked behind, and a smell of oil, tar and dried apples.",
+          "A ledger of who owes what left open where everyone can see it, which is the point.",
+          "Everything priced in chalk on the shelf edge, most of it rubbed out and rewritten."
+        ],
+        "trade": [
+          "Rope, lamp oil, rations and whatever the last cart brought.",
+          "Everything a household needs and nothing it wants, at a fair price and no haggling.",
+          "Goods on account, which is how the keeper knows every family's business."
+        ],
+        "occupations": [
+          "shopkeeper",
+          "counter clerk",
+          "stock boy",
+          "pedlar",
+          "chandler"
+        ],
+        "objects": [
+          "a ledger with one name struck through and no amount beside it",
+          "a crate at the back stamped with a mark from outside the region",
+          "a shelf of goods priced far under what they should be",
+          "a locked drawer under the counter the keeper opens with their back turned"
+        ],
+        "hooks": [
+          "The keeper will settle a debt for the party in exchange for an errand out of town.",
+          "A crate arrived that nobody ordered and nobody will collect.",
+          "Somebody has been buying rope, oil and iron spikes in quantities that suggest a delve.",
+          "The keeper is being leaned on to stop selling to a particular family."
+        ],
+        "hidden": [
+          "The locked drawer holds letters the keeper has been paid to hold rather than deliver.",
+          "The unclaimed crate belongs to the antagonist's people and they will come for it.",
+          "The ledger is the closest thing the settlement has to a record of who is quietly starving.",
+          "The keeper buys salvage from the site the party is headed to, and knows what comes back out."
+        ],
+        "rumors": [
+          "the carts have stopped coming as often as they did",
+          "somebody bought rope and oil enough for six people and left the same night",
+          "the keeper has stopped extending credit to one particular house"
+        ]
+      },
+      { "id": "bakery", "name": "The bakery", "map": "Bakery", "type": "Bakery", "shopType": "Bakery", "line": "warm before dawn and empty by noon",
+        "names": [
+          "The Morning Oven",
+          "{last}'s Bakehouse",
+          "The Brown Loaf",
+          "Ovensfoot",
+          "The Early Door"
+        ],
+        "sights": [
+          "Heat and flour dust, and a queue that formed before the sun did.",
+          "Loaves cooling on racks in ranks, and one shelf kept back under a cloth.",
+          "A great domed oven with the day's mark chalked on its door.",
+          "Children sent for bread, being served in a strict order everybody but the party understands."
+        ],
+        "trade": [
+          "Bread twice a day, and the oven let out to neighbours for a fee once it cools.",
+          "Loaves, pies and the settlement's only reliable news at first light.",
+          "Flour ground at the mill and baked here, which ties the two houses together."
+        ],
+        "occupations": [
+          "baker",
+          "baker's apprentice",
+          "oven boy",
+          "pie seller",
+          "flour carter"
+        ],
+        "objects": [
+          "a shelf of loaves kept back under a cloth for somebody who has not come",
+          "a pie with a mark cut into the crust that is not decoration",
+          "a tally of the oven's hire with one name on it far too often",
+          "a sack of flour with the mill's stamp scratched off"
+        ],
+        "hooks": [
+          "The baker keeps a loaf back each day for somebody who stopped collecting it a week ago.",
+          "The oven is hired at night by someone who is not baking bread.",
+          "Flour has come short three deliveries running and the miller says it left full.",
+          "The baker will pay to have somebody walked home safely after the early shift."
+        ],
+        "hidden": [
+          "The marks cut into the crusts are messages, and the baker is only the post.",
+          "Whoever hires the oven at night is burning something that is not fuel.",
+          "The baker knows exactly who in the settlement cannot pay, and has told somebody who asked.",
+          "The kept-back loaves are for a person in hiding, and the baker will not say where."
+        ],
+        "rumors": [
+          "the oven is lit at hours nobody bakes at",
+          "the flour has been coming short and neither house will say which",
+          "there is a loaf set aside every day for somebody who never comes"
+        ]
+      },
+      { "id": "apothecary", "name": "The apothecary", "map": "Apothecary", "type": "Apothecary", "shopType": "Apothecary", "line": "where the cures outnumber the ailments",
+        "names": [
+          "The Green Jar",
+          "{last}'s Remedies",
+          "The Bitter Draught",
+          "Physick House",
+          "The Pestle"
+        ],
+        "sights": [
+          "Jars in ranks with labels in a hand that has been getting worse for years.",
+          "Bunches drying head-down from every beam, and a floor swept far cleaner than the shelves.",
+          "A curtained alcove with a stool in it, for consultations nobody wants overheard.",
+          "A set of scales good enough to weigh a dose, and a locked case behind them."
+        ],
+        "trade": [
+          "Draughts, poultices and the setting of bones, cheaper than the temple and faster.",
+          "Remedies made here from what grows here, and a few things that do not.",
+          "Whatever will get somebody through the winter, sold on trust until spring."
+        ],
+        "occupations": [
+          "apothecary",
+          "herb gatherer",
+          "physicker",
+          "apprentice",
+          "midwife"
+        ],
+        "objects": [
+          "a jar labelled in a hand quite different from the rest",
+          "a locked case whose contents are weighed rather than counted",
+          "a ledger of doses with one patient listed under no name at all",
+          "a mortar stained a colour none of the shelf stock would leave"
+        ],
+        "hooks": [
+          "The apothecary wants an ingredient that only grows where the party is going.",
+          "Somebody has been buying the makings of something that is not a remedy.",
+          "A patient is being treated in the alcove who should not be in the settlement at all.",
+          "Three households have come in this month with the same complaint and no shared cause."
+        ],
+        "hidden": [
+          "The locked case holds poisons, sold twice this season, and the buyer paid in old coin.",
+          "The unnamed patient in the ledger is somebody the campaign is looking for.",
+          "The apothecary knows the well is the cause and has been paid to keep saying it is not.",
+          "A jar on the open shelf is mislabelled, and the apothecary has not noticed."
+        ],
+        "rumors": [
+          "the same sickness has come to three houses that share nothing but a well",
+          "somebody bought what you would need to poison a household and paid in old coin",
+          "there is a patient in the back room nobody has seen come or go"
         ]
       },
       { "id": "market", "name": "The market square", "map": "Market square", "line": "where the notice board is the fastest information in the region", "type": "Market", "names": ["The Weighhouse", "Chandlers' Row", "The Open Stones", "{last} Market", "The Cross Stalls"],
@@ -1734,7 +1884,7 @@
           "the river came up faster than the rain accounts for"
         ]
       },
-      { "id": "smithy", "name": "The smithy", "map": "Smithy", "line": "where the fire has not been let out in living memory", "type": "Smithy", "names": ["{last}'s Forge", "The Standing Fire", "Anvil Yard", "The Black House", "Coalside"],
+      { "id": "smithy", "name": "The smithy", "map": "Smithy", "line": "where the fire has not been let out in living memory", "type": "Smithy", "shopType": "Smithy", "names": ["{last}'s Forge", "The Standing Fire", "Anvil Yard", "The Black House", "Coalside"],
         "sights": [
           "Heat you feel from the doorway, and the smith working through the conversation rather than pausing for it.",
           "Finished work hung by size, and one piece under a cloth that is not for sale.",
