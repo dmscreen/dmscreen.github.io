@@ -423,6 +423,14 @@
         22
       ],
       "note": "Full stock, and special orders are usually possible."
+    },
+    "Metropolis": {
+      "stock": [
+        20,
+        32
+      ],
+      "note": "Anything on the list, in depth, and a back room for what is not on the list.",
+      "depth": 1.6
     }
   },
   "flavor": [
