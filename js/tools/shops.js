@@ -17,10 +17,14 @@ const priceInCopper = (price) => {
   const mult = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 }[m[2].toLowerCase()] || 100;
   return parseFloat(m[1].replace(/,/g, '')) * mult;
 };
-const stockFor = (item) => {
+const stockFor = (item, depth = 1) => {
   const cp = priceInCopper(item.price);
   const band = cp <= 10 ? [8, 24] : cp <= 100 ? [4, 12] : cp <= 1000 ? [2, 6] : cp <= 10000 ? [1, 3] : [1, 1];
-  return band[0] + Math.floor(Math.random() * (band[1] - band[0] + 1));
+  const n = band[0] + Math.floor(Math.random() * (band[1] - band[0] + 1));
+  // A bigger place stocks deeper as well as wider. It has to: most shop
+  // types have about a dozen lines to their name, so a metropolis cannot
+  // simply have more of them than exist.
+  return Math.max(1, Math.round(n * depth));
 };
 
 export default {
@@ -80,6 +84,7 @@ export default {
         <p class="small faint">${esc(shop.note)}</p>
         <div class="row mb">
           <button class="btn small" data-refresh title="A day of trade: some stock sells through, some is restocked, and something new comes in">Refresh items</button>
+          <input type="search" class="shop-filter" data-filter placeholder="Filter the shelf..." aria-label="Filter items">
           <span class="small faint" data-summary></span>
         </div>
         <div class="table-scroll"><table class="data">
@@ -96,14 +101,32 @@ export default {
       const summary = card.querySelector('[data-summary]');
       const save = () => dbPut('shops', shop);
 
+      // What the filter box has left. The index is into the shop's own list,
+      // so selling one row still removes the right line when the shelf is
+      // filtered down to three of thirty.
+      const filterEl = card.querySelector('[data-filter]');
+      const visible = () => {
+        const term = filterEl.value.trim().toLowerCase();
+        return shop.items.map((item, i) => ({ item, i }))
+          .filter(({ item }) => !term || item.name.toLowerCase().includes(term));
+      };
+
       const drawRows = () => {
         tbody.innerHTML = '';
-        summary.textContent = `${shop.items.length} lines, ${shop.items.reduce((a, i) => a + (i.qty || 0), 0)} items on the shelf`;
+        const rows = visible();
+        const onShelf = shop.items.reduce((a, i) => a + (i.qty || 0), 0);
+        summary.textContent = rows.length === shop.items.length
+          ? `${shop.items.length} lines, ${onShelf} items on the shelf`
+          : `${rows.length} of ${shop.items.length} lines shown`;
         if (!shop.items.length) {
           tbody.innerHTML = '<tr><td colspan="4" class="faint">Shelves bare. Refresh items to see what comes in.</td></tr>';
           return;
         }
-        shop.items.forEach((item, i) => {
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="faint">Nothing on the shelf matches that.</td></tr>';
+          return;
+        }
+        rows.forEach(({ item, i }) => {
           const tr = el(`<tr>
             <td>${esc(item.name)}${item.flavor ? ' <span class="pill">odd</span>' : ''}</td>
             <td>${esc(item.price)}</td>
@@ -121,7 +144,10 @@ export default {
             item.qty = Math.max(0, n);
             num.value = item.qty;
             await save();
-            summary.textContent = `${shop.items.length} lines, ${shop.items.reduce((a, x) => a + (x.qty || 0), 0)} items on the shelf`;
+            const shown = visible().length;
+            summary.textContent = shown === shop.items.length
+              ? `${shop.items.length} lines, ${shop.items.reduce((a, x) => a + (x.qty || 0), 0)} items on the shelf`
+              : `${shown} of ${shop.items.length} lines shown`;
             drawSaved();
           };
           tr.querySelector('[data-less]').addEventListener('click', () => setQty((item.qty || 0) - 1));
@@ -160,7 +186,7 @@ export default {
         const room = Math.max(0, maxLines + 2 - kept.length);
         const fresh = conf.items.filter(i => !have.has(i.name)).sort(() => Math.random() - 0.5)
           .slice(0, Math.min(room, 1 + Math.floor(Math.random() * 3)))
-          .map(i => ({ ...i, qty: stockFor(i) }));
+          .map(i => ({ ...i, qty: stockFor(i, (shopData.sizes[shop.size] || {}).depth || 1) }));
         if (room > fresh.length && Math.random() < 0.35) {
           const odd = pick(shopData.flavor);
           if (!have.has(odd.name)) fresh.push({ ...odd, flavor: true, qty: 1 });
@@ -180,6 +206,13 @@ export default {
           drawSaved();
         }));
 
+      // typing in the filter redraws the shelf, not the shop
+      let filterTimer;
+      filterEl.addEventListener('input', () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(drawRows, 100);
+      });
+
       drawRows();
       currentEl.append(card);
     };
@@ -191,8 +224,9 @@ export default {
       const sizeConf = shopData.sizes[sizeName];
       const [min, max] = sizeConf.stock;
       const count = min + Math.floor(Math.random() * (max - min + 1));
+      const depth = sizeConf.depth || 1;
       const items = [...conf.items].sort(() => Math.random() - 0.5).slice(0, count)
-        .map(i => ({ ...i, qty: stockFor(i) }));
+        .map(i => ({ ...i, qty: stockFor(i, depth) }));
       if (Math.random() < 0.7) {
         const odd = pick(shopData.flavor);
         items.push({ ...odd, flavor: true, qty: 1 });

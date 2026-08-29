@@ -96,7 +96,11 @@ export default {
       const categories = [...new Set(catalog.map(t => t.category))].sort();
       const selected = new Set();
 
-      const body = el(`<div>
+      // The list takes whatever height the overlay has left rather than a
+      // fixed slice of the viewport, so on a tall screen it simply shows
+      // more tables instead of leaving the dialog scrolling past its own
+      // buttons.
+      const body = el(`<div class="modal-fill">
         <div class="row mb">
           <div class="grow" id="im-search"></div>
           <label class="field"><span>Category</span>
@@ -104,7 +108,7 @@ export default {
           </label>
         </div>
         <p class="small muted" id="im-count"></p>
-        <div id="im-list" style="max-height:46vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"></div>
+        <div id="im-list" data-grow style="border:1px solid var(--border);border-radius:var(--radius-sm)"></div>
         <p class="small faint mt">Tables from <a href="https://autorolltables.github.io" target="_blank" rel="noopener">Auto Roll Tables</a>. Imported copies are yours to edit.</p>
       </div>`);
 
