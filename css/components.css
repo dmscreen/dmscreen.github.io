@@ -752,9 +752,6 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
 .link-tile h2 a { color: inherit; text-decoration: none; }
 .link-tile h2 a:hover { color: var(--accent); }
 
-/* Storage tally on the About page. */
-.stat-group table.data td { padding: 4px 8px; }
-.stat-group .stat-num { text-align: right; font-family: var(--font-mono); color: var(--accent); white-space: nowrap; }
 
 /* A dilemma's two horns, shown side by side so neither reads as the answer. */
 .dilemma-card { border-left: 3px solid var(--accent); }
