@@ -1,7 +1,508 @@
 {
-  "patrons": ["a desperate village elder", "a wealthy merchant with too many secrets", "the captain of the town watch", "a hedge wizard whose experiment escaped", "an anonymous letter sealed in black wax", "a dying knight with unfinished business", "a child with an impossible story that checks out", "a rival adventuring party swallowing its pride", "a temple priest acting against orders", "a noble who cannot be seen asking for help", "a ghost that appears only at the third bell", "a talking raven with a cultured accent"],
-  "goals": ["recover a stolen heirloom", "escort a witness safely to the next town", "find out why the mine went silent", "break a curse on the local well", "retrieve a body for proper burial", "deliver a sealed package, unopened, no questions", "clear out a monster lair before the trade fair", "find a missing person last seen at the crossroads", "steal back what was stolen first", "map a forgotten stretch of tunnels", "win a contest without revealing their patron", "destroy a specific object that cannot be destroyed by fire"],
-  "complications": ["the target location floods at high tide", "a rival crew was hired for the same job", "the locals are lying about something basic", "the monster is a victim too", "the patron's information is three weeks stale", "an old enemy of one PC is involved", "the law arrives at the worst possible moment", "the goal item is already broken, faked, or sold", "someone inside the party's circle tips off the opposition", "the weather turns against everyone", "an innocent bystander gets attached to the party", "the map is wrong on purpose"],
-  "twists": ["the patron is the true villain", "the stolen item wants to stay stolen", "success triggers a worse problem the villain was containing", "the villain is a relative of the patron", "there are two identical artifacts and one is bait", "the missing person left willingly and won't return", "the reward was never real, but something better is", "the whole job is a distraction from a bigger heist", "an apparent enemy saves the party's life", "the curse moves to whoever breaks it"],
-  "rewards": ["a fair purse of gold, paid grudgingly", "a favor from someone who never grants favors", "deed to a small, haunted property", "a minor magic item with a chatty previous owner", "free lodging for life at a struggling inn", "a letter of introduction to a powerful guild", "a map fragment to something bigger", "the loyalty of a very capable hireling", "forgiveness of an old debt or bounty", "a strange coin that always finds its way back"]
+  "patrons": [
+    "a desperate village elder",
+    "a wealthy merchant with too many secrets",
+    "the captain of the town watch",
+    "a hedge wizard whose experiment escaped",
+    "an anonymous letter sealed in black wax",
+    "a dying knight with unfinished business",
+    "a child with an impossible story that checks out",
+    "a rival adventuring party swallowing its pride",
+    "a temple priest acting against orders",
+    "a noble who cannot be seen asking for help",
+    "a ghost that appears only at the third bell",
+    "a talking raven with a cultured accent"
+  ],
+  "goals": [
+    "recover a stolen heirloom",
+    "escort a witness safely to the next town",
+    "find out why the mine went silent",
+    "break a curse on the local well",
+    "retrieve a body for proper burial",
+    "deliver a sealed package, unopened, no questions",
+    "clear out a monster lair before the trade fair",
+    "find a missing person last seen at the crossroads",
+    "steal back what was stolen first",
+    "map a forgotten stretch of tunnels",
+    "win a contest without revealing their patron",
+    "destroy a specific object that cannot be destroyed by fire"
+  ],
+  "complications": [
+    "the target location floods at high tide",
+    "a rival crew was hired for the same job",
+    "the locals are lying about something basic",
+    "the monster is a victim too",
+    "the patron's information is three weeks stale",
+    "an old enemy of one PC is involved",
+    "the law arrives at the worst possible moment",
+    "the goal item is already broken, faked, or sold",
+    "someone inside the party's circle tips off the opposition",
+    "the weather turns against everyone",
+    "an innocent bystander gets attached to the party",
+    "the map is wrong on purpose"
+  ],
+  "twists": [
+    "the patron is the true villain",
+    "the stolen item wants to stay stolen",
+    "success triggers a worse problem the villain was containing",
+    "the villain is a relative of the patron",
+    "there are two identical artifacts and one is bait",
+    "the missing person left willingly and won't return",
+    "the reward was never real, but something better is",
+    "the whole job is a distraction from a bigger heist",
+    "an apparent enemy saves the party's life",
+    "the curse moves to whoever breaks it"
+  ],
+  "rewards": [
+    "a fair purse of gold, paid grudgingly",
+    "a favor from someone who never grants favors",
+    "deed to a small, haunted property",
+    "a minor magic item with a chatty previous owner",
+    "free lodging for life at a struggling inn",
+    "a letter of introduction to a powerful guild",
+    "a map fragment to something bigger",
+    "the loyalty of a very capable hireling",
+    "forgiveness of an old debt or bounty",
+    "a strange coin that always finds its way back"
+  ],
+  "quest": {
+    "shapes": [
+      {
+        "id": "bounty",
+        "label": "Bounty",
+        "weight": 4,
+        "depth": 1,
+        "kinds": [
+          "kill"
+        ],
+        "objectives": [
+          1,
+          1
+        ],
+        "premise": "Something has been killing, and somebody is paying to have it stopped."
+      },
+      {
+        "id": "fetch",
+        "label": "Fetch",
+        "weight": 4,
+        "depth": 1,
+        "kinds": [
+          "collect"
+        ],
+        "objectives": [
+          1,
+          1
+        ],
+        "premise": "Somebody needs a quantity of something and will not go and get it themselves."
+      },
+      {
+        "id": "delivery",
+        "label": "Delivery",
+        "weight": 3,
+        "depth": 1,
+        "kinds": [
+          "deliver"
+        ],
+        "objectives": [
+          1,
+          2
+        ],
+        "premise": "Something has to be somewhere else, and the road between is the problem."
+      },
+      {
+        "id": "clearout",
+        "label": "Clear-out",
+        "weight": 3,
+        "depth": 2,
+        "kinds": [
+          "kill",
+          "reach",
+          "destroy"
+        ],
+        "objectives": [
+          2,
+          3
+        ],
+        "premise": "Something has moved into a place that people need back."
+      },
+      {
+        "id": "escort",
+        "label": "Escort",
+        "weight": 3,
+        "depth": 2,
+        "kinds": [
+          "protect",
+          "reach"
+        ],
+        "objectives": [
+          2,
+          3
+        ],
+        "premise": "Somebody has to get somewhere alive, and there are reasons they might not."
+      },
+      {
+        "id": "recovery",
+        "label": "Recovery",
+        "weight": 3,
+        "depth": 2,
+        "kinds": [
+          "find",
+          "collect",
+          "reach"
+        ],
+        "objectives": [
+          2,
+          3
+        ],
+        "premise": "Something was lost or taken, and its absence is costing somebody dearly."
+      },
+      {
+        "id": "investigation",
+        "label": "Investigation",
+        "weight": 3,
+        "depth": 3,
+        "kinds": [
+          "find",
+          "talk",
+          "reach"
+        ],
+        "objectives": [
+          3,
+          4
+        ],
+        "premise": "Something happened, the account of it does not hold together, and somebody wants the truth."
+      },
+      {
+        "id": "heist",
+        "label": "Heist",
+        "weight": 2,
+        "depth": 3,
+        "kinds": [
+          "steal",
+          "reach",
+          "talk"
+        ],
+        "objectives": [
+          3,
+          4
+        ],
+        "premise": "Something is held somewhere it should not be, behind people who will not hand it over."
+      },
+      {
+        "id": "defence",
+        "label": "Defence",
+        "weight": 2,
+        "depth": 3,
+        "kinds": [
+          "protect",
+          "destroy",
+          "kill"
+        ],
+        "objectives": [
+          3,
+          4
+        ],
+        "premise": "Something is coming, the date is known, and the place cannot hold as it stands."
+      },
+      {
+        "id": "diplomacy",
+        "label": "Diplomacy",
+        "weight": 2,
+        "depth": 3,
+        "kinds": [
+          "talk",
+          "reach",
+          "deliver"
+        ],
+        "objectives": [
+          3,
+          4
+        ],
+        "premise": "Two parties are one insult from open trouble, and somebody would rather they were not."
+      }
+    ],
+    "givers": [
+      "a village elder who has run out of other options",
+      "a merchant who is paying to keep this out of the ledger",
+      "a captain of the watch, off duty and out of uniform",
+      "a notice nailed to the board, the hand shaky",
+      "an item found on a body, with instructions still folded inside",
+      "a conversation the party was not meant to overhear",
+      "a priest who will not say which god sent them",
+      "a child sent with a message and a coin for the trouble",
+      "a rival adventuring party who cannot take this one on",
+      "a guild clerk following an instruction they do not understand",
+      "a stranger who knows one of the party's names",
+      "the survivor, still in the clothes they ran in"
+    ],
+    "pitches": [
+      "It should take a day. It will not take a day.",
+      "The pay is better than the work looks, which is the first thing worth noticing.",
+      "Nobody local will touch it, and nobody local will say why.",
+      "It has been tried twice already. Neither party came back to explain.",
+      "It is quiet work, and quiet is what is being paid for.",
+      "The last people who were asked said yes, and that is the problem.",
+      "It is beneath the party and everyone in the room knows it.",
+      "There is a deadline, and the deadline is not negotiable.",
+      "Half now, half after, and the half now is already more than it should be.",
+      "They are asking the party because the party is passing through and will keep going."
+    ],
+    "prerequisites": [
+      "word has to come back from somewhere first, which takes a day",
+      "somebody has to vouch for the party before the door opens",
+      "the party needs to be able to pass for something they are not",
+      "it cannot start until the next market day, when the place empties",
+      "the way is shut until the weather turns",
+      "the giver will only talk once the party has done something smaller first"
+    ],
+    "walkAway": [
+      "Nothing stops the party walking away, and nothing bad happens if they do.",
+      "Walking away is free, but the offer goes to the rival crew that afternoon.",
+      "The party can decline, but the giver will remember, and the giver talks.",
+      "Declining costs nothing now and closes a door later that nobody points out.",
+      "There is no declining: the party is already involved and only found out today."
+    ],
+    "stakes": [
+      "people will starve by winter, quietly, in ones and twos",
+      "a family loses everything and nobody outside the valley notices",
+      "the road closes and the settlement goes with it inside a year",
+      "somebody innocent hangs for it in a fortnight",
+      "the thing that is loose gets bolder, and the next one it takes is a child",
+      "a truce that took ten years collapses in an afternoon",
+      "the party's own name is on a list they have not seen yet",
+      "the site is emptied by somebody worse before anyone else gets there"
+    ],
+    "antagonists": [
+      "a band that has done this before and has the routine down",
+      "something that has been in the place far longer than the trouble has",
+      "a rival crew working the same job from the other end",
+      "a local authority with a reason to want this left alone",
+      "one person, competent, patient and entirely alone",
+      "a thing that cannot be reasoned with and does not need to eat",
+      "a family that will not be moved and is not wrong",
+      "the weather, the ground and the clock, in that order"
+    ],
+    "twists": [
+      "the giver has left out the part that makes it dangerous",
+      "the target is not the one who did it and can prove it",
+      "the thing being recovered does not want to be recovered",
+      "somebody the party already knows is on the other side of this",
+      "the job was already done once, and undone",
+      "the payment is real but the money is not the giver's to give",
+      "there are two of the thing, and only one was mentioned",
+      "the deadline is early on purpose, and the party is meant to fail"
+    ],
+    "moralChoices": [
+      "whether the one who did it deserves what is coming to them",
+      "whether to hand back the thing to the person who lost it or the person who needs it",
+      "whether the truth is worth what it will cost the person who told it",
+      "whether to take the offer from the other side, which is honest and better",
+      "whether the people living there now count less than the people who lived there before"
+    ],
+    "lore": [
+      "the place has a name in an older tongue, and the name is a warning",
+      "this has happened here before, twice, at about the same interval",
+      "the founding of the settlement is not what the settlement believes it is",
+      "somebody drew a map of this a century ago and marked it do not open",
+      "the pattern matches something the party has seen elsewhere and not understood"
+    ],
+    "constraints": [
+      "before the tide turns",
+      "without being seen",
+      "before the next market day",
+      "without killing anybody",
+      "without the watch finding out",
+      "in a single night",
+      "with the client's man watching",
+      "quietly enough that nothing else wakes"
+    ],
+    "hiddenObjectives": [
+      "find out who paid for it, which nobody has thought to ask",
+      "get the ledger out as well, which the giver never mentioned",
+      "bring back the one who ran, alive, if they can be caught",
+      "leave the place standing, which somebody else would rather it did not",
+      "learn what the mark on the door means before anyone else does"
+    ],
+    "solutions": [
+      "fight for it, which is loud and works",
+      "talk to the one who wants out, and there is always one",
+      "buy the answer, at a price that is meant to hurt",
+      "go in at the wrong hour, when the routine is thin",
+      "let the other side take it and follow them home",
+      "produce a document convincing enough that nobody checks"
+    ],
+    "turnIns": [
+      "back to the giver, in person, with the thing in hand",
+      "back to the giver, though they have moved and left word where",
+      "word sent ahead is enough; payment waits at the next town",
+      "leave it where it was asked for and walk away; the party is watched",
+      "the giver comes to the party, which was not the arrangement"
+    ],
+    "outcomes": [
+      {"kind": "success", "text": "Done clean: the thing is where it should be and nobody the party liked is dead."},
+      {"kind": "partial", "text": "Most of it done, and the part left undone comes back later."},
+      {"kind": "partial", "text": "Done, but loudly, and the wrong people now know the party's faces."},
+      {"kind": "failure", "text": "Not done, but the party knows why now, and that is worth something to somebody."},
+      {"kind": "failure", "text": "Not done, and the party is the reason: what they broke cannot be put back."}
+    ],
+    "debriefs": [
+      "the giver pays without meeting anyone's eye",
+      "the giver asks one question about the ending that nobody expected them to care about",
+      "the giver pays more than agreed and asks the party to leave town",
+      "the giver argues the price, then pays it, then offers the next job",
+      "somebody else entirely is at the meeting, and the giver defers to them"
+    ],
+    "rewardsCoin": [
+      "a purse counted out in front of the party",
+      "payment in trade goods worth more than coin and harder to carry",
+      "a banker's note against a house two towns over",
+      "coin now and a smaller amount every month, for as long as it holds"
+    ],
+    "rewardsChoice": [
+      "coin, a favour, or the thing itself",
+      "the horse, the armour, or the name of who paid",
+      "a fair price, a share of what is found, or the giver's silence forever",
+      "the weapon off the wall, the map in the drawer, or the debt written off"
+    ],
+    "rewardsUnlock": [
+      "the run of a workshop and whoever works it",
+      "a door in the wall that is not on any map, and the key to it",
+      "a standing rate with a supplier who does not usually deal with strangers",
+      "somewhere to sleep in this town, permanently, no questions",
+      "the right to walk armed where the party could not before"
+    ],
+    "rewardsRep": [
+      "the watch stops asking the party for papers",
+      "one faction warms and its rival cools by the same measure",
+      "the party's name reaches somebody two regions away who has been listening for it",
+      "the guild strikes the party's fine and does not explain why"
+    ],
+    "rewardsNarrative": [
+      "somebody the party helped follows them out of town and will not be sent back",
+      "the settlement changes what it does on one day of the year, because of this",
+      "a rival becomes something closer to a colleague",
+      "the party is owed a favour by somebody who pays their debts exactly once"
+    ],
+    "rewardsHidden": [
+      "what was in the false bottom, if anyone thought to look",
+      "the second half of the map, held back until the giver was sure",
+      "a name, given quietly, that opens a door much later",
+      "the thing the antagonist was carrying and nobody has yet counted"
+    ],
+    "worldChanges": [
+      "the road reopens, and the first cart through changes what the town can be",
+      "a building comes down and is not rebuilt",
+      "the family that ran the place leaves, and somebody worse takes the lease",
+      "the site is sealed, properly this time, with witnesses",
+      "the season turns and this is what everyone remembers about it"
+    ],
+    "followUps": [
+      "whoever paid for it is still out there and now knows the party by name",
+      "the thing recovered turns out to be one of a set",
+      "somebody survived who was not meant to and wants to talk",
+      "the door the party opened does not close again",
+      "a debt is called in, at the worst hour, by somebody in the right"
+    ],
+    "memory": [
+      "the innkeeper stops charging the party for the first round",
+      "the children in the street know which one of the party did it",
+      "one NPC will not speak to the party again and will not say why",
+      "the story is told back to the party a season later, wrong, and better"
+    ],
+    "targets": {
+      "kill": [
+        "kobolds raiding the low road",
+        "a pack that has learned to open doors",
+        "the bandit crew working the crossroads",
+        "something in the flooded level that the miners will not name",
+        "a beast with a bounty and a description that keeps changing",
+        "the deserters holed up in the old post",
+        "whatever is taking the livestock a field at a time"
+      ],
+      "collect": [
+        "silverleaf, which only grows where nothing else will",
+        "unbroken shipping seals from the wreck",
+        "the tax rolls for the last three years",
+        "sample jars from the poisoned well",
+        "cut stone from the quarry face",
+        "the missing pages, wherever they ended up",
+        "clean water, in quantity, before the day is out"
+      ],
+      "find": [
+        "where the cart actually went off the road",
+        "the room the map insists is there",
+        "the second body",
+        "who has been paying the ferryman",
+        "the workshop the counterfeits are coming out of",
+        "the way down that is not the stair"
+      ],
+      "talk": [
+        "the only witness, who has stopped talking to anybody",
+        "the foreman, who knows and is frightened",
+        "the prisoner, who will trade what they saw",
+        "the family, who have not been told yet",
+        "the rival crew, before this gets expensive for everyone",
+        "the hermit, who has not spoken to anyone in years"
+      ],
+      "reach": [
+        "the far side of the flooded gallery",
+        "the watchtower before the signal goes out",
+        "the camp on the ridge without being seen from the road",
+        "the vault door",
+        "the far bank, with the river up",
+        "the top of the stair, where the bell is"
+      ],
+      "protect": [
+        "the witness, until the assizes",
+        "the cart and everything on it",
+        "the well, until it can be capped",
+        "the two families still in the valley",
+        "the surveyor, who will not stop working long enough to hide"
+      ],
+      "destroy": [
+        "the ford, so nothing else crosses",
+        "the nest, root and branch",
+        "the counterfeit dies, all of them",
+        "the bridge, once everybody is over it",
+        "the standing stone the offerings are left at"
+      ],
+      "steal": [
+        "the ledger from the guild hall's back room",
+        "the key, without its owner noticing it was gone",
+        "the seal, long enough to make an impression",
+        "the shipment, before it is signed for",
+        "the letters, and only the letters"
+      ],
+      "deliver": [
+        "a sealed case, unopened, and the seal is checked",
+        "a message that must be said aloud, not carried",
+        "a body, home, for burial",
+        "medicine that will not keep",
+        "a payment that must not be seen to be made"
+      ]
+    },
+    "places": [
+      "the old workings above the village",
+      "the flooded level under the mill",
+      "the crossroads and the wood either side",
+      "the tower nobody has condemned properly",
+      "a farmstead three hours out",
+      "the guild hall's back rooms",
+      "the ferry landing and the far bank",
+      "the barrow field",
+      "the caravanserai on the north road",
+      "the quarry, which has not been worked in years"
+    ],
+    "verbPhrases": {
+      "kill": "Kill",
+      "collect": "Collect",
+      "find": "Find out",
+      "talk": "Get word from",
+      "reach": "Reach",
+      "protect": "Keep safe",
+      "destroy": "Destroy",
+      "steal": "Lift",
+      "deliver": "Deliver"
+    }
+  }
 }
