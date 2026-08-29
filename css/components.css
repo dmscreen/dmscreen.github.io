@@ -285,7 +285,20 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.55); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg);
+  /* Two options fit anywhere; twenty-two shop types do not. The control
+     keeps its joined look and scrolls sideways rather than bursting the
+     card or wrapping into a stack that no longer reads as one control.
+     width and align-self are not optional here: giving a flex item any
+     overflow other than visible drops its automatic minimum size to zero,
+     and inside the field's flex column that collapsed the whole control to
+     forty pixels. */
+  max-width: 100%;
+  width: fit-content;
+  align-self: flex-start;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
+.toggle-row.segmented .btn { flex: 0 0 auto; white-space: nowrap; }
 .toggle-row.segmented .btn {
   border: 0;
   border-radius: var(--radius-sm);
