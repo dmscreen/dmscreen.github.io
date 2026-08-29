@@ -65,10 +65,10 @@ export default {
       { value: 'person', label: 'Person' }, { value: 'tavern', label: 'Tavern' },
       { value: 'shop', label: 'Shop' }, { value: 'ship', label: 'Ship' },
       { value: 'settlement', label: 'Settlement' },
-    ], 'person', () => syncAncestry());
+    ], 'person', () => syncAncestry(), { segmented: true });
     container.querySelector('#n-kind-row').append(kind.el);
 
-    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null);
+    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null, { segmented: true });
     ancRow.append(ancestry.el);
 
     container.querySelector('#n-gen').addEventListener('click', () => {

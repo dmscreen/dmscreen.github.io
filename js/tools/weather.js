@@ -32,9 +32,9 @@ export default {
       </div>
       <div id="w-history"></div>`;
 
-    const climate = toggleRow('Climate', Object.keys(CLIMATES).map(c => ({ value: c, label: cap(c) })), 'temperate', null);
+    const climate = toggleRow('Climate', Object.keys(CLIMATES).map(c => ({ value: c, label: cap(c) })), 'temperate', null, { segmented: true });
     container.querySelector('#w-climate-row').append(climate.el);
-    const season = toggleRow('Season', ['spring', 'summer', 'fall', 'winter'].map(s => ({ value: s, label: cap(s) })), 'summer', null);
+    const season = toggleRow('Season', ['spring', 'summer', 'fall', 'winter'].map(s => ({ value: s, label: cap(s) })), 'summer', null, { segmented: true });
     container.querySelector('#w-season-row').append(season.el);
 
     const history = await historyList({

@@ -111,7 +111,7 @@ export default {
       }
     };
 
-    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null);
+    const ancestry = toggleRow('Ancestry', [{ value: '', label: 'Any' }, ...ancestries], '', null, { segmented: true });
     container.querySelector('#np-anc-row').append(ancestry.el);
 
     container.querySelector('#np-gen').addEventListener('click', () =>

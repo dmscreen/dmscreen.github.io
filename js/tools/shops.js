@@ -49,9 +49,9 @@ export default {
         <div id="sh-current"></div>
       </div>`;
 
-    const type = toggleRow('Shop type', types, types[0], null);
+    const type = toggleRow('Shop type', types, types[0], null, { segmented: true });
     container.querySelector('#sh-type-row').append(type.el);
-    const size = toggleRow('Settlement', sizes, sizes.includes('Town') ? 'Town' : sizes[0], null);
+    const size = toggleRow('Settlement', sizes, sizes.includes('Town') ? 'Town' : sizes[0], null, { segmented: true });
     container.querySelector('#sh-size-row').append(size.el);
 
     const currentEl = container.querySelector('#sh-current');
