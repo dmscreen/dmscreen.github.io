@@ -12,6 +12,33 @@ import { icon } from '../components/icons.js';
 import { launchCombat, addToCombat } from './encounters.js';
 import { getParty } from './party.js';
 
+// The map's ink lives in CSS custom properties, which holds up right until
+// something on the reader's device resolves one of them differently. On an
+// iPad the floors came back pale while the page, the ink and the hatching
+// stayed dark -- the signature of a single overridden --map-floor -- so the
+// rooms and passages read as white paper cut into a dark cave.
+//
+// Writing the palette onto the drawing itself settles it: an inline style on
+// the <svg> outranks every stylesheet rule, so a level is the same colour
+// wherever it is opened. The stylesheet keeps its own copy as the fallback
+// for anything that renders before this runs, and the exported sheets build
+// their palette from scratch, so neither is touched by this.
+const MAP_INKS = {
+  dark:  { page: '#221c15', floor: '#39312a', ink: '#e6d9c0', hatch: '#8d7c60', grid: 'rgba(230, 217, 192, 0.10)', water: '#3d5661' },
+  light: { page: '#e4dccb', floor: '#f7f2e7', ink: '#191309', hatch: '#2b2214', grid: 'rgba(25, 19, 9, 0.13)', water: '#b9cdd2' },
+};
+
+const paintMaps = (root = document) => {
+  const p = MAP_INKS[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
+  root.querySelectorAll('svg.dungeon-map').forEach((svg) => {
+    for (const [k, v] of Object.entries(p)) svg.style.setProperty(`--map-${k}`, v);
+  });
+};
+
+// Switching the theme repaints whatever is already on screen.
+new MutationObserver(() => paintMaps()).observe(document.documentElement,
+  { attributes: true, attributeFilter: ['data-theme'] });
+
 const PATTERNS = [
   ['', 'Shape: let the premise decide'],
   ['funnel_to_hub', 'Funnel to hub'],
@@ -2473,6 +2500,7 @@ export default {
       }));
 
       wireMaps(box);
+      paintMaps(box);
       box.querySelectorAll('[data-mon]').forEach(a => a.addEventListener('click', () => {
         const m = bySlug.get(a.dataset.mon);
         m ? showStatBlock(m) : toast('Stat block not found', 'danger');
