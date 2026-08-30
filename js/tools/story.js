@@ -12,17 +12,11 @@ import { icon } from '../components/icons.js';
 import { launchCombat, addToCombat } from './encounters.js';
 import { getParty } from './party.js';
 
-// The map's ink lives in CSS custom properties, which holds up right until
-// something on the reader's device resolves one of them differently. On an
-// iPad the floors came back pale while the page, the ink and the hatching
-// stayed dark -- the signature of a single overridden --map-floor -- so the
-// rooms and passages read as white paper cut into a dark cave.
-//
-// Writing the palette onto the drawing itself settles it: an inline style on
-// the <svg> outranks every stylesheet rule, so a level is the same colour
-// wherever it is opened. The stylesheet keeps its own copy as the fallback
-// for anything that renders before this runs, and the exported sheets build
-// their palette from scratch, so neither is touched by this.
+// The map's palette, written onto each drawing as an inline style. The
+// stylesheet carries the same values as the fallback for anything drawn
+// before this runs, and the exported sheets build their palette from
+// scratch. Beyond pinning the colours against anything else styling the
+// page, this is what lets a theme switch recolour maps already on screen.
 const MAP_INKS = {
   dark:  { page: '#221c15', floor: '#39312a', ink: '#e6d9c0', hatch: '#8d7c60', grid: 'rgba(230, 217, 192, 0.10)', water: '#3d5661' },
   light: { page: '#e4dccb', floor: '#f7f2e7', ink: '#191309', hatch: '#2b2214', grid: 'rgba(25, 19, 9, 0.13)', water: '#b9cdd2' },
@@ -1023,9 +1017,9 @@ export default {
       }
 
       // The grid covers every square anyone can stand on: the rooms and the
-      // passages between them. It is masked rather than clipped because a
-      // hallway is a stroked line, and a clip path only ever uses the shape
-      // its children fill.
+      // passages between them. It is clipped to that region; the clip shapes
+      // are built where the svg is assembled, from the room paths plus one
+      // rect per passage cell.
       let grid = '';
       for (let gx = 0; gx <= m.bounds.w; gx++) grid += `<line x1="${gx * C}" y1="0" x2="${gx * C}" y2="${H}"/>`;
       for (let gy = 0; gy <= m.bounds.h; gy++) grid += `<line x1="0" y1="${gy * C}" x2="${W}" y2="${gy * C}"/>`;
@@ -1179,13 +1173,16 @@ export default {
             <rect width="${W}" height="${H}" fill="#fff"/>
             <g fill="#000" stroke="#000" stroke-width="${WALL}" stroke-linejoin="round">${clip}</g>
           </mask>
-          <!-- every square anyone can stand on: room floors and passage floors -->
-          <mask id="dmfloor${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
-            <rect width="${W}" height="${H}" fill="#000"/>
-            <g fill="#fff">${clip}</g>
-            <g fill="none" stroke="#fff" stroke-width="${PASSAGE.toFixed(1)}" stroke-linecap="butt" stroke-linejoin="round">${
-              corridors.map(co => `<polyline points="${corridorPts(co.cells)}"/>`).join('')}</g>
-          </mask>
+          <!-- Every square anyone can stand on: room floors and passage
+               floors. A clip, not a mask: on the WebKit that iPads run, a
+               luminance mask over a drawing this size sometimes composites
+               its own white content into a tile instead of masking with it,
+               and whole rooms came out pale. A passage fills its square edge
+               to edge, so its cells are the same geometry as the old stroked
+               centerline, said with fills. -->
+          <clipPath id="dmfloor${li}">${clip}${
+            corridors.map(co => co.cells.map(([cx, cy]) =>
+              `<rect x="${cx * C}" y="${cy * C}" width="${C}" height="${C}"/>`).join('')).join('')}</clipPath>
         </defs>
         <rect width="${W}" height="${H}" fill="var(--map-page)"/>
         <g class="map-crag">${crag}</g>
@@ -1199,7 +1196,7 @@ export default {
         <g mask="url(#dmouter${li})">${corridorInk}${corridorFloorTop}</g>
         <!-- the squares last of the floor work, so the second pass at the
              hallways cannot paint over the ones out on the passages -->
-        <g mask="url(#dmfloor${li})" class="map-grid">${grid}</g>
+        <g clip-path="url(#dmfloor${li})" class="map-grid">${grid}</g>
         <g class="map-labels-over">${player ? '' : rooms.map(r => {
           const tint = ROLE_TINT[r.role];
           const lx = (r.x + r.w / 2) * C, ly = (r.y + r.h / 2) * C;
