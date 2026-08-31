@@ -310,24 +310,21 @@ dialog.modal:has(.modal-fill) { max-height: min(88dvh, 1100px); }
 /* segmented variant: buttons joined inside one bordered control */
 .toggle-row.segmented {
   display: inline-flex;
-  flex-wrap: nowrap;
   gap: 0;
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg);
   /* Two options fit anywhere; twenty-two shop types do not. The control
-     keeps its joined look and scrolls sideways rather than bursting the
-     card or wrapping into a stack that no longer reads as one control.
-     width and align-self are not optional here: giving a flex item any
-     overflow other than visible drops its automatic minimum size to zero,
-     and inside the field's flex column that collapsed the whole control to
-     forty pixels. */
+     wraps onto more rows rather than growing a sideways scrollbar: every
+     option stays visible and nothing needs dragging. width: fit-content
+     keeps the shell hugging its single row when everything fits, and
+     max-width is what makes it wrap instead of bursting the card. */
   max-width: 100%;
   width: fit-content;
   align-self: flex-start;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
 .toggle-row.segmented .btn { flex: 0 0 auto; white-space: nowrap; }
 .toggle-row.segmented .btn {
@@ -695,9 +692,13 @@ dialog.modal:has(.modal-fill) { max-height: min(88dvh, 1100px); }
    the buttons fill it. `> .btn` keeps this off the segmented buttons. */
 .gen-controls select,
 .gen-controls > .btn,
-.gen-controls .stepper,
-.gen-controls .toggle-row.segmented {
+.gen-controls .stepper {
   height: 38px;
+  box-sizing: border-box;
+}
+/* the segmented control matches the row height until it wraps, then grows */
+.gen-controls .toggle-row.segmented {
+  min-height: 38px;
   box-sizing: border-box;
 }
 .gen-controls select { padding: 0 10px; }
@@ -705,7 +706,7 @@ dialog.modal:has(.modal-fill) { max-height: min(88dvh, 1100px); }
 .gen-controls .toggle-row { gap: 6px; margin: 0; }
 .gen-controls .toggle-row.segmented { gap: 0; }
 .gen-controls .toggle-row.segmented .btn {
-  height: 100%;
+  height: 30px;
   padding: 0 12px;
   font-size: 0.85rem;
 }
