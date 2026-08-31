@@ -54,6 +54,8 @@ const CHEST_EXTRA = [
 
 // Bands: 0-4, 5-10, 11-16, 17+. Coin rolls are a base and a spread rather
 // than one fixed formula, so two rolls at the same CR do not read the same.
+// The four sizes are also a promise the buttons make left to right: at every
+// band, expected value runs individual < pile < treasure chest < hoard.
 const BANDS = [
   {
     label: 'CR 0-4',
@@ -77,7 +79,7 @@ const BANDS = [
   },
   {
     label: 'CR 11-16',
-    individual: () => ({ gp: roll('4d6').total * 100, pp: roll('2d6').total * 10 }),
+    individual: () => ({ gp: roll('3d6').total * 50, pp: roll('1d6').total * 10 }),
     pileCoins: () => ({ gp: roll('4d6').total * 50, pp: roll('2d6').total * 5 }),
     hoardCoins: () => ({ gp: roll('4d6').total * 1000, pp: roll('5d6').total * 100 }),
     gemTier: 3, artTier: 2,
@@ -87,7 +89,7 @@ const BANDS = [
   },
   {
     label: 'CR 17+',
-    individual: () => ({ gp: roll('8d6').total * 100, pp: roll('3d6').total * 100 }),
+    individual: () => ({ gp: roll('6d6').total * 100, pp: roll('1d6').total * 100 }),
     pileCoins: () => ({ gp: roll('6d6').total * 100, pp: roll('3d6').total * 50 }),
     hoardCoins: () => ({ gp: roll('12d6').total * 1000, pp: roll('8d6').total * 1000 }),
     gemTier: 4, artTier: 3,
