@@ -240,6 +240,8 @@ address in <b>Safari</b> on the iPad too and screenshot that as well.</p>
     const t = await (await fetch('sw.js', { cache: 'no-store' })).text();
     lines.push('served build: ' + (t.match(/VERSION = '([^']+)'/) || [])[1]);
   } catch (e) { lines.push('served build: unreadable (' + e.message + ')'); }
+  lines.push('dark reader styles: ' + document.querySelectorAll('style.darkreader').length
+    + ' | mode: ' + (document.documentElement.getAttribute('data-darkreader-scheme') || 'none'));
   const t4 = document.querySelector('.t4 .t4floor');
   lines.push('T4 computed fill: ' + getComputedStyle(t4).fill);
   const t8 = document.querySelector('svg.dungeon-map .map-floor');
