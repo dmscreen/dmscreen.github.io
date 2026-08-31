@@ -50,6 +50,7 @@ export default {
         <div class="card">
           <h2>About your data</h2>
           <p class="small muted">No account, no server, no tracking. Campaign data is stored with IndexedDB and preferences with localStorage, on this device only. The app works offline once loaded.</p>
+          <p class="small faint" id="st-build"></p>
         </div>
       </div>`;
 
@@ -62,6 +63,18 @@ export default {
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.content = v === 'dark' ? '#191512' : '#f3eee5';
     }, { segmented: true });
+    // Which build this tab is running, for telling a stale tab from a bug.
+    // The running page and the served file can differ until the page is
+    // reloaded, so show both when they disagree.
+    fetch('sw.js', { cache: 'no-store' }).then(r => r.text()).then((t) => {
+      const served = t.match(/VERSION = '([^']+)'/)?.[1];
+      const box = container.querySelector('#st-build');
+      if (!box || !served) return;
+      box.textContent = window.__build === served || !window.__build
+        ? `App build ${served}`
+        : `App build ${window.__build} in this tab; ${served} is live. Reload to update.`;
+    }).catch(() => {});
+
     container.querySelector('#st-theme-row').append(theme.el);
 
     const navMode = toggleRow('Navigation switching', [

@@ -1165,14 +1165,60 @@ export default {
       entranceSvg = `<g class="map-entrance">${rungs}</g>`;
       }
 
+      // Where the hallways may repaint themselves on the second pass: their
+      // own cells, and nothing of any room. A cell that pokes into a room is
+      // dropped; a cell that abuts a rectangular room is trimmed back by
+      // half the wall stroke, so the pass stops at the wall's outer face the
+      // way the old mask did. Fill geometry only -- no luminance mask -- for
+      // the same reason as the grid clip below.
+      const hallClip = (() => {
+        const polyRooms = rooms.filter(r => r.poly).map(r => r.poly.map(([a, b]) => [a * C, b * C]));
+        const rectRooms = rooms.filter(r => !r.poly).map(r => [r.x * C, r.y * C, (r.x + r.w) * C, (r.y + r.h) * C]);
+        const distToEdge = (pp, x, y) => {
+          let best = Infinity;
+          for (let i = 0, k = pp.length - 1; i < pp.length; k = i++) {
+            const [x1, y1] = pp[k], [x2, y2] = pp[i];
+            const dx = x2 - x1, dy = y2 - y1;
+            const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1)));
+            best = Math.min(best, Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy)));
+          }
+          return best;
+        };
+        const out = [];
+        const seen = new Set();
+        for (const co of corridors) for (const [cx, cy] of co.cells) {
+          const key = cx + ',' + cy;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          let x0 = cx * C, y0 = cy * C, x1 = x0 + C, y1 = y0 + C;
+          let dropped = false;
+          for (const [rx0, ry0, rx1, ry1] of rectRooms) {
+            if (x0 < rx1 && x1 > rx0 && y0 < ry1 && y1 > ry0) { dropped = true; break; }
+            const t = WALL / 2 + 0.2;
+            // abutting edges pull back by half the wall stroke
+            if (y0 < ry1 && y1 > ry0) {
+              if (x1 === rx0) x1 -= t;
+              if (x0 === rx1) x0 += t;
+            }
+            if (x0 < rx1 && x1 > rx0) {
+              if (y1 === ry0) y1 -= t;
+              if (y0 === ry1) y0 += t;
+            }
+          }
+          if (!dropped) for (const pp of polyRooms) {
+            const probes = [[x0 + 0.5, y0 + 0.5], [x1 - 0.5, y0 + 0.5], [x1 - 0.5, y1 - 0.5], [x0 + 0.5, y1 - 0.5], [(x0 + x1) / 2, (y0 + y1) / 2]];
+            if (probes.some(([px, py]) => inPoly(pp, px, py) || distToEdge(pp, px, py) < WALL / 2)) { dropped = true; break; }
+          }
+          if (!dropped && x1 > x0 && y1 > y0) out.push(`<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(x1 - x0).toFixed(1)}" height="${(y1 - y0).toFixed(1)}"/>`);
+        }
+        return out.join('');
+      })();
+
       return `<svg class="dungeon-map ${cave ? 'is-cave' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Dungeon map">
         <defs>
           <clipPath id="dmrooms${li}">${clip}</clipPath>
-          <!-- everything that is not a room or a room's wall -->
-          <mask id="dmouter${li}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
-            <rect width="${W}" height="${H}" fill="#fff"/>
-            <g fill="#000" stroke="#000" stroke-width="${WALL}" stroke-linejoin="round">${clip}</g>
-          </mask>
+          <!-- the hallway cells, minus every room: see hallClip above -->
+          <clipPath id="dmhall${li}">${hallClip}</clipPath>
           <!-- Every square anyone can stand on: room floors and passage
                floors. A clip, not a mask: on the WebKit that iPads run, a
                luminance mask over a drawing this size sometimes composites
@@ -1189,11 +1235,11 @@ export default {
         ${corridorInk}${corridorFloor}
         ${roomsSvg}${waterSvg}
         ${doorErasers}${entranceEraser}
-        <!-- The hallways draw themselves again, over the openings but masked
-             to what lies outside the rooms, so an opening can only ever take
-             something off the room it belongs to. Whatever it reaches past
-             the room's skin the hallway simply puts back. -->
-        <g mask="url(#dmouter${li})">${corridorInk}${corridorFloorTop}</g>
+        <!-- The hallways draw themselves again, over the openings but held
+             to their own cells, so an opening can only ever take something
+             off the room it belongs to. Whatever it reaches past the room's
+             skin the hallway simply puts back. -->
+        <g clip-path="url(#dmhall${li})">${corridorInk}${corridorFloorTop}</g>
         <!-- the squares last of the floor work, so the second pass at the
              hallways cannot paint over the ones out on the passages -->
         <g clip-path="url(#dmfloor${li})" class="map-grid">${grid}</g>
