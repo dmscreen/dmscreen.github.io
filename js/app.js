@@ -224,8 +224,27 @@ async function boot() {
   // warm all reference data in the background so later page switches are instant
   setTimeout(preloadAll, 400);
 
+  // stamped at deploy time; Settings compares it against the served build
+  window.__build = 'v99';
+
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // A tablet tab can sit in the background for weeks and never make a
+      // navigation, so it keeps running whatever build it loaded last, long
+      // after a fix has shipped. Ask for a newer build each time the tab
+      // comes back to the front, and when one takes over, step onto it.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+      if (navigator.serviceWorker.controller) {
+        let stepped = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (stepped) return;
+          stepped = true;
+          location.reload();
+        });
+      }
+    }).catch(() => {});
   }
 }
 
