@@ -57,6 +57,32 @@ A curated page of excellent free companions, featuring **[Auto Roll Tables](http
 - Installable PWA with a service worker for offline use at the table.
 - Desktop gets a sidebar layout; phones get an app-style bottom tab bar.
 
+### Browser dark-mode extensions and the maps
+
+`index.html` carries `<meta name="darkreader-lock">`, and `base.css` declares
+`color-scheme` for both themes. **Keep both.** They exist because of a bug that
+took four rounds to diagnose (PRs #59-#63):
+
+- Firefox for iOS bundles [Dark Reader](https://github.com/darkreader/darkreader)
+  as its "Website Dark Mode" feature and injects it into every page when the
+  toggle is on. Dark Reader repaints large dark SVG fills as if they were
+  foreground art, which turned the dungeon-map floors and passages pale while
+  the page, walls and hatching kept their colours.
+- Nothing on the site's side can out-specify it: it rewrites styles inside the
+  browser, after the cascade, so inline styles, masks versus clips, and cache
+  busting are all irrelevant. Safari on the same device is unaffected, and no
+  plain WebKit build reproduces it, because the recolouring rides in the
+  Firefox app, not the engine.
+- The `darkreader-lock` meta is Dark Reader's own documented signal that a
+  site manages dark mode itself; with it present the library injects nothing.
+  The `color-scheme` declarations give every other auto-darkener the same
+  information.
+
+If maps ever render with wrong colours in one specific browser again, open
+`/mapdebug.html` on that device first: it renders labelled test cases and
+reports the user agent, the served build, and whether Dark Reader styles are
+present in the page.
+
 ### Run locally
 
 Any static file server works:
