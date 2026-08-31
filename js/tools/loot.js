@@ -176,7 +176,7 @@ export default {
           <button class="btn" id="l-individual" title="What one creature was carrying">Individual</button>
           <button class="btn" id="l-pile" title="A stash: a few creatures' worth, or what was swept into a corner">Pile</button>
           <button class="btn" id="l-chest" title="A container, with what it is and how it is shut">Treasure chest</button>
-          <button class="btn primary" id="l-hoard" title="A lair, a vault, a milestone">Hoard</button>
+          <button class="btn" id="l-hoard" title="A lair, a vault, a milestone">Hoard</button>
         </div>
         <p class="small faint mt">A hoard is for a lair or a milestone, not every fight. Rarer magic is rarer here than the band's own weighting alone would make it, so a legendary stays a story.</p>
       </div>

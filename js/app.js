@@ -225,7 +225,7 @@ async function boot() {
   setTimeout(preloadAll, 400);
 
   // stamped at deploy time; Settings compares it against the served build
-  window.__build = 'v102';
+  window.__build = 'v103';
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').then((reg) => {
