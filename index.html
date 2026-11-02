@@ -12,13 +12,19 @@
        handles dark itself"; with it present the library stands down. -->
   <meta name="darkreader-lock">
   <title>dmscreen.github.io</title>
+  <meta name="apple-mobile-web-app-title" content="DM Screen">
+  <!-- Home-screen icons are opaque tiles at the root paths browsers probe on
+       their own (see tools/make-icons.py). Keep SVG out of the manifest:
+       Chrome prefers an "any"-sized SVG over any PNG that is not an exact
+       size match for the launcher, and the outline SVG is transparent. -->
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">

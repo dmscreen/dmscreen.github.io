@@ -1,6 +1,6 @@
 // Cache-first service worker so the screen works offline.
 // Bump VERSION on every deploy to refresh caches.
-const VERSION = 'v103';
+const VERSION = 'v104';
 const CACHE = `dmsk-${VERSION}`;
 
 const PRECACHE = [
@@ -10,7 +10,8 @@ const PRECACHE = [
   'css/base.css', 'css/layout.css', 'css/components.css',
   'includes/dndlogo1.png',
   'assets/favicon.svg', 'assets/art-logo.png', 'assets/icon-16.png', 'assets/icon-32.png',
-  'assets/icon-180.png', 'assets/icon-192.png', 'assets/icon-512.png',
+  'assets/icon-192.png', 'assets/icon-512.png',
+  'apple-touch-icon.png', 'favicon.ico',
 ];
 
 self.addEventListener('install', (e) => {
